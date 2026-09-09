@@ -7,16 +7,22 @@ grant connect on database ssot2026_test_db to ssot2026_user;
 
 \c ssot2026_test_db
 set role to ssot2026_owner;
-create schema ssot2026;
-grant usage on schema ssot2026 to ssot2026_user;
+create schema ssot;
+grant usage on schema ssot to ssot2026_user;
 
-set search_path = ssot2026;
+set search_path = ssot;
 
 create table materias(
     cod_mat text,
     materia text,
     plan integer,
-    oblgiatoria boolean,
+    obligatoria boolean,
     constraint "materias_pk" primary key (cod_mat)
 );
+grant select on ssot.materias to ssot2026_user;
 
+insert into materias(cod_mat, materia, plan, obligatoria) values
+    ('ARI', 'BASE DE DATOS', 2023, true),
+    ('BD', 'BASE DE DATOS', 1993, true);
+    
+    

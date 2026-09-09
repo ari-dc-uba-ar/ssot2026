@@ -1,4 +1,6 @@
 import express from "express";
+import { Pool } from 'pg'
+const pool = new Pool();
 
 const app = express();
 
@@ -25,6 +27,28 @@ app.post('/poc/api/inter', async (req, res) => {
         <H2>recibido</H2>
     `)
     console.log(await req.body);
+})
+
+app.get('/poc/lista-materias', async (_, res) => {
+    const result = await pool.query(`
+        SELECT cod_mat, materia, plan, obligatoria 
+            FROM ssot.materias
+            ORDER BY cod_mat
+    `);
+    res.send(`<table>
+            <tr>
+                ${Object.entries(result.rows[0] as string[]).map(([title]: string[])=>{
+                    `<th>${title}</th>`
+                }).join('')}
+            </tr>
+        ${result.rows.map((row:Record<string,any>)=>
+            `<tr>
+                ${Object.entries(row).map(([_, value]:string[])=>
+                    `<td>${value}</td>`
+                ).join('')}
+            </tr>`
+        ).join('')}
+    </table>`)
 })
 
 const port = 3000;
