@@ -2,6 +2,8 @@ import express from "express";
 
 const app = express();
 
+app.use(express.urlencoded({ extended: true }));
+
 app.get('/menu', (_, res) => {
     res.send('SSOT2026 - Solo Somos Otros Tenaces en 2026');
 })
