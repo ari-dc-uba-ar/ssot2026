@@ -4,6 +4,19 @@ const pool = new Pool();
 
 const app = express();
 
+const ssot = {
+    tablas: {
+        materias: {
+            campos: {
+                cod_mat     :{ tipo:'text'   },
+                materia     :{ tipo:'text'   },
+                obligatoria :{ tipo:'boolean'},
+                plan        :{ tipo:'integer'},
+            }
+        }
+    }
+}
+
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/menu', (_, res) => {
@@ -31,15 +44,15 @@ app.post('/poc/api/inter', async (req, res) => {
 
 app.get('/poc/lista-materias', async (_, res) => {
     const result = await pool.query(`
-        SELECT cod_mat, materia, plan, obligatoria 
+        SELECT ${Object.keys(ssot.tablas.materias.campos).join(',')} 
             FROM ssot.materias
             ORDER BY cod_mat
     `);
     res.send(`<table>
             <tr>
-                ${Object.entries(result.rows[0] as string[]).map(([title]: string[])=>{
+                ${Object.keys(ssot.tablas.materias.campos).map(title => 
                     `<th>${title}</th>`
-                }).join('')}
+                ).join(',')}
             </tr>
         ${result.rows.map((row:Record<string,any>)=>
             `<tr>
