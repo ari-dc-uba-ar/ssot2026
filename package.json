@@ -1,0 +1,16 @@
+{
+    "name": "ssot2026",
+    "type": "module",
+    "dependencies": {
+        "express": "^5.2.1"
+    },
+    "devDependencies": {
+        "@types/express": "^5.0.6",
+        "@types/node": "^24.13.4",
+        "typescript": "^7.0.2"
+    },
+    "scripts": {
+        "build": "tsc -p ./src/backend",
+        "start": "node ./dist/backend/server"
+    }
+}
