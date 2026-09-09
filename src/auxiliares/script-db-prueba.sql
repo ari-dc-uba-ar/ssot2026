@@ -25,4 +25,17 @@ insert into materias(cod_mat, materia, plan, obligatoria) values
     ('ARI', 'BASE DE DATOS', 2023, true),
     ('BD', 'BASE DE DATOS', 1993, true);
     
-    
+
+create table pabellones(
+    pab text,
+    pabellon text,
+    pisos integer,
+    constraint "pabellones_pk" primary key (pab)
+);
+grant select on ssot.pabellones to ssot2026_user;
+
+insert into pabellones(pab, pabellon, pisos) values
+    ('P0+I','Cero más infinito', 2),
+    ('P1','Pabellón I', 3),
+    ('P2','Pabellón II', 5);
+        

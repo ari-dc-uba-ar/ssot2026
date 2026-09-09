@@ -4,6 +4,11 @@ const pool = new Pool();
 
 const app = express();
 
+type DefTabla = {
+    campos: Record<string, {tipo:string}>
+    pk: string[]
+}
+
 const ssot = {
     tablas: {
         materias: {
@@ -12,8 +17,17 @@ const ssot = {
                 materia     :{ tipo:'text'   },
                 obligatoria :{ tipo:'boolean'},
                 plan        :{ tipo:'integer'},
-            }
-        }
+            },
+            pk: ['cod_mat']
+        } satisfies DefTabla,
+        pabellones: {
+            campos: {
+                pab         : {tipo:'text'},
+                pabellon    : {tipo:'text'},
+                pisos       : {tipo:'integer'},
+            },
+            pk: ['pab']
+        } satisfies DefTabla
     }
 }
 
@@ -42,17 +56,19 @@ app.post('/poc/api/inter', async (req, res) => {
     console.log(await req.body);
 })
 
-app.get('/poc/lista-materias', async (_, res) => {
+Object.entries(ssot.tablas).forEach(([tabla, def]: [string, DefTabla]) => {
+
+app.get(`/poc/lista-${tabla}`, async (_, res) => {
     const result = await pool.query(`
-        SELECT ${Object.keys(ssot.tablas.materias.campos).join(',')} 
-            FROM ssot.materias
-            ORDER BY cod_mat
+        SELECT ${Object.keys(def.campos).join(',')} 
+            FROM ssot.${tabla}
+            ORDER BY ${def.pk}
     `);
     res.send(`<table>
             <tr>
-                ${Object.keys(ssot.tablas.materias.campos).map(title => 
+                ${Object.keys(def.campos).map(title => 
                     `<th>${title}</th>`
-                ).join(',')}
+                ).join('')}
             </tr>
         ${result.rows.map((row:Record<string,any>)=>
             `<tr>
@@ -62,6 +78,7 @@ app.get('/poc/lista-materias', async (_, res) => {
             </tr>`
         ).join('')}
     </table>`)
+})
 })
 
 const port = 3000;
