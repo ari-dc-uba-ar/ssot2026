@@ -19,7 +19,7 @@ create table materias(
     obligatoria boolean,
     constraint "materias_pk" primary key (cod_mat)
 );
-grant select on ssot.materias to ssot2026_user;
+grant select, insert on ssot.materias to ssot2026_user;
 
 insert into materias(cod_mat, materia, plan, obligatoria) values
     ('ARI', 'BASE DE DATOS', 2023, true),
