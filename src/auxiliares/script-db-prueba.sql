@@ -1,5 +1,5 @@
 create user ssot2026_owner;
-create user ssot2026_user password 'Cambia esta urgente!';
+create user ssot2026_user password 'amigo';
 
 create database ssot2026_test_db owner ssot2026_owner encoding 'UTF8' template template0;
 
@@ -19,7 +19,7 @@ create table materias(
     obligatoria boolean,
     constraint "materias_pk" primary key (cod_mat)
 );
-grant select on ssot.materias to ssot2026_user;
+grant select, insert, update, delete on ssot.materias to ssot2026_user;
 
 insert into materias(cod_mat, materia, plan, obligatoria) values
     ('ARI', 'BASE DE DATOS', 2023, true),
