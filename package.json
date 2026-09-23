@@ -3,7 +3,8 @@
     "type": "module",
     "dependencies": {
         "express": "^5.2.1",
-        "pg": "^8.23.0"
+        "pg": "^8.23.0",
+        "system-definition": "^0.3.0"
     },
     "devDependencies": {
         "@types/express": "^5.0.6",
