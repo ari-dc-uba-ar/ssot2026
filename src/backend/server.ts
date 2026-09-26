@@ -1,37 +1,81 @@
 import express from "express";
 import { Pool } from 'pg'
+
+import { commonTypeDefs, defineTypes, type CoreFieldDef, completeCoreField, defineRecord, 
+    withRecords, defineEntity, defineEntities,
+    completeEntity, type Problem,
+    withValidators
+} from 'system-definition'
+import { humanBehaviours, typeBehaviours } from "system-definition/examples";
+
+export type MyFieldDef = CoreFieldDef<typeof commonTypeDefs> & {
+    isName?: boolean
+    label?: string
+    description?: string
+    maxLength?: number
+}
+
+export const myTypes = defineTypes({
+    types: commonTypeDefs,
+    behaviours: typeBehaviours,
+    human: humanBehaviours,
+    completeField: (fieldDef: MyFieldDef, name: string) => ({
+        ...completeCoreField(fieldDef, name),
+        isName     : fieldDef.isName ?? false,
+        label      : fieldDef.label ?? name.replace(/_/g,' '),
+        description: fieldDef.description ?? '',
+        maxLength  : fieldDef.maxLength ?? 100
+    }),
+})
+
+const materia = defineRecord(myTypes,{
+    cod_mat     :{ type:'text'   },
+    materia     :{ type:'text'   },
+    obligatoria :{ type:'boolean'},
+    plan        :{ type:'integer'},
+})
+
+const pabellon = defineRecord(myTypes,{
+    pab         : {type:'text'   },
+    pabellon    : {type:'text'   },
+    pisos       : {type:'integer'},
+});
+
+const myRecords = withRecords(myTypes, {materia, pabellon})
+
+function validarPlan1993SinObligatorias(dato:{plan?:number, obligatoria?:boolean}){
+    var problemas: Problem[] = []
+    if (dato.plan == 1993) {
+        if (dato.obligatoria) problemas.push({
+            field: 'obligatoria',
+            messageKey: 'plan 1993 no puede tener obligatorias',
+            severity: 'regular',
+            details: {}
+        } satisfies Problem)
+    }
+    return problemas;
+}
+
+const myReordsValidators = withValidators(myRecords, {validarPlan1993SinObligatorias})
+
+const materias = defineEntity(myReordsValidators, {
+    name: 'materias',
+    record: 'materia',
+    pk: ['materia'],
+    // validators: ['validarPlan1993SinObligatorias']
+})
+
+const pabellones = defineEntity(myReordsValidators, {
+    name: 'pabellones',
+    record: 'pabellon',
+    pk: ['pab']
+})
+
+var myEntities = defineEntities({materias, pabellones})
+
 const pool = new Pool();
 
 const app = express();
-
-type DefTabla = {
-    campos: Record<string, {tipo:string}>
-    pk: string[]
-}
-
-const MATERIAS = 'ssot.materias';
-
-const ssot = {
-    tablas: {
-        materias: {
-            campos: {
-                cod_mat     :{ tipo:'text'   },
-                materia     :{ tipo:'text'   },
-                obligatoria :{ tipo:'boolean'},
-                plan        :{ tipo:'integer'},
-            },
-            pk: ['cod_mat']
-        } satisfies DefTabla,
-        pabellones: {
-            campos: {
-                pab         : {tipo:'text'},
-                pabellon    : {tipo:'text'},
-                pisos       : {tipo:'integer'},
-            },
-            pk: ['pab']
-        } satisfies DefTabla
-    }
-}
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -125,18 +169,20 @@ app.get('/poc/materias', (_, res) => {
     `)
 })
 
-Object.entries(ssot.tablas).forEach(([tabla, def]: [string, DefTabla]) => {
+Object.values(myEntities).forEach(entityDef => {
+    const entity = completeEntity(myRecords, entityDef);
+    const tabla = entity.name;
 
 app.get(`/poc/lista-${tabla}`, async (_, res) => {
     const result = await pool.query(`
-        SELECT ${Object.keys(def.campos).join(',')} 
+        SELECT ${Object.keys(entity.fields).join(',')} 
             FROM ssot.${tabla}
-            ORDER BY ${def.pk}
+            ORDER BY ${entity.pk}
     `);
     res.send(`<table>
             <tr>
-                ${Object.keys(def.campos).map(title => 
-                    `<th>${title}</th>`
+                ${Object.values(entity.fields).map(campo => 
+                    `<th>${campo.label}</th>`
                 ).join('')}
             </tr>
         ${result.rows.map((row:Record<string,any>)=>
@@ -148,6 +194,7 @@ app.get(`/poc/lista-${tabla}`, async (_, res) => {
         ).join('')}
     </table>`)
 })
+
 })
 
 const port = 3000;
