@@ -32,7 +32,6 @@ const materia = defineRecord(myTypes,{
     cod_mat     :{ type:'text'   },
     materia     :{ type:'text'   },
     obligatoria :{ type:'boolean'},
-    plan        :{ type:'integer'},
 })
 
 const pabellon = defineRecord(myTypes,{
@@ -128,7 +127,58 @@ app.get(`/poc/lista-${tabla}`, async (_, res) => {
     </table>`)
 })
 
-})
+app.post(`/poc/insertar-${tabla}`, async (req, res) => {
+    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
+    const fields = Object.keys(entity.fields).join(',');
+
+    const insertQuery = `
+        INSERT INTO ssot.${tabla} (${fields})
+        VALUES ´${values.map((_, index) => `$${index + 1}`).join(',')}
+    `;
+
+    await pool.query(insertQuery, values);
+
+    res.send(`
+        <H2>Dato insertado</H2>
+    `);
+});
+
+app.patch(`/poc/actualizar-${tabla}`, async (req, res) => {
+    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
+    const fields = Object.keys(entity.fields).join(',');
+    const pk = Object.values(entity.pk).join(',');
+
+    const updateQuery = `
+        UPDATE ssot.${tabla}
+        SET ${fields.split(',').map((field, index) => `${field} = $${index + 1}`).join(', ')}
+        WHERE ${pk.split(',').map((pkField, index) => `${pkField} = $${Object.keys(entity.fields).length + index + 1}`).join(' AND ')}
+    `;
+
+    await pool.query(updateQuery, [...values, ...Object.values(entity.pk).map(pkField => req.body[pkField])]);
+
+    res.send(`
+        <H2>Dato actualizado</H2>
+    `);
+});
+app.delete(`/poc/eliminar-${tabla}`, async (req, res) => {
+    const pk = Object.values(entity.pk).join(',');
+
+    const deleteQuery = `
+        DELETE FROM ssot.${tabla}
+        WHERE ${pk.split(',').map((pkField, index) => `${pkField} = $${index + 1}`).join(' AND ')}
+    `;
+
+    await pool.query(deleteQuery, Object.values(entity.pk).map(pkField => req.body[pkField]));
+
+    res.send(`
+        <H2>Dato eliminado</H2>
+    `);
+
+});
+});
+
+
+
 
 const port = 3000;
 
