@@ -3,11 +3,12 @@ import { Pool } from 'pg'
 
 import { completeEntity } from 'system-definition'
 import { myRecords, myEntities } from './system.js';
+import { databaseConfig } from './database.js';
 
 export { myTypes } from './system.js';
 export type { MyFieldDef } from './system.js';
 
-const pool = new Pool();
+const pool = new Pool(databaseConfig);
 
 const app = express();
 

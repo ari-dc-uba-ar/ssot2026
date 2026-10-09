@@ -1,0 +1,1 @@
+{"entities":["materias","pabellones"],"representations":{"postgres":{"boolean":"boolean","integer":"integer","text":"text"}}}
