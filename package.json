@@ -4,7 +4,8 @@
     "dependencies": {
         "express": "^5.2.1",
         "pg": "^8.23.0",
-        "system-definition": "^0.3.0"
+        "system-definition": "file:../system-definition",
+        "@system-definition/postgres-migrations": "file:../system-definition/consumers/postgres-migrations"
     },
     "devDependencies": {
         "@types/express": "^5.0.6",
@@ -14,6 +15,7 @@
     },
     "scripts": {
         "build": "tsc -p ./src/backend",
-        "start": "node ./dist/backend/server"
+        "start": "node ./dist/backend/server",
+        "migration:capture": "npm run build && postgres-migrations capture --project ./dist/backend/migration-project.js"
     }
 }
