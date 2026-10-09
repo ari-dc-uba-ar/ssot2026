@@ -16,10 +16,10 @@
     "scripts": {
         "build": "tsc -p ./src/backend",
         "start": "node --env-file-if-exists=.env ./dist/backend/server",
-        "db:check": "npm run build && node --env-file-if-exists=.env ./dist/backend/check-db.js",
         "db:bootstrap": "docker compose run --rm bootstrap",
         "migration:generate-initial": "npm run build && node --env-file-if-exists=.env ./dist/backend/generate-initial.js",
-        "test:initial-migration": "npm run build && node --env-file-if-exists=.env --test test/initial-migration.test.mjs",
-        "migration:capture": "npm run build && postgres-migrations capture --project ./dist/backend/migration-project.js"
+        "migration:install": "npm run build && node --env-file-if-exists=.env ./dist/backend/install-initial.js",
+        "migration:check": "npm run build && node --env-file-if-exists=.env ./dist/backend/install-initial.js --check",
+        "test:initial-migration": "npm run build && node --env-file-if-exists=.env --test test/initial-migration.test.mjs test/installation.test.mjs"
     }
 }

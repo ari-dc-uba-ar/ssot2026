@@ -6,12 +6,11 @@ import {
 } from '@system-definition/postgres-migrations';
 import {databaseConfig, getMigrationDatabaseConfig} from '../dist/backend/database.js';
 import {valueOf} from '../dist/backend/initial-migration.js';
-import {captureSystemSnapshot} from 'system-definition';
-import {createMigrationProject} from '../dist/backend/migration-project.js';
+import {captureSnapshot} from '../dist/backend/system.js';
 
 test('published initial SQL gives the app CRUD access and keeps DDL with the owner', async () => {
     const artifact = valueOf(await loadReleaseArtifact('migrations/releases/initial'));
-    assert.deepEqual(artifact.snapshot, valueOf(captureSystemSnapshot(...createMigrationProject().capture)));
+    assert.deepEqual(artifact.snapshot, valueOf(captureSnapshot()));
     const scratch = createPostgresScratch(getMigrationDatabaseConfig(), ['ssot']);
     const handle = valueOf(await scratch.create('clean-target'));
     let app;

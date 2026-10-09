@@ -1,13 +1,12 @@
 import {readFile} from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {dirname, join} from 'node:path';
-import {captureSystemSnapshot, definePersistence, toJsonValue, type ValidationResult} from 'system-definition';
+import {definePersistence, toJsonValue, type ValidationResult} from 'system-definition';
 import {
     generateCreate, projectSchema, quotePgIdentifier, sha256Hex,
     type StorageContext, type PgSchemaInfo, type ReleaseArtifactDraft, type ReleaseVerificationInput,
 } from '@system-definition/postgres-migrations';
-import {createMigrationProject} from './migration-project.js';
-import {myRecords, myEntities} from './system.js';
+import {captureSnapshot, myRecords, myEntities} from './system.js';
 import {appDatabaseUser, getMigrationDatabaseConfig} from './database.js';
 
 export function valueOf<T>(result: ValidationResult<T>): T {
@@ -18,7 +17,7 @@ const literal = (value: string) => "'" + value.replaceAll("'", "''") + "'";
 const hashText = (text: string) => sha256Hex(new TextEncoder().encode(text));
 
 export async function createInitialMigration(): Promise<{draft: ReleaseArtifactDraft; release: ReleaseVerificationInput}> {
-    const snapshot = valueOf(captureSystemSnapshot(...createMigrationProject().capture));
+    const snapshot = valueOf(captureSnapshot());
     const persistence = definePersistence({...myRecords, entities: myEntities}, {
         entities: Object.keys(myEntities) as (keyof typeof myEntities)[],
         representations: {postgres: {text: 'text', integer: 'integer', boolean: 'boolean'}},

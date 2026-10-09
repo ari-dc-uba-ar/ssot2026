@@ -1,18 +1,18 @@
 import { commonTypeDefs, defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
-    withRecords, defineEntity, defineEntities,
+    withRecords, defineEntity, defineEntities, captureSystemSnapshot,
     type Problem,
     withValidators
 } from 'system-definition'
 import { humanBehaviours, typeBehaviours } from "system-definition/examples";
 
-export type MyFieldDef = CoreFieldDef<typeof commonTypeDefs> & {
+type MyFieldDef = CoreFieldDef<typeof commonTypeDefs> & {
     isName?: boolean
     label?: string
     description?: string
     maxLength?: number
 }
 
-export const myTypes = defineTypes({
+const myTypes = defineTypes({
     types: commonTypeDefs,
     behaviours: typeBehaviours,
     human: humanBehaviours,
@@ -67,4 +67,12 @@ const pabellones = defineEntity(myReordsValidators, {
     pk: ['pab']
 })
 
-export var myEntities = defineEntities({materias, pabellones})
+export const myEntities = defineEntities({materias, pabellones})
+
+export function captureSnapshot() {
+    return captureSystemSnapshot(myRecords, {
+        systemId: 'ssot2026',
+        entities: myEntities,
+        records: myRecords.records,
+    });
+}

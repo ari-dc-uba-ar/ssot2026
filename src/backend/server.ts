@@ -5,36 +5,19 @@ import { completeEntity } from 'system-definition'
 import { myRecords, myEntities } from './system.js';
 import { databaseConfig } from './database.js';
 
-export { myTypes } from './system.js';
-export type { MyFieldDef } from './system.js';
-
 const pool = new Pool(databaseConfig);
 
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
 
+app.get('/health', async (_, res) => {
+    await pool.query('SELECT 1');
+    res.json({ok: true});
+});
+
 app.get('/menu', (_, res) => {
     res.send('SSOT2026 - Solo Somos Otros Tenaces en 2026');
-})
-
-app.get('/poc/inter', (_, res) => {
-    res.send(`
-        <form method=post action="/poc/api/inter">
-            <p>Esta es una prueba de concepto</p>
-            <p><label>dato:<input name=dato></label></p>
-            <input type=submit value="Procesar">
-        </form>
-    `)
-})
-
-app.post('/poc/api/inter', async (req, res) => {
-    console.log('POST', '/poc/api/inter')
-    console.log(req.query);
-    res.send(`
-        <H2>recibido</H2>
-    `)
-    console.log(await req.body);
 })
 
 Object.values(myEntities).forEach(entityDef => {
@@ -69,7 +52,7 @@ app.post(`/poc/insertar-${tabla}`, async (req, res) => {
 
     const insertQuery = `
         INSERT INTO ssot.${tabla} (${fields})
-        VALUES ´${values.map((_, index) => `$${index + 1}`).join(',')}
+        VALUES (${values.map((_, index) => `$${index + 1}`).join(',')})
     `;
 
     await pool.query(insertQuery, values);
@@ -81,30 +64,27 @@ app.post(`/poc/insertar-${tabla}`, async (req, res) => {
 
 app.patch(`/poc/actualizar-${tabla}`, async (req, res) => {
     const values = Object.values(entity.fields).map((field) => req.body[field.name]);
-    const fields = Object.keys(entity.fields).join(',');
-    const pk = Object.values(entity.pk).join(',');
+    const fields = Object.keys(entity.fields);
 
     const updateQuery = `
         UPDATE ssot.${tabla}
-        SET ${fields.split(',').map((field, index) => `${field} = $${index + 1}`).join(', ')}
-        WHERE ${pk.split(',').map((pkField, index) => `${pkField} = $${Object.keys(entity.fields).length + index + 1}`).join(' AND ')}
+        SET ${fields.map((field, index) => `${field} = $${index + 1}`).join(', ')}
+        WHERE ${entity.pk.map((pkField, index) => `${pkField} = $${fields.length + index + 1}`).join(' AND ')}
     `;
 
-    await pool.query(updateQuery, [...values, ...Object.values(entity.pk).map(pkField => req.body[pkField])]);
+    await pool.query(updateQuery, [...values, ...entity.pk.map(pkField => req.body[pkField])]);
 
     res.send(`
         <H2>Dato actualizado</H2>
     `);
 });
 app.delete(`/poc/eliminar-${tabla}`, async (req, res) => {
-    const pk = Object.values(entity.pk).join(',');
-
     const deleteQuery = `
         DELETE FROM ssot.${tabla}
-        WHERE ${pk.split(',').map((pkField, index) => `${pkField} = $${index + 1}`).join(' AND ')}
+        WHERE ${entity.pk.map((pkField, index) => `${pkField} = $${index + 1}`).join(' AND ')}
     `;
 
-    await pool.query(deleteQuery, Object.values(entity.pk).map(pkField => req.body[pkField]));
+    await pool.query(deleteQuery, entity.pk.map(pkField => req.body[pkField]));
 
     res.send(`
         <H2>Dato eliminado</H2>
