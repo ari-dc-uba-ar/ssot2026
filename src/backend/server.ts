@@ -31,6 +31,7 @@ export const myTypes = defineTypes({
 const materia = defineRecord(myTypes,{
     cod_mat     :{ type:'text'   },
     materia     :{ type:'text'   },
+    plan        :{type: 'text'},
     obligatoria :{ type:'boolean'},
 })
 
@@ -60,7 +61,7 @@ const myReordsValidators = withValidators(myRecords, {validarPlan1993SinObligato
 const materias = defineEntity(myReordsValidators, {
     name: 'materias',
     record: 'materia',
-    pk: ['materia'],
+    pk: ['cod_mat'],
     // validators: ['validarPlan1993SinObligatorias']
 })
 
@@ -77,6 +78,12 @@ const pool = new Pool();
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('src/frontend/dist'));
+app.use(express.json());
+
+app.get('/', (_, res) => {
+    res.sendFile('index.html', { root: 'src/frontend/' });
+});
 
 app.get('/menu', (_, res) => {
     res.send('SSOT2026 - Solo Somos Otros Tenaces en 2026');
@@ -111,21 +118,32 @@ app.get(`/poc/lista-${tabla}`, async (_, res) => {
             FROM ssot.${tabla}
             ORDER BY ${entity.pk}
     `);
-    res.send(`<table>
-            <tr>
-                ${Object.values(entity.fields).map(campo => 
-                    `<th>${campo.label}</th>`
-                ).join('')}
-            </tr>
-        ${result.rows.map((row:Record<string,any>)=>
-            `<tr>
-                ${Object.entries(row).map(([_, value]:string[])=>
-                    `<td>${value}</td>`
-                ).join('')}
-            </tr>`
-        ).join('')}
-    </table>`)
+    res.json(result.rows)
 })
+
+app.get(`/poc/obtener-${tabla}/:id`, async (req, res) => {
+    try {
+        const pk = Object.values(entity.pk).join(',');
+        const pkFields = pk.split(',');
+
+        const result = await pool.query(
+            `SELECT ${Object.keys(entity.fields).join(',')}
+             FROM ssot.${tabla}
+             WHERE ${pkFields.map((field, index) => `${field} = $${index + 1}`).join(' AND ')}
+            `,
+             pkFields.map(field => req.params.id)
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Registro no encontrado' });
+        }
+
+        return res.json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: 'Error al obtener el registro' });
+    }
+});
 
 app.post(`/poc/insertar-${tabla}`, async (req, res) => {
     const values = Object.values(entity.fields).map((field) => req.body[field.name]);
@@ -133,46 +151,66 @@ app.post(`/poc/insertar-${tabla}`, async (req, res) => {
 
     const insertQuery = `
         INSERT INTO ssot.${tabla} (${fields})
-        VALUES ´${values.map((_, index) => `$${index + 1}`).join(',')}
+         VALUES (${values.map((_, index) => `$${index + 1}`).join(', ')})
+        RETURNING *
     `;
 
-    await pool.query(insertQuery, values);
-
-    res.send(`
-        <H2>Dato insertado</H2>
-    `);
+    const result = await pool.query(insertQuery, values);
+    res.status(201).json(result.rows[0]);
 });
 
 app.patch(`/poc/actualizar-${tabla}`, async (req, res) => {
-    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
-    const fields = Object.keys(entity.fields).join(',');
-    const pk = Object.values(entity.pk).join(',');
+    const pk = Object.values(entity.pk);
+
+    // Solo actualizamos campos enviados y que no estén vacíos.
+    const fieldsToUpdate = Object.values(entity.fields).filter(
+        field =>
+            !pk.includes(field.name) &&
+            req.body[field.name] !== undefined &&
+            req.body[field.name] !== ''
+    );
+
+    if (fieldsToUpdate.length === 0) {
+        return res.status(400).json({ error: 'No hay campos para actualizar' });
+    }
+
+    const values = fieldsToUpdate.map(field => req.body[field.name]);
+    const fields = fieldsToUpdate.map(field => field.name);
+
+    const whereValues = pk.map(pkField => req.body[pkField]);
 
     const updateQuery = `
         UPDATE ssot.${tabla}
-        SET ${fields.split(',').map((field, index) => `${field} = $${index + 1}`).join(', ')}
-        WHERE ${pk.split(',').map((pkField, index) => `${pkField} = $${Object.keys(entity.fields).length + index + 1}`).join(' AND ')}
+        SET ${fields.map((field, index) => `${field} = $${index + 1}`).join(', ')}
+        WHERE ${pk.map((pkField, index) => `${pkField} = $${values.length + index + 1}`).join(' AND ')}
+        RETURNING *
     `;
 
-    await pool.query(updateQuery, [...values, ...Object.values(entity.pk).map(pkField => req.body[pkField])]);
+    const result = await pool.query(updateQuery, [...values, ...whereValues]);
 
-    res.send(`
-        <H2>Dato actualizado</H2>
-    `);
+    if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'No se encontró el registro' });
+    }
+
+    return res.json(result.rows[0]);
 });
-app.delete(`/poc/eliminar-${tabla}`, async (req, res) => {
+
+app.delete(`/poc/eliminar-${tabla}/:id`, async (req, res) => {
     const pk = Object.values(entity.pk).join(',');
 
     const deleteQuery = `
         DELETE FROM ssot.${tabla}
         WHERE ${pk.split(',').map((pkField, index) => `${pkField} = $${index + 1}`).join(' AND ')}
+        RETURNING *
     `;
 
-    await pool.query(deleteQuery, Object.values(entity.pk).map(pkField => req.body[pkField]));
+    const result = await pool.query(deleteQuery, [req.params.id]);
 
-    res.send(`
-        <H2>Dato eliminado</H2>
-    `);
+    if (result.rowCount === 0) {
+        return res.status(404).json({ error: 'No se encontró el registro' });
+    }
+
+    return res.json(result.rows[0]);
 
 });
 });

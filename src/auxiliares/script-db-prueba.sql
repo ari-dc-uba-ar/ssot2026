@@ -20,6 +20,9 @@ create table materias(
     constraint "materias_pk" primary key (cod_mat)
 );
 grant select on ssot.materias to ssot2026_user;
+grant insert on ssot.materias to ssot2026_user;
+grant delete on ssot.materias to ssot2026_user;
+grant update on ssot.materias to ssot2026_user;
 
 insert into materias(cod_mat, materia, plan, obligatoria) values
     ('ARI', 'BASE DE DATOS', 2023, true),
@@ -33,6 +36,9 @@ create table pabellones(
     constraint "pabellones_pk" primary key (pab)
 );
 grant select on ssot.pabellones to ssot2026_user;
+grant insert on ssot.pabellones to ssot2026_user;
+grant delete on ssot.pabellones to ssot2026_user;
+grant update on ssot.pabellones to ssot2026_user;
 
 insert into pabellones(pab, pabellon, pisos) values
     ('P0+I','Cero más infinito', 2),
