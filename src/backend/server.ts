@@ -55,7 +55,8 @@ app.get('/menu', (_, res) => {
     res.send('SSOT2026 - Solo Somos Otros Tenaces en 2026');
 })
 
-Object.values(myEntities).forEach(entityDef => {
+// Filtro evita crear endpoints para la tabla de usuarios
+Object.values(myEntities).filter(entityDef => entityDef.name !== 'usuarios').forEach(entityDef => {
     const entity = completeEntity(myRecords, entityDef);
     const tabla = entity.name;
 
