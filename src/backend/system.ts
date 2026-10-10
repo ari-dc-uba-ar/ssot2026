@@ -37,7 +37,12 @@ const pabellon = defineRecord(myTypes,{
     pisos       : {type:'integer'},
 });
 
-export const myRecords = withRecords(myTypes, {materia, pabellon})
+const usuario = defineRecord(myTypes,{
+    usuario     : {type:'text'   },
+    clave       : {type:'text'   },
+});
+
+export const myRecords = withRecords(myTypes, {materia, pabellon, usuario})
 
 function validarPlan1993SinObligatorias(dato:{plan?:number, obligatoria?:boolean}){
     var problemas: Problem[] = []
@@ -67,7 +72,14 @@ const pabellones = defineEntity(myReordsValidators, {
     pk: ['pab']
 })
 
-export const myEntities = defineEntities({materias, pabellones})
+const usuarios = defineEntity(myReordsValidators, {
+    name: 'usuarios',
+    record: 'usuario',
+    pk: ['usuario']
+})
+
+
+export const myEntities = defineEntities({materias, pabellones, usuarios})
 
 export function captureSnapshot() {
     return captureSystemSnapshot(myRecords, {

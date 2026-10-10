@@ -1,4 +1,5 @@
 import express from "express";
+import type {Request, Response, NextFunction} from 'express';
 import { Pool } from 'pg'
 
 import { completeEntity } from 'system-definition'
@@ -9,7 +10,38 @@ const pool = new Pool(databaseConfig);
 
 const app = express();
 
+// no se encriptar claves 😭
+function claveCorrecta(claveRecibida: string, claveGuardada: string): boolean {
+    return claveRecibida === claveGuardada;
+}
+
+function rechazar(res: Response) {
+    res.set('WWW-Authenticate', 'Basic realm="SSOT2026"').status(401).send('No autorizado');
+}
+
+async function autenticar(req: Request, res: Response, next: NextFunction) {
+    const header = req.headers.authorization;
+    if (!header || !header.startsWith('Basic ')) return rechazar(res);
+
+    const decodificado = Buffer.from(header.slice('Basic '.length), 'base64').toString();
+
+    const pos = decodificado.indexOf(':');
+    if (pos === -1) return rechazar(res);
+    const usuario = decodificado.slice(0, pos);
+    const clave = decodificado.slice(pos + 1);
+
+    const result = await pool.query('SELECT clave FROM ssot.usuarios WHERE usuario = $1', [usuario]);
+    const fila = result.rows[0];
+
+    if (!fila || !claveCorrecta(clave, fila.clave)) return rechazar(res);
+
+    res.locals['usuario'] = usuario;
+    next();
+}
+
 app.use(express.urlencoded({ extended: true }));
+
+app.use('/poc', autenticar);
 
 app.get('/health', async (_, res) => {
     await pool.query('SELECT 1');
