@@ -11,10 +11,6 @@ const app = express();
 app.use(express.static('src/frontend/dist'));
 app.use(express.json());
 
-app.get('/', (_, res) => {
-    res.sendFile('index.html', { root: 'src/frontend/' });
-});
-
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('src/frontend/dist'));
 app.use(express.json());
