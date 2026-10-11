@@ -10,6 +10,10 @@ export const databaseSettings = {
         schema: 'ssot',
         connectionTimeoutMillis: 5000,
     },
+    initialUser: {
+        user: process.env['POSTGRES_USER'] || 'ssot2026',
+        password: process.env['POSTGRES_PASSWORD'],
+    },
     owner: process.env['MIGRATION_PGUSER'] || 'ssot2026_owner',
     appUser: (url && decodeURIComponent(url.username)) || process.env['PGUSER'] || 'ssot2026_user',
 } satisfies DatabaseSettings;

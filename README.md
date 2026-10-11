@@ -18,10 +18,14 @@ npm run test:ssot
 
 The command loads the app's exported model and validates it with the core decoder.
 `migration:load` also reads `databaseSettings` from `src/backend/database.ts`:
-the PostgreSQL connection settings and schema, the owner role, and the app role. The connection
+the PostgreSQL connection settings and schema, the initial provisioning connection,
+the owner role, and the app role. The connection
 uses the driver's existing `ClientConfig` type. The backend uses the same settings
 with the app role. The loader requires distinct owner/app names; applying database
 permissions is a later step. CLI output includes connection identity and role names.
+`initialUser` takes the driver's `ClientConfig` with a required username. The app
+supplies it through `POSTGRES_USER`/`POSTGRES_PASSWORD`; its credentials are omitted
+from CLI output. It is reserved for initial role and permission setup.
 The load commands do not connect to PostgreSQL. Schema assessment is a separate
 read-only command. Bootstrap, permission setup, generation, and installation
 will be handled separately. The previous automatic migration commands and Compose
@@ -35,9 +39,17 @@ npm run test:assessment
 ```
 
 Assessment projects the SSOT into a PostgreSQL schema, reads the configured SQL
-schema using the app connection, and compares normalized structures. It returns
+schema using the app connection, and compares normalized structures. Inspection reads
+the existing schema names and objects from a single catalog query, including empty
+schemas. Comparison ignores object property order and preserves array order. It returns
 `{equal, differences}`. Each difference has `path`, `change`, `before` (database),
 and `after` (SSOT). This step reads catalogs and leaves tables and data unchanged.
+Each difference also has `impact`: `preserving`, `requiresDataCheck`, `destructive`,
+or `unsupported`. Classification reuses the assessment result and requires no
+release/history configuration. Destructive changes require a user data decision;
+data-sensitive changes require validation or a conversion/backfill decision.
+Table removals group their children into one decision. Possible renames remain
+removal plus addition until the user supplies an explicit correspondence.
 Constraint backing indexes are represented by their constraints; independent
 indexes remain visible as differences. Current mappings cover text, integer, and
 boolean; unsupported domains produce a mapping error. Migration planning and
