@@ -16,10 +16,11 @@
     "scripts": {
         "build": "tsc -p ./src/backend",
         "start": "node --env-file-if-exists=.env ./dist/backend/server",
-        "db:bootstrap": "docker compose run --rm bootstrap",
-        "migration:generate-initial": "npm run build && node --env-file-if-exists=.env ./dist/backend/generate-initial.js",
-        "migration:install": "npm run build && node --env-file-if-exists=.env ./dist/backend/install-initial.js",
-        "migration:check": "npm run build && node --env-file-if-exists=.env ./dist/backend/install-initial.js --check",
-        "test:initial-migration": "npm run build && node --env-file-if-exists=.env --test test/initial-migration.test.mjs test/installation.test.mjs"
+        "ssot:load": "npm run build && postgres-migrations capture --ssot ./dist/backend/system.js",
+        "migration:load": "npm run build && postgres-migrations capture --ssot ./dist/backend/system.js --database ./dist/backend/database.js",
+        "migration:assess": "npm run build && postgres-migrations assess --ssot ./dist/backend/system.js --database ./dist/backend/database.js",
+        "test:assessment": "npm run build && node --env-file-if-exists=.env --test test/assessment.test.mjs",
+        "test:ssot": "npm run build && node --test test/ssot.test.mjs",
+        "test:api": "npm run build && tsc -p test && node --test test/api.test.mjs"
     }
 }

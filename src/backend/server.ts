@@ -4,6 +4,7 @@ import { Pool } from 'pg'
 import { completeEntity } from 'system-definition'
 import { myRecords, myEntities } from './system.js';
 import { databaseConfig } from './database.js';
+import { registerEntityApi } from './api.js';
 
 const pool = new Pool(databaseConfig);
 
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('src/frontend/dist'));
 app.use(express.json());
+registerEntityApi(app, pool);
 
 app.get('/health', async (_, res) => {
     await pool.query('SELECT 1');
