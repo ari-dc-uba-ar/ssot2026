@@ -28,9 +28,9 @@ const myTypes = defineTypes({
 const materia = defineRecord(myTypes,{
     cod_mat     :{ type:'text'   },
     materia     :{ type:'text'   },
+    plan        :{ type:'text'   }, 
     obligatoria :{ type:'boolean'},
 })
-
 const pabellon = defineRecord(myTypes,{
     pab         : {type:'text'   },
     pabellon    : {type:'text'   },
