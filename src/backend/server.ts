@@ -55,7 +55,7 @@ app.get(`/poc/obtener-${tabla}/:id`, async (req, res) => {
              FROM ssot.${tabla}
              WHERE ${pkFields.map((field, index) => `${field} = $${index + 1}`).join(' AND ')}
             `,
-             pkFields.map(field => req.params.id)
+             pkFields.map(() => req.params.id)
         );
 
         if (result.rows.length === 0) {

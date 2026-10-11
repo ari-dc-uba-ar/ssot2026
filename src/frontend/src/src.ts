@@ -24,7 +24,6 @@ const structure = {
       columns:{
         cod_mat     :{ type:'text'   },
         materia     :{ type:'text'   },
-        plan        :{ type:'number'},
         obligatoria :{ type:'boolean'},
       },
       pk: 'materia',
@@ -43,7 +42,6 @@ interface Pabellon {
 interface Materia {
     cod_mat: string,
     materia: string,
-    plan: string,
     obligatoria: boolean,
 }
 
@@ -236,10 +234,6 @@ function showMateriaForm(materia?: Materia) {
         <input type="text" id="materia" value="${materia?.materia || ''}" required>
       </div>
       <div class="form-group">
-        <label for="plan">Plan:</label>
-        <input type="text" id="plan" value="${materia?.plan || ''}" required>
-      </div>
-      <div class="form-group">
         <label for="obligatoria">Obligatoria:</label>
         <select id="obligatoria">
         <option value="1" ${materia?.obligatoria? 'selected' : ''}>Si</option>
@@ -261,7 +255,6 @@ function showMateriaForm(materia?: Materia) {
     const subjectData = {
       cod_mat: (document.getElementById('cod_mat') as HTMLInputElement).value,
       materia: (document.getElementById('materia') as HTMLInputElement).value,
-      plan: (document.getElementById('plan') as HTMLInputElement).value,
       obligatoria: (document.getElementById('obligatoria') as HTMLInputElement).value == '1',
     };
 

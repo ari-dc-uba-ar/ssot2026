@@ -10,7 +10,14 @@ WORKDIR /workspace/ssot2026
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY src ./src
+
+# Build backend
 RUN npm run build
+
+# Build frontend
+RUN npm --prefix src/frontend install
+RUN npm --prefix src/frontend run build
+
 COPY migrations ./migrations
 COPY test ./test
 
