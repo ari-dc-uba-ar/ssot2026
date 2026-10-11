@@ -4,9 +4,9 @@ import { Pool } from 'pg'
 import { completeEntity } from 'system-definition'
 import { myRecords, myEntities } from './system.js';
 import { databaseConfig } from './database.js';
+import { selectQuery, insertQuery, updateQuery, deleteQuery } from './queries.js';
 
-const pool = new Pool(databaseConfig);
-
+export function createApp(pool: Pool) {
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
@@ -25,11 +25,8 @@ Object.values(myEntities).forEach(entityDef => {
     const tabla = entity.name;
 
 app.get(`/poc/lista-${tabla}`, async (_, res) => {
-    const result = await pool.query(`
-        SELECT ${Object.keys(entity.fields).join(',')} 
-            FROM ssot.${tabla}
-            ORDER BY ${entity.pk}
-    `);
+    const query = selectQuery(entity);
+    const result = await pool.query(query.text, query.values);
     res.send(`<table>
             <tr>
                 ${Object.values(entity.fields).map(campo => 
@@ -47,15 +44,8 @@ app.get(`/poc/lista-${tabla}`, async (_, res) => {
 })
 
 app.post(`/poc/insertar-${tabla}`, async (req, res) => {
-    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
-    const fields = Object.keys(entity.fields).join(',');
-
-    const insertQuery = `
-        INSERT INTO ssot.${tabla} (${fields})
-        VALUES (${values.map((_, index) => `$${index + 1}`).join(',')})
-    `;
-
-    await pool.query(insertQuery, values);
+    const query = insertQuery(entity, req.body);
+    await pool.query(query.text, query.values);
 
     res.send(`
         <H2>Dato insertado</H2>
@@ -63,28 +53,16 @@ app.post(`/poc/insertar-${tabla}`, async (req, res) => {
 });
 
 app.patch(`/poc/actualizar-${tabla}`, async (req, res) => {
-    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
-    const fields = Object.keys(entity.fields);
-
-    const updateQuery = `
-        UPDATE ssot.${tabla}
-        SET ${fields.map((field, index) => `${field} = $${index + 1}`).join(', ')}
-        WHERE ${entity.pk.map((pkField, index) => `${pkField} = $${fields.length + index + 1}`).join(' AND ')}
-    `;
-
-    await pool.query(updateQuery, [...values, ...entity.pk.map(pkField => req.body[pkField])]);
+    const query = updateQuery(entity, req.body);
+    await pool.query(query.text, query.values);
 
     res.send(`
         <H2>Dato actualizado</H2>
     `);
 });
 app.delete(`/poc/eliminar-${tabla}`, async (req, res) => {
-    const deleteQuery = `
-        DELETE FROM ssot.${tabla}
-        WHERE ${entity.pk.map((pkField, index) => `${pkField} = $${index + 1}`).join(' AND ')}
-    `;
-
-    await pool.query(deleteQuery, entity.pk.map(pkField => req.body[pkField]));
+    const query = deleteQuery(entity, req.body);
+    await pool.query(query.text, query.values);
 
     res.send(`
         <H2>Dato eliminado</H2>
@@ -93,12 +71,16 @@ app.delete(`/poc/eliminar-${tabla}`, async (req, res) => {
 });
 });
 
+return app;
+}
 
+if (import.meta.main) {
+    const pool = new Pool(databaseConfig);
+    const app = createApp(pool);
+    const port = 3000;
 
-
-const port = 3000;
-
-app.listen(port, (error) => {
-    if (error) throw error;
-    console.log(`SSOT2026 escuchando en http://localhost:${port}/menu`);
-})
+    app.listen(port, (error) => {
+        if (error) throw error;
+        console.log(`SSOT2026 escuchando en http://localhost:${port}/menu`);
+    })
+}

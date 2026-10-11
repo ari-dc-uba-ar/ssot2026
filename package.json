@@ -20,6 +20,8 @@
         "migration:generate-initial": "npm run build && node --env-file-if-exists=.env ./dist/backend/generate-initial.js",
         "migration:install": "npm run build && node --env-file-if-exists=.env ./dist/backend/install-initial.js",
         "migration:check": "npm run build && node --env-file-if-exists=.env ./dist/backend/install-initial.js --check",
-        "test:initial-migration": "npm run build && node --env-file-if-exists=.env --test test/initial-migration.test.mjs test/installation.test.mjs"
+        "test:initial-migration": "npm run build && node --env-file-if-exists=.env --test test/initial-migration.test.mjs test/installation.test.mjs",
+        "test:crud": "npm run build && node --env-file-if-exists=.env --test test/crud.test.mjs",
+        "test": "npm run build && node --env-file-if-exists=.env --test test/initial-migration.test.mjs test/installation.test.mjs test/crud.test.mjs"
     }
 }
