@@ -10,7 +10,7 @@ const value = result => {if (!result.ok) throw new Error(JSON.stringify(result.p
 
 test('history keeps pending migrations and updates SQL, history and pointer in one transaction', async () => {
     const {schema} = databaseSettings.database;
-    const scratch = createPostgresScratch({...databaseSettings.database, user: databaseSettings.owner, password: process.env.MIGRATION_PGPASSWORD}, [schema]);
+    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.initialUser}, [schema]);
     const handle = value(await scratch.create('clean-target'));
     const journal = {schema: schema + '_history'}, scope = {systemId: 'history-test', schemas: [schema]};
     const ref = (id, digit) => ({systemId: scope.systemId, releaseId: id, releaseHash: digit.repeat(64)});

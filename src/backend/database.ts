@@ -14,12 +14,18 @@ export const databaseSettings = {
         user: process.env['POSTGRES_USER'] || 'ssot2026',
         password: process.env['POSTGRES_PASSWORD'],
     },
-    owner: process.env['MIGRATION_PGUSER'] || 'ssot2026_owner',
-    appUser: (url && decodeURIComponent(url.username)) || process.env['PGUSER'] || 'ssot2026_user',
+    owner: {
+        user: process.env['MIGRATION_PGUSER'] || 'ssot2026_owner',
+        password: process.env['MIGRATION_PGPASSWORD'],
+    },
+    appUser: {
+        user: (url && decodeURIComponent(url.username)) || process.env['PGUSER'] || 'ssot2026_user',
+        password: process.env['PGPASSWORD'],
+        ...(process.env['DATABASE_URL'] ? {connectionString: process.env['DATABASE_URL']} : {}),
+    },
 } satisfies DatabaseSettings;
 
 export const databaseConfig: ClientConfig = {
     ...databaseSettings.database,
-    user: databaseSettings.appUser,
-    ...(process.env['DATABASE_URL'] ? {connectionString: process.env['DATABASE_URL']} : {}),
+    ...databaseSettings.appUser,
 };

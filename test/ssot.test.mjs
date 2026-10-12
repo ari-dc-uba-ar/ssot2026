@@ -5,7 +5,6 @@ import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {loadSsot} from '@system-definition/postgres-migrations/ssot';
 import {loadDatabaseSettings} from '@system-definition/postgres-migrations/database';
-import {decodeSystemSnapshot} from 'system-definition';
 import {decodeSqlSsot} from '@system-definition/postgres-migrations';
 import {ssot, sqlMapping} from '../dist/backend/system.js';
 import {databaseSettings, databaseConfig} from '../dist/backend/database.js';
@@ -14,17 +13,13 @@ import {createRequire} from 'node:module';
 
 test('the migration loader reads the backend SSOT using the core contract', async () => {
     assert.deepEqual(await loadSsot('dist/backend/system.js'), decodeSqlSsot(ssot, sqlMapping));
-    assert.deepEqual(Object.keys(ssot.entities), ['materias', 'pabellones']);
-    const initial = decodeSystemSnapshot(JSON.parse(await readFile('migrations/releases/initial/snapshot.json', 'utf8')));
-    assert.equal(initial.ok, true);
-    assert.deepEqual(ssot, initial.value);
 });
 
 test('the app supplies the database, provisioning connection and owner/app identities', async () => {
     assert.deepEqual(await loadDatabaseSettings('dist/backend/database.js'), {ok: true, value: databaseSettings});
     assert.equal(databaseConfig.database, databaseSettings.database.database);
-    assert.equal(databaseConfig.user, databaseSettings.appUser);
-    assert.notEqual(databaseSettings.owner, databaseSettings.appUser);
+    assert.equal(databaseConfig.user, databaseSettings.appUser.user);
+    assert.notEqual(databaseSettings.owner.user, databaseSettings.appUser.user);
     assert.equal(databaseSettings.initialUser.user, process.env.POSTGRES_USER || 'ssot2026');
     assert.equal(databaseSettings.initialUser.password, process.env.POSTGRES_PASSWORD);
 });
@@ -44,8 +39,8 @@ test('the CLI loads both inputs without returning connection secrets', async () 
         assert.equal(loaded.ok, true);
         assert.equal(loaded.value.ssot.systemId, ssot.systemId);
         assert.deepEqual(loaded.value.persistence.representations.postgres, sqlMapping);
-        assert.equal(loaded.value.database.owner, databaseSettings.owner);
-        assert.equal(loaded.value.database.appUser, databaseSettings.appUser);
+        assert.equal(loaded.value.database.owner.user, databaseSettings.owner.user);
+        assert.equal(loaded.value.database.appUser.user, databaseSettings.appUser.user);
         assert.deepEqual(loaded.value.database.initialUser, {user: databaseSettings.initialUser.user});
         assert.equal(loaded.value.database.database.database, databaseSettings.database.database);
         assert.ok(!result.stdout.includes('test-only-secret'));

@@ -11,7 +11,7 @@ const system = value(decodeSqlSsot(ssot, sqlMapping));
 test('assessment reports live schema differences without changing schema or data', async () => {
     const {schema} = databaseSettings.database;
     const scratch = createPostgresScratch({...databaseSettings.database,
-        user: databaseSettings.owner, password: process.env.MIGRATION_PGPASSWORD}, [schema]);
+        ...databaseSettings.initialUser}, [schema]);
     const handle = value(await scratch.create('clean-target'));
     try {
         const expected = value(projectSsotSchema(system, schema));
@@ -58,9 +58,41 @@ test('the configured live database already matches the SSOT', async () => {
     assert.deepEqual(value(await assessDatabase(system, databaseSettings)), {equal: true, differences: []});
 });
 
+test('generated SQL preserves a rename and stages the required-field change around a backfill', async () => {
+    const {schema} = databaseSettings.database;
+    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.initialUser}, [schema]);
+    const handle = value(await scratch.create('clean-target'));
+    try {
+        const current = value(projectSsotSchema(system, schema));
+        for (const statement of value(generateCreate(current)).statements) await handle.session.query(statement.text, statement.values);
+        await handle.session.query("INSERT INTO ssot.materias (materia, cod_mat) VALUES ('kept', null)", []);
+        await handle.session.query("ALTER TABLE ssot.materias ALTER COLUMN cod_mat SET DEFAULT 'pending'", []);
+        current.objects.find(object => object.kind === 'column' && object.identity.name === 'cod_mat').defaultExpression = "'pending'::text";
+        const target = structuredClone(ssot);
+        delete target.entities.materias.fields.cod_mat;
+        delete target.records.materia.cod_mat;
+        target.entities.materias.fields.notes = myRecords.completeField({type: 'text', nullable: false}, 'notes');
+        target.records.materia.notes = target.entities.materias.fields.notes;
+        const changed = value(decodeSqlSsot(target, {...sqlMapping, text: sqlTypes.varchar}));
+        const base = {from: {systemId: ssot.systemId, releaseId: 'before', releaseHash: '1'.repeat(64)},
+            to: {systemId: ssot.systemId, releaseId: 'after', releaseHash: '2'.repeat(64)},
+            fromSnapshotHash: '3'.repeat(64), toSnapshotHash: '4'.repeat(64), fromPersistenceHash: '5'.repeat(64), toPersistenceHash: '6'.repeat(64)};
+        const changes = value(inferStructureChanges(base, current, value(projectSsotSchema(changed, schema)), [
+            {before: {side: 'from', entity: 'materias', field: 'cod_mat'}, after: {side: 'to', entity: 'materias', field: 'notes'}},
+        ]));
+        const statements = value(generateMigrationSql(changes, current, changed, schema, [{side: 'to', entity: 'materias', field: 'notes'}]));
+        for (const statement of statements.filter(statement => statement.order < 50)) await handle.session.query(statement.text, []);
+        assert.equal((await handle.session.query('SELECT notes FROM ssot.materias', [])).rows[0].notes, null);
+        await handle.session.query("UPDATE ssot.materias SET notes = 'filled' WHERE notes IS NULL", []);
+        for (const statement of statements.filter(statement => statement.order >= 50)) await handle.session.query(statement.text, []);
+        assert.deepEqual(value(await assessSchema(changed, schema, handle.session)), {equal: true, differences: []});
+        assert.deepEqual((await handle.session.query('SELECT materia, notes FROM ssot.materias', [])).rows, [{materia: 'kept', notes: 'filled'}]);
+    } finally {value(await scratch.destroy(handle));}
+});
+
 test('generated migration SQL maps the backend definitions and all provided SQL types into PostgreSQL', async () => {
     const {schema} = databaseSettings.database;
-    const scratch = createPostgresScratch({...databaseSettings.database, user: databaseSettings.owner, password: process.env.MIGRATION_PGPASSWORD}, [schema]);
+    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.initialUser}, [schema]);
     const handle = value(await scratch.create('clean-target'));
     try {
         const current = {formatVersion: 1, engineVersion: '18.6', schemas: [schema], objects: []};

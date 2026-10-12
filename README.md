@@ -25,15 +25,14 @@ and persistence decoders. It returns `{ssot, persistence}`.
 the PostgreSQL connection settings and schema, the initial provisioning connection,
 the owner role, and the app role. The connection
 uses the driver's existing `ClientConfig` type. The backend uses the same settings
-with the app role. The loader requires distinct owner/app names; applying database
-permissions is a later step. CLI output includes connection identity and role names.
+with the app role. The loader requires distinct owner/app names. CLI output
+includes connection identity and role names.
 `initialUser` takes the driver's `ClientConfig` with a required username. The app
 supplies it through `POSTGRES_USER`/`POSTGRES_PASSWORD`; its credentials are omitted
 from CLI output. It is reserved for initial role and permission setup.
 The load commands do not connect to PostgreSQL. Schema assessment is a separate
-read-only command. Bootstrap, permission setup, generation, and installation
-will be handled separately. The previous automatic migration commands and Compose
-initialization services have been removed.
+read-only command. The apply command provisions initial roles and permissions,
+then executes migrations through the owner connection.
 
 ## Assess schema differences
 
@@ -65,8 +64,47 @@ and returns ordered SQL statements without connecting or applying them. Arbitrar
 developer validators remain runtime rules; the current SQL vocabulary supplies
 17 scalar types without length/precision parameters.
 
-The published initial release remains under `migrations/releases/initial`.
-The SSOT test confirms that the current domain model matches its saved snapshot.
+The optional fifth argument supplies existing `FieldRefInfo` values for columns
+that will receive data. Generation stages `SET NOT NULL` after the backfill and
+preserves simultaneous rename/type/default changes. Initial and incremental SQL
+share column rendering; unsupported attributes require explicit SQL.
+
+The migration catalog is under `migrations/catalog.json`. Each migration has a
+numbered SQL script and `metadata.json`; new migration IDs and directories also
+carry the sequence prefix. Metadata preserves schema snapshots, decisions, checks
+and frozen validators. Passwords remain in database settings.
+
+## Migration decisions
+
+Collect choices for an existing migration draft:
+
+```sh
+npm run migration:decide -- --draft migration-draft.json --answers answers.json
+```
+
+The answers file contains `{id, revisionHash, decisions}` using the draft's ID and
+current revision. Decisions use the existing `discard`, `migrate`, or `check`
+definitions. Transformation references must exist in the draft. Valid partial
+answers are saved while other changes remain pending; invalid or stale answers
+leave the draft untouched. No project adapter or conflict report is required.
+Inference, generation and apply reuse the same decision validation.
+
+## Migration assembly
+
+`createMigrationDraft` creates an editable draft from the loaded backend SSOT and
+source schema. `assembleMigration` orders schema SQL, transformations and checks
+using existing resource callbacks. Structure-only assembly needs a resource sink.
+`saveMigrationArtifact` writes an immutable directory, sharing manifest construction
+with verification. The saved compilation is `authoring.json`; the duplicate
+`compiled.json` has been removed. Assembly and saving are separate from verification
+and database application.
+
+```sh
+npm run test:assembly
+```
+
+This test creates a migration from the backend SSOT, saves it, loads its files and
+executes the saved SQL on an owned scratch database to verify the resulting schema.
 
 ## Migration history
 
@@ -76,12 +114,56 @@ entries are pending. `bootstrapHistory` creates only the pointer and applied-his
 tables. `appendCommittedMigration` updates both in the same transaction as the SQL.
 `readMigrationHistory` also rejects drift from the schema saved for the applied head.
 
+`readMigrationCatalog(baseline, orderedDirectories)` reads saved migration manifests
+using the explicit order and core catalog types. `readMigrationStatus` combines
+that catalog with the pointer and applied log in one journal query. It reports
+applied/pending entries without schema inspection or database writes. The existing
+drift-checking API reuses this reader.
+
+`verifyMigrationFiles(directory, expected)` checks the saved manifest against its
+expected catalog identity and verifies authoring, SQL/check/query and validator
+file hashes. It reads files without executing SQL or importing validator code.
+New manifests also bind the resource registry through the existing `FileInfo`
+contract; older manifests remain readable.
+
+The [24-point assessment](docs/migration-assessment.md) records capability status,
+source responsibilities, remaining duplication and legacy workflows beyond that scope.
+
+SSOT authoring also supports `infer`, `generate` and standalone `data` commands
+with `--ssot` and `--database`. New migrations bind saved source/target schemas
+to their immutable authoring files. Role settings now use `{user, password, ...}`
+driver connections for `initialUser`, `owner` and `appUser`; the backend uses the
+app connection. Role provisioning and permission checks are separate SDK APIs.
+The apply command generates migrations from the SSOT when needed, then verifies
+immutable files, history integrity and drift before using locked owner transactions.
+Ambiguous changes save a draft and block until its data decisions are resolved.
+Schema, declared data requirements and permissions are checked before success and
+pointer advancement. Failed operations roll back and retain an execution attempt.
+Deployment activation, readiness and separate corrective workflows were removed.
+
+```sh
+npm run migration:apply
+npm run migration:status
+```
+
+These scripts support a fresh database directly. The initial migration saves
+owner/app role setup for the supplied initial administrator, followed by schema,
+data and permissions under the owner connection. An existing catalog is retained.
+
+```sh
+npm run migration:apply
+```
+
 ```sh
 npm run test:history
 ```
 
 The test uses an owned scratch database to verify pending status, commit/rollback,
-checksums and drift. The existing local journal and immutable releases are retained.
+checksums and drift. Scratch databases use the initial administrator; production
+migrations use the owner. The current initial migration was compacted into
+[`0001_initial.sql`](migrations/entries/initial/0001_initial.sql) and metadata without
+changing its recorded hash. Its originally external role setup is marked as a
+historical declaration. Newly generated initial migrations record that phase too.
 
 ## Run the backend
 
@@ -90,9 +172,9 @@ docker compose up --build -d --wait
 ```
 
 Compose runs PostgreSQL 18.6 and the backend. The backend connects as the app user
-using `PGUSER`/`PGPASSWORD` or `DATABASE_URL`. This currently requires an existing
-database with its roles and tables already provisioned, such as the current local
-Docker volume. Fresh-volume database setup is outside this step.
+using `PGUSER`/`PGPASSWORD` or `DATABASE_URL`. Compose starts the database and app;
+run the SDK apply command above to provision a fresh database before using the app.
+Migration execution remains an explicit command.
 
 For a host process, configure `.env`, start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.
