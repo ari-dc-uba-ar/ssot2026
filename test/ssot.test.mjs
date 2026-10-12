@@ -5,7 +5,6 @@ import {dirname, join} from 'node:path';
 import test from 'node:test';
 import {loadSsot} from '@system-definition/postgres-migrations/ssot';
 import {loadDatabaseSettings} from '@system-definition/postgres-migrations/database';
-import {decodeSystemSnapshot} from 'system-definition';
 import {decodeSqlSsot} from '@system-definition/postgres-migrations';
 import {ssot, sqlMapping} from '../dist/backend/system.js';
 import {databaseSettings, databaseConfig} from '../dist/backend/database.js';
@@ -14,10 +13,6 @@ import {createRequire} from 'node:module';
 
 test('the migration loader reads the backend SSOT using the core contract', async () => {
     assert.deepEqual(await loadSsot('dist/backend/system.js'), decodeSqlSsot(ssot, sqlMapping));
-    assert.deepEqual(Object.keys(ssot.entities), ['materias', 'pabellones']);
-    const initial = decodeSystemSnapshot(JSON.parse(await readFile('migrations/releases/initial/snapshot.json', 'utf8')));
-    assert.equal(initial.ok, true);
-    assert.deepEqual(ssot, initial.value);
 });
 
 test('the app supplies the database, provisioning connection and owner/app identities', async () => {

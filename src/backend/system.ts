@@ -26,9 +26,15 @@ const myTypes = defineTypes({
     }),
 })
 
+const plan = defineRecord(myTypes,{
+    plan        :{ type:'integer'},
+    descripcion :{ type:'text'   },
+})
+
 const materia = defineRecord(myTypes,{
     cod_mat     :{ type:'text'   },
     materia     :{ type:'text'   },
+    plan        :{ type:'integer'},
     obligatoria :{ type:'boolean'},
 })
 
@@ -43,12 +49,12 @@ const usuario = defineRecord(myTypes,{
     clave       : {type:'text'   },
 });
 
-export const myRecords = withRecords(myTypes, {materia, pabellon, usuario})
+export const myRecords = withRecords(myTypes, {materia, pabellon, plan, usuario})
 
-function validarPlan1993SinObligatorias(dato:{plan?:number, obligatoria?:boolean}){
+function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatoria?:boolean | null}){
     var problemas: Problem[] = []
-    if (dato.plan == 1993) {
-        if (dato.obligatoria) problemas.push({
+    if (materia.plan == 1993) {
+        if (materia.obligatoria) problemas.push({
             field: 'obligatoria',
             messageKey: 'plan 1993 no puede tener obligatorias',
             severity: 'regular',
@@ -64,13 +70,19 @@ const materias = defineEntity(myReordsValidators, {
     name: 'materias',
     record: 'materia',
     pk: ['materia'],
-    // validators: ['validarPlan1993SinObligatorias']
+    validators: ['validarPlan1993SinObligatorias']
 })
 
 const pabellones = defineEntity(myReordsValidators, {
     name: 'pabellones',
     record: 'pabellon',
     pk: ['pab']
+})
+
+const planes = defineEntity(myReordsValidators, {
+    name: 'planes',
+    record: 'plan',
+    pk: ['plan']
 })
 
 const usuarios = defineEntity(myReordsValidators, {
@@ -80,7 +92,7 @@ const usuarios = defineEntity(myReordsValidators, {
 })
 
 
-export const myEntities = defineEntities({materias, pabellones, usuarios})
+export const myEntities = defineEntities({materias, pabellones, planes, usuarios})
 
 const snapshot = captureSystemSnapshot(myReordsValidators, {
     systemId: 'ssot2026',

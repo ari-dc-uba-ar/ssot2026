@@ -69,8 +69,10 @@ that will receive data. Generation stages `SET NOT NULL` after the backfill and
 preserves simultaneous rename/type/default changes. Initial and incremental SQL
 share column rendering; unsupported attributes require explicit SQL.
 
-The published initial release remains under `migrations/releases/initial`.
-The SSOT test confirms that the current domain model matches its saved snapshot.
+The migration catalog is under `migrations/catalog.json`. Each migration has a
+numbered SQL script and `metadata.json`; new migration IDs and directories also
+carry the sequence prefix. Metadata preserves schema snapshots, decisions, checks
+and frozen validators. Passwords remain in database settings.
 
 ## Migration decisions
 
@@ -144,13 +146,12 @@ npm run migration:apply
 npm run migration:status
 ```
 
-These scripts import the existing initial release as their baseline. For a fresh
-empty database, use the SDK apply command without `--baseline` so it generates
-the initial schema migration:
+These scripts support a fresh database directly. The initial migration saves
+owner/app role setup for the supplied initial administrator, followed by schema,
+data and permissions under the owner connection. An existing catalog is retained.
 
 ```sh
-npm run build
-npx postgres-migrations apply --ssot ./dist/backend/system.js --database ./dist/backend/database.js --directory ./migrations/fresh
+npm run migration:apply
 ```
 
 ```sh
@@ -158,7 +159,11 @@ npm run test:history
 ```
 
 The test uses an owned scratch database to verify pending status, commit/rollback,
-checksums and drift. The existing local journal and immutable releases are retained.
+checksums and drift. Scratch databases use the initial administrator; production
+migrations use the owner. The current initial migration was compacted into
+[`0001_initial.sql`](migrations/entries/initial/0001_initial.sql) and metadata without
+changing its recorded hash. Its originally external role setup is marked as a
+historical declaration. Newly generated initial migrations record that phase too.
 
 ## Run the backend
 
