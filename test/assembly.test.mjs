@@ -4,7 +4,7 @@ import {mkdtemp, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {AuthoringFiles, appendCommittedMigration, assembleMigration, assessSchema, bootstrapHistory, createMigrationDraft, createPostgresScratch, decodeSqlSsot,
-    installBaseline, loadVerifiedMigrationAuthoring, openArtifactDirectory, projectSsotSchema, readMigrationCatalog, readMigrationStatus, saveMigrationArtifact, sha256Hex} from '@system-definition/postgres-migrations';
+    installBaseline, openArtifactDirectory, projectSsotSchema, readMigrationCatalog, readMigrationStatus, saveMigrationArtifact, sha256Hex, verifyMigrationFiles} from '@system-definition/postgres-migrations';
 import {ssot, sqlMapping} from '../dist/backend/system.js';
 import {databaseSettings} from '../dist/backend/database.js';
 
@@ -35,10 +35,7 @@ test('a saved migration from the backend SSOT contains the ordered SQL needed to
         const status = () => readMigrationStatus(handle.session, journal, scope, catalog).then(value);
         assert.deepEqual((await status()).migrations.map(migration => migration.applied), [false]);
         const reader = value(await openArtifactDirectory(destination));
-        const verified = value(await loadVerifiedMigrationAuthoring(published, {
-            async loadMigrationManifest() {return {ok: true, value: JSON.parse(new TextDecoder().decode(value(await reader.read('migration.json'))))};},
-            async readMigrationFile(_migration, file) {return reader.readVerified(file);},
-        }));
+        const verified = value(await verifyMigrationFiles(destination, published));
         await handle.session.query('BEGIN', []);
         for (const step of verified.authoring.migration.steps) {
             const bytes = value(await reader.read('generated/' + step.run.contentHash + '.sql'));

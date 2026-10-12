@@ -120,6 +120,12 @@ that catalog with the pointer and applied log in one journal query. It reports
 applied/pending entries without schema inspection or database writes. The existing
 drift-checking API reuses this reader.
 
+`verifyMigrationFiles(directory, expected)` checks the saved manifest against its
+expected catalog identity and verifies authoring, SQL/check/query and validator
+file hashes. It reads files without executing SQL or importing validator code.
+New manifests also bind the resource registry through the existing `FileInfo`
+contract; older manifests remain readable.
+
 ```sh
 npm run test:history
 ```
