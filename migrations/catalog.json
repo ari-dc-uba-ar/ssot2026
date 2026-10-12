@@ -8,14 +8,14 @@
     },
     {
       "systemId": "ssot2026",
-      "releaseId": "initial",
-      "releaseHash": "5e77588a4363094246cf1ed1b989fdbfd1515a846cb545e144844fef1bc49c35"
+      "releaseId": "0001_initial",
+      "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f"
     }
   ],
   "migrations": [
     {
       "migration": {
-        "id": "initial",
+        "id": "0001_initial",
         "from": {
           "systemId": "ssot2026",
           "releaseId": "empty",
@@ -23,136 +23,144 @@
         },
         "to": {
           "systemId": "ssot2026",
-          "releaseId": "initial",
-          "releaseHash": "5e77588a4363094246cf1ed1b989fdbfd1515a846cb545e144844fef1bc49c35"
+          "releaseId": "0001_initial",
+          "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f"
         },
         "description": "",
         "before": [],
         "steps": [
           {
-            "id": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0",
+            "id": "001_add_table_planes",
             "run": {
-              "name": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0.sql",
+              "name": "001_add_table_planes.sql",
               "kind": "sql",
               "contentHash": "c57ed24bccd2c37fbf9177714279ac32409e4c6cbdbef304504d0cdf9e43404c"
             }
           },
           {
-            "id": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1",
+            "id": "002_add_table_materias",
             "run": {
-              "name": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1.sql",
+              "name": "002_add_table_materias.sql",
               "kind": "sql",
               "contentHash": "51e39c66af3c7da9fb48a080267bf64a9464d50c63800a9ac4b8ab6d13d24966"
             }
           },
           {
-            "id": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2",
+            "id": "003_add_table_pabellones",
             "run": {
-              "name": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2.sql",
+              "name": "003_add_table_pabellones.sql",
               "kind": "sql",
               "contentHash": "ab0be354ee0d6b850ab07923341102ca944101a0daf4d222b89d0870941e4b63"
             }
           },
           {
-            "id": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3",
+            "id": "004_add_column_planes_plan",
             "run": {
-              "name": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3.sql",
-              "kind": "sql",
-              "contentHash": "e31fae565677f55f7ec9eb056601fde71f10cb5dc4e3ff23a45b1f7a372c62f6"
-            }
-          },
-          {
-            "id": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4",
-            "run": {
-              "name": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4.sql",
-              "kind": "sql",
-              "contentHash": "999985f8483322f5dc45bebbe78eda09de9bcd24c941b3e1c4b3fc794235c644"
-            }
-          },
-          {
-            "id": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5",
-            "run": {
-              "name": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5.sql",
-              "kind": "sql",
-              "contentHash": "28e3f452e09b809dd3e9b3acba057d161cd9bdfc06eae83fae8061a556076c5c"
-            }
-          },
-          {
-            "id": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6",
-            "run": {
-              "name": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6.sql",
-              "kind": "sql",
-              "contentHash": "f7d65c41a43cc2a5c36d4a9ee9d01276bda61280b3707eb6f84335fe02b2bf8f"
-            }
-          },
-          {
-            "id": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7",
-            "run": {
-              "name": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7.sql",
-              "kind": "sql",
-              "contentHash": "8dcfd8beee74f51f7b551d89cd1e2cd709b7d629b2d9fe9f085b251009ad4507"
-            }
-          },
-          {
-            "id": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8",
-            "run": {
-              "name": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8.sql",
+              "name": "004_add_column_planes_plan.sql",
               "kind": "sql",
               "contentHash": "c5917f58adb04b688e6bb8bd6b4416f4a5a2b301bc0930c0cd5ef86b172b69d3"
             }
           },
           {
-            "id": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9",
+            "id": "005_add_column_materias_materia",
             "run": {
-              "name": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9.sql",
+              "name": "005_add_column_materias_materia.sql",
+              "kind": "sql",
+              "contentHash": "f7d65c41a43cc2a5c36d4a9ee9d01276bda61280b3707eb6f84335fe02b2bf8f"
+            }
+          },
+          {
+            "id": "006_add_column_materias_obligatoria",
+            "run": {
+              "name": "006_add_column_materias_obligatoria.sql",
+              "kind": "sql",
+              "contentHash": "28e3f452e09b809dd3e9b3acba057d161cd9bdfc06eae83fae8061a556076c5c"
+            }
+          },
+          {
+            "id": "007_add_column_pabellones_pab",
+            "run": {
+              "name": "007_add_column_pabellones_pab.sql",
+              "kind": "sql",
+              "contentHash": "e31fae565677f55f7ec9eb056601fde71f10cb5dc4e3ff23a45b1f7a372c62f6"
+            }
+          },
+          {
+            "id": "008_add_column_materias_plan",
+            "run": {
+              "name": "008_add_column_materias_plan.sql",
+              "kind": "sql",
+              "contentHash": "999985f8483322f5dc45bebbe78eda09de9bcd24c941b3e1c4b3fc794235c644"
+            }
+          },
+          {
+            "id": "009_add_column_pabellones_pisos",
+            "run": {
+              "name": "009_add_column_pabellones_pisos.sql",
               "kind": "sql",
               "contentHash": "e5adf969bc56afdc07dc77c79bdb59c303ec32aec887b36c1f013a47d3d0b35c"
             }
           },
           {
-            "id": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10",
+            "id": "010_add_column_planes_descripcion",
             "run": {
-              "name": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10.sql",
+              "name": "010_add_column_planes_descripcion.sql",
               "kind": "sql",
               "contentHash": "fe02bc7f0f055572c1a9202d7021a2b91ca25358ca9b50c4c16befae21b47367"
             }
           },
           {
-            "id": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11",
+            "id": "011_add_column_pabellones_pabellon",
             "run": {
-              "name": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11.sql",
+              "name": "011_add_column_pabellones_pabellon.sql",
+              "kind": "sql",
+              "contentHash": "8dcfd8beee74f51f7b551d89cd1e2cd709b7d629b2d9fe9f085b251009ad4507"
+            }
+          },
+          {
+            "id": "012_add_column_materias_cod_mat",
+            "run": {
+              "name": "012_add_column_materias_cod_mat.sql",
               "kind": "sql",
               "contentHash": "c8b7ba2cb1e7a171327fab610e0e55381ad1601d0d71d08092a3905fe7782b02"
             }
           },
           {
-            "id": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12",
+            "id": "013_add_constraint_pabellones_pabellones_pkey",
             "run": {
-              "name": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12.sql",
-              "kind": "sql",
-              "contentHash": "25ab01b39d3b029477e7ce7fff4f0bfdd47eb87d3727df42a694d60218bbb3ef"
-            }
-          },
-          {
-            "id": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13",
-            "run": {
-              "name": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13.sql",
+              "name": "013_add_constraint_pabellones_pabellones_pkey.sql",
               "kind": "sql",
               "contentHash": "f3494576561cbf1d492cfaba578fa7c1461921227aea74988e0df7a809a70fb3"
             }
           },
           {
-            "id": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14",
+            "id": "014_add_constraint_planes_planes_pkey",
             "run": {
-              "name": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14.sql",
+              "name": "014_add_constraint_planes_planes_pkey.sql",
+              "kind": "sql",
+              "contentHash": "25ab01b39d3b029477e7ce7fff4f0bfdd47eb87d3727df42a694d60218bbb3ef"
+            }
+          },
+          {
+            "id": "015_add_constraint_materias_materias_pkey",
+            "run": {
+              "name": "015_add_constraint_materias_materias_pkey.sql",
               "kind": "sql",
               "contentHash": "42bedaec24032772a329d6a8876210ceda3af935e5d1b2fbb027fbf65bf1add6"
+            }
+          },
+          {
+            "id": "app-permissions",
+            "run": {
+              "name": "app-permissions.sql",
+              "kind": "sql",
+              "contentHash": "ac275b470355c1ecd998cf6585eda5949ee9387af34ff99d6c4d222f2760d372"
             }
           }
         ],
         "after": []
       },
-      "migrationHash": "0cb4872a86d6550192f79d3b3c41ebf6c77ff7084e697bea1b95cd8c69e64a01"
+      "migrationHash": "dfa0e9d03681b601f50cb14abdd48b4ec02fb27df9f22d3202cad80601ebe618"
     }
   ]
 }
