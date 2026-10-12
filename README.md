@@ -68,6 +68,21 @@ developer validators remain runtime rules; the current SQL vocabulary supplies
 The published initial release remains under `migrations/releases/initial`.
 The SSOT test confirms that the current domain model matches its saved snapshot.
 
+## Migration decisions
+
+Collect choices for an existing migration draft:
+
+```sh
+npm run migration:decide -- --draft migration-draft.json --answers answers.json
+```
+
+The answers file contains `{id, revisionHash, decisions}` using the draft's ID and
+current revision. Decisions use the existing `discard`, `migrate`, or `check`
+definitions. Transformation references must exist in the draft. Valid partial
+answers are saved while other changes remain pending; invalid or stale answers
+leave the draft untouched. No project adapter or conflict report is required.
+Automatic draft assembly from the SSOT remains a later step.
+
 ## Migration history
 
 The migration library uses an ordered core catalog and the database's recorded
