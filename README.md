@@ -65,6 +65,11 @@ and returns ordered SQL statements without connecting or applying them. Arbitrar
 developer validators remain runtime rules; the current SQL vocabulary supplies
 17 scalar types without length/precision parameters.
 
+The optional fifth argument supplies existing `FieldRefInfo` values for columns
+that will receive data. Generation stages `SET NOT NULL` after the backfill and
+preserves simultaneous rename/type/default changes. Initial and incremental SQL
+share column rendering; unsupported attributes require explicit SQL.
+
 The published initial release remains under `migrations/releases/initial`.
 The SSOT test confirms that the current domain model matches its saved snapshot.
 
@@ -81,7 +86,25 @@ current revision. Decisions use the existing `discard`, `migrate`, or `check`
 definitions. Transformation references must exist in the draft. Valid partial
 answers are saved while other changes remain pending; invalid or stale answers
 leave the draft untouched. No project adapter or conflict report is required.
-Automatic draft assembly from the SSOT remains a later step.
+SSOT draft creation and assembly are available as library functions; complete CLI
+composition remains a separate step.
+
+## Migration assembly
+
+`createMigrationDraft` creates an editable draft from the loaded backend SSOT and
+source schema. `assembleMigration` orders schema SQL, transformations and checks
+using existing resource callbacks. Structure-only assembly needs a resource sink.
+`saveMigrationArtifact` writes an immutable directory, sharing manifest construction
+with verification. The saved compilation is `authoring.json`; the duplicate
+`compiled.json` has been removed. Assembly and saving are separate from verification
+and database application.
+
+```sh
+npm run test:assembly
+```
+
+This test creates a migration from the backend SSOT, saves it, loads its files and
+executes the saved SQL on an owned scratch database to verify the resulting schema.
 
 ## Migration history
 
@@ -90,6 +113,12 @@ baseline/current pointer. Applied migrations must be an unchanged prefix; later
 entries are pending. `bootstrapHistory` creates only the pointer and applied-history
 tables. `appendCommittedMigration` updates both in the same transaction as the SQL.
 `readMigrationHistory` also rejects drift from the schema saved for the applied head.
+
+`readMigrationCatalog(baseline, orderedDirectories)` reads saved migration manifests
+using the explicit order and core catalog types. `readMigrationStatus` combines
+that catalog with the pointer and applied log in one journal query. It reports
+applied/pending entries without schema inspection or database writes. The existing
+drift-checking API reuses this reader.
 
 ```sh
 npm run test:history
