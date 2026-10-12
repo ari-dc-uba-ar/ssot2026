@@ -37,7 +37,6 @@ const materia = defineRecord(myTypes,{
     plan        :{ type:'integer'},
     obligatoria :{ type:'boolean'},
 })
-
 const pabellon = defineRecord(myTypes,{
     pab         : {type:'text'   },
     pabellon    : {type:'text'   },
