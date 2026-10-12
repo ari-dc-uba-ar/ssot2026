@@ -18,43 +18,6 @@ services:
       retries: 30
       start_period: 5s
 
-  bootstrap:
-    image: postgres:18.6-bookworm
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGHOST: postgres
-      PGPORT: "5432"
-      PGUSER: ${POSTGRES_USER:-ssot2026}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-ssot2026_local}
-      PGDATABASE: ${PGDATABASE:-ssot2026}
-      OWNER_USER: ${MIGRATION_PGUSER:-ssot2026_owner}
-      OWNER_PASSWORD: ${MIGRATION_PGPASSWORD:-ssot2026_owner_local}
-      APP_USER: ${PGUSER:-ssot2026_user}
-      APP_PASSWORD: ${PGPASSWORD:-ssot2026_app_local}
-    volumes:
-      - ./scripts/bootstrap-db.sh:/bootstrap-db.sh:ro
-    entrypoint: ["bash", "/bootstrap-db.sh"]
-
-  migration:
-    image: ssot2026-backend:local
-    build:
-      context: .
-      additional_contexts:
-        system-definition: ../system-definition
-    depends_on:
-      bootstrap:
-        condition: service_completed_successfully
-    environment:
-      PGHOST: postgres
-      PGPORT: "5432"
-      PGDATABASE: ${PGDATABASE:-ssot2026}
-      PGUSER: ${PGUSER:-ssot2026_user}
-      MIGRATION_PGUSER: ${MIGRATION_PGUSER:-ssot2026_owner}
-      MIGRATION_PGPASSWORD: ${MIGRATION_PGPASSWORD:-ssot2026_owner_local}
-    command: ["node", "dist/backend/install-initial.js"]
-
   backend:
     image: ssot2026-backend:local
     build:
@@ -64,8 +27,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      migration:
-        condition: service_completed_successfully
     environment:
       PGHOST: postgres
       PGPORT: "5432"

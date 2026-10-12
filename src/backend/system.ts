@@ -1,5 +1,6 @@
 import { commonTypeDefs, defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
     withRecords, defineEntity, defineEntities, captureSystemSnapshot,
+    sqlTypes, type SqlTypeMapping,
     type Problem,
     withValidators
 } from 'system-definition'
@@ -81,10 +82,16 @@ const usuarios = defineEntity(myReordsValidators, {
 
 export const myEntities = defineEntities({materias, pabellones, usuarios})
 
-export function captureSnapshot() {
-    return captureSystemSnapshot(myRecords, {
-        systemId: 'ssot2026',
-        entities: myEntities,
-        records: myRecords.records,
-    });
-}
+const snapshot = captureSystemSnapshot(myReordsValidators, {
+    systemId: 'ssot2026',
+    entities: myEntities,
+    records: myRecords.records,
+});
+if (!snapshot.ok) throw new Error(JSON.stringify(snapshot.problems));
+export const ssot = snapshot.value;
+
+export const sqlMapping = {
+    text: sqlTypes.text,
+    integer: sqlTypes.integer,
+    boolean: sqlTypes.boolean,
+} satisfies SqlTypeMapping<typeof ssot>;
