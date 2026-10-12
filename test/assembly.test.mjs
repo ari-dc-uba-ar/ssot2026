@@ -13,7 +13,7 @@ const value = result => {if (!result.ok) throw new Error(JSON.stringify(result.p
 test('a saved migration from the backend SSOT contains the ordered SQL needed to create its schema', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'ssot-assembly-'));
     const {schema} = databaseSettings.database;
-    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.owner}, [schema]);
+    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.initialUser}, [schema]);
     let handle;
     try {
         handle = value(await scratch.create('clean-target'));

@@ -22,12 +22,12 @@ Existing history and immutable initial releases are preserved.
 | 7 | Collect migration-specific decisions and transformations. | Answers bind to draft ID/revision and reconstructed change IDs. |
 | 8 | Validate decisions against differences. | One validator reused by inference, resolution and compilation. |
 | 9 | Generate schema SQL. | Incremental and initial SQL share type/column/constraint renderers. |
-| 10 | Assemble/save ordered migrations, transformations and checks. | Assembly, resource emission and immutable publication are separate functions. |
+| 10 | Assemble/save ordered migrations, transformations and checks. | Assembly, resource emission and atomic publication are separate. New IDs/directories have sequence prefixes; each migration contains numbered SQL plus metadata. |
 | 11 | Read catalog and database history. | Core catalog contracts plus saved states and journal readers. |
 | 12 | Verify migration file hashes. | Read-only verification of manifests, resources, validators and bound states. |
 | 13 | Verify unchanged applied prefix and pointer. | `describeMigrationHistory` reuses journal continuity checks. |
 | 14 | Check drift against saved head. | Compare with recorded schema before apply; user reconciles drift. |
-| 15 | Provision initial owner/app roles and permissions. | `initialUser` creates roles and owner-controlled app/journal schemas. |
+| 15 | Provision initial owner/app roles and permissions. | New initial migrations save the role/schema setup SQL; `initialUser` executes that resource with passwords supplied at runtime. |
 | 16 | Prevent concurrent execution. | Dedicated scope lock; operation-session lock prevents racing recovery. |
 | 17 | Execute migrations transactionally. | Existing executor runs each migration in one owner transaction. |
 | 18 | Verify resulting schema/constraints. | Inspection, normalization and comparison before recording success. |
@@ -67,7 +67,7 @@ that every line is minimal.
 | `compiled-artifact.ts` | 10, 12, 18, 19 |
 | `create-resources.ts` | 9, 10, 17, 18 |
 | `data-validation.ts` | 19 |
-| `database-permissions.ts` | 15, 20 |
+| `database-permissions.ts` | 9, 15, 20 |
 | `database-settings.ts` | 2 |
 | `dependency-order.ts` | 10 |
 | `draft-revision.ts` | 7, 8, 10 |
@@ -125,18 +125,21 @@ these owners. Older design/evidence documents describe historical workflows.
 
 ## Simplicity and remaining limits
 
-StructureChangeInfo now correlates actions with required before/after identities;
-RenameInfo correlates field/entity endpoints and source/target sides. Typed
-command dispatch replaces the legacy workflow tree. Manual/create dependency
-ordering, hashing, decoding, comparison, decision validation and execution are reused.
+StructureChangeInfo correlates actions with required before/after identities;
+RenameInfo correlates field/entity endpoints and source/target sides. Supported
+database objects now correlate kind with identity and parent. Required command
+inputs are parsed at the CLI boundary and typed for authoring/apply. Compiled
+checkpoint rows and validator metadata share their producer/executor types;
+immutable artifacts are decoded fully before execution. Duplicate shape checks
+and artifact error adapters were removed. Artifact results reuse core
+ValidationResult/Problem. Manual/create dependency ordering, hashing, comparison,
+decision validation and execution are reused.
 Normal failure propagation needs no generic orchestration framework.
 JSON, database rows and imported modules still require boundary validation.
 
-Narrower type/API improvements remain: physical object identities do not fully
-correlate kind/parent; authoring decoding still has casts; compiled row checks and
-validator payloads could have one stronger decoding owner; ArtifactProblem
-duplicates part of core Problem; optional scratch/storage APIs carry broader
-configuration; generated-data ordering still has a separate traversal with its
+Narrower type/API improvements remain: editable-draft loading and runtime callbacks
+still have casts; optional scratch/storage APIs carry broader configuration;
+generated-data ordering still has a separate traversal with its
 own tie policy. Manual row-check authoring is limited. These do not constitute
 missing checklist capabilities. SQL mappings support 17 scalar types without
 length/precision parameters; arbitrary application validators are not inferred
@@ -148,10 +151,21 @@ deployment lifecycle. Old extension tables are left intact. Initial provisioning
 is separate from migration transactions; retries verify existing ownership.
 Database drift is never repaired automatically.
 
+Published resources now share one numbered SQL script and `metadata.json`, which
+holds the existing contracts, source/target states and historical validator bytes.
+The reader reconstructs their exact bytes and reuses the original hash checks.
+New manifests also bind the whole readable SQL script. Table grants are saved
+operations; apply verifies their result instead of silently adding extra grants.
+The initial administrator and owner phases remain separate transactions.
+
+The already-applied app migration was compacted without changing its identity,
+pointer or history. Its formerly external role setup is explicitly labelled a
+historical declaration; new initial migrations save that resource authoritatively.
+
 ## Verification
 
-- SDK Docker suite: 146 core tests, 230 consumer tests and 22 regression tests passed.
+- SDK checks: 146 core tests, 233 consumer tests and 22 regression tests passed.
 - PostgreSQL 18.6 generated/manual/mixed/data integrations and historical validators passed.
 - SSOT CLI integration verified fresh roles/schema/journal, app CRUD/DDL separation, idempotence, upgrades, required-column decisions, file/drift/permission gates, concurrent rejection and rollback without pointer advancement.
-- App assembly, assessment, history and SSOT checks passed (9 tests).
+- App checks: all 9 passed. The user reset the database to the current SSOT; tests no longer depend on the deleted archived initial release. Scratch database creation uses the initial administrator, while migration execution uses the restricted owner.
 - No migration was applied to the live application database. Writes used owned scratch databases and test roles.

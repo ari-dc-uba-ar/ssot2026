@@ -1,0 +1,1262 @@
+{
+  "authoring.json": {
+    "base": {
+      "from": {
+        "releaseHash": "24ca614674c9def5d5d56cc509f6626de045ee253f777289a7d3f164b57df43c",
+        "releaseId": "empty",
+        "systemId": "ssot2026"
+      },
+      "fromPersistenceHash": "adbfac3d1efa474bf0d6fa0eb911472561d0bc9973d4003fe2a740bce4b6d16f",
+      "fromSnapshotHash": "a638535e088442e78cf6a765357b26d4872c9ef6a637f95a4704299df07a262d",
+      "to": {
+        "releaseHash": "5e77588a4363094246cf1ed1b989fdbfd1515a846cb545e144844fef1bc49c35",
+        "releaseId": "initial",
+        "systemId": "ssot2026"
+      },
+      "toPersistenceHash": "7cdd17033f1dcf8c2c94e15a6bac1702b62b25eccf90da7640705c8c72b2f7fe",
+      "toSnapshotHash": "d230ab5721ce03d80d3120cb54209384db1ffcb5f1d357aec100f7d309b93789"
+    },
+    "checkpoints": [],
+    "decisions": [],
+    "draftHash": "7989d62d14dc18d641712467c0f16de6a2c42076ddd8f4cf023b763c8231216e",
+    "formatVersion": 1,
+    "migration": {
+      "after": [],
+      "before": [],
+      "description": "",
+      "from": {
+        "releaseHash": "24ca614674c9def5d5d56cc509f6626de045ee253f777289a7d3f164b57df43c",
+        "releaseId": "empty",
+        "systemId": "ssot2026"
+      },
+      "id": "initial",
+      "steps": [
+        {
+          "id": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0",
+          "run": {
+            "contentHash": "c57ed24bccd2c37fbf9177714279ac32409e4c6cbdbef304504d0cdf9e43404c",
+            "kind": "sql",
+            "name": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0.sql"
+          }
+        },
+        {
+          "id": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1",
+          "run": {
+            "contentHash": "51e39c66af3c7da9fb48a080267bf64a9464d50c63800a9ac4b8ab6d13d24966",
+            "kind": "sql",
+            "name": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1.sql"
+          }
+        },
+        {
+          "id": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2",
+          "run": {
+            "contentHash": "ab0be354ee0d6b850ab07923341102ca944101a0daf4d222b89d0870941e4b63",
+            "kind": "sql",
+            "name": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2.sql"
+          }
+        },
+        {
+          "id": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3",
+          "run": {
+            "contentHash": "e31fae565677f55f7ec9eb056601fde71f10cb5dc4e3ff23a45b1f7a372c62f6",
+            "kind": "sql",
+            "name": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3.sql"
+          }
+        },
+        {
+          "id": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4",
+          "run": {
+            "contentHash": "999985f8483322f5dc45bebbe78eda09de9bcd24c941b3e1c4b3fc794235c644",
+            "kind": "sql",
+            "name": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4.sql"
+          }
+        },
+        {
+          "id": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5",
+          "run": {
+            "contentHash": "28e3f452e09b809dd3e9b3acba057d161cd9bdfc06eae83fae8061a556076c5c",
+            "kind": "sql",
+            "name": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5.sql"
+          }
+        },
+        {
+          "id": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6",
+          "run": {
+            "contentHash": "f7d65c41a43cc2a5c36d4a9ee9d01276bda61280b3707eb6f84335fe02b2bf8f",
+            "kind": "sql",
+            "name": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6.sql"
+          }
+        },
+        {
+          "id": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7",
+          "run": {
+            "contentHash": "8dcfd8beee74f51f7b551d89cd1e2cd709b7d629b2d9fe9f085b251009ad4507",
+            "kind": "sql",
+            "name": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7.sql"
+          }
+        },
+        {
+          "id": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8",
+          "run": {
+            "contentHash": "c5917f58adb04b688e6bb8bd6b4416f4a5a2b301bc0930c0cd5ef86b172b69d3",
+            "kind": "sql",
+            "name": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8.sql"
+          }
+        },
+        {
+          "id": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9",
+          "run": {
+            "contentHash": "e5adf969bc56afdc07dc77c79bdb59c303ec32aec887b36c1f013a47d3d0b35c",
+            "kind": "sql",
+            "name": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9.sql"
+          }
+        },
+        {
+          "id": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10",
+          "run": {
+            "contentHash": "fe02bc7f0f055572c1a9202d7021a2b91ca25358ca9b50c4c16befae21b47367",
+            "kind": "sql",
+            "name": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10.sql"
+          }
+        },
+        {
+          "id": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11",
+          "run": {
+            "contentHash": "c8b7ba2cb1e7a171327fab610e0e55381ad1601d0d71d08092a3905fe7782b02",
+            "kind": "sql",
+            "name": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11.sql"
+          }
+        },
+        {
+          "id": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12",
+          "run": {
+            "contentHash": "25ab01b39d3b029477e7ce7fff4f0bfdd47eb87d3727df42a694d60218bbb3ef",
+            "kind": "sql",
+            "name": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12.sql"
+          }
+        },
+        {
+          "id": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13",
+          "run": {
+            "contentHash": "f3494576561cbf1d492cfaba578fa7c1461921227aea74988e0df7a809a70fb3",
+            "kind": "sql",
+            "name": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13.sql"
+          }
+        },
+        {
+          "id": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14",
+          "run": {
+            "contentHash": "42bedaec24032772a329d6a8876210ceda3af935e5d1b2fbb027fbf65bf1add6",
+            "kind": "sql",
+            "name": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14.sql"
+          }
+        }
+      ],
+      "to": {
+        "releaseHash": "5e77588a4363094246cf1ed1b989fdbfd1515a846cb545e144844fef1bc49c35",
+        "releaseId": "initial",
+        "systemId": "ssot2026"
+      }
+    },
+    "operations": [
+      {
+        "changeIds": [
+          "099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0",
+        "stepIds": [
+          "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0"
+        ]
+      },
+      {
+        "changeIds": [
+          "2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1",
+        "stepIds": [
+          "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1"
+        ]
+      },
+      {
+        "changeIds": [
+          "8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2",
+        "stepIds": [
+          "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2"
+        ]
+      },
+      {
+        "changeIds": [
+          "109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3",
+        "stepIds": [
+          "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3"
+        ]
+      },
+      {
+        "changeIds": [
+          "11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4",
+        "stepIds": [
+          "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4"
+        ]
+      },
+      {
+        "changeIds": [
+          "13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5",
+        "stepIds": [
+          "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5"
+        ]
+      },
+      {
+        "changeIds": [
+          "352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6",
+        "stepIds": [
+          "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6"
+        ]
+      },
+      {
+        "changeIds": [
+          "37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7",
+        "stepIds": [
+          "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7"
+        ]
+      },
+      {
+        "changeIds": [
+          "93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8",
+        "stepIds": [
+          "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8"
+        ]
+      },
+      {
+        "changeIds": [
+          "b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9",
+        "stepIds": [
+          "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9"
+        ]
+      },
+      {
+        "changeIds": [
+          "c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10",
+        "stepIds": [
+          "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10"
+        ]
+      },
+      {
+        "changeIds": [
+          "d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11",
+        "stepIds": [
+          "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11"
+        ]
+      },
+      {
+        "changeIds": [
+          "872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12",
+        "stepIds": [
+          "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12"
+        ]
+      },
+      {
+        "changeIds": [
+          "c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13",
+        "stepIds": [
+          "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13"
+        ]
+      },
+      {
+        "changeIds": [
+          "d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0"
+        ],
+        "dataMigrationIds": [],
+        "id": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14",
+        "stepIds": [
+          "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14"
+        ]
+      }
+    ],
+    "queryResources": {},
+    "states": {
+      "from": {
+        "byteLength": 1519,
+        "contentHash": "24ca614674c9def5d5d56cc509f6626de045ee253f777289a7d3f164b57df43c",
+        "path": "states/from.json"
+      },
+      "to": {
+        "byteLength": 7277,
+        "contentHash": "5e77588a4363094246cf1ed1b989fdbfd1515a846cb545e144844fef1bc49c35",
+        "path": "states/to.json"
+      }
+    },
+    "validationArtifacts": []
+  },
+  "migration.json": {
+    "authoring": {
+      "byteLength": 9817,
+      "contentHash": "601856f0c2f3e8711b051641610e458265e084989157ee073b19c35c8a49a7a3",
+      "path": "authoring.json"
+    },
+    "formatVersion": 1,
+    "migration": {
+      "after": [],
+      "before": [],
+      "description": "",
+      "from": {
+        "releaseHash": "24ca614674c9def5d5d56cc509f6626de045ee253f777289a7d3f164b57df43c",
+        "releaseId": "empty",
+        "systemId": "ssot2026"
+      },
+      "id": "initial",
+      "steps": [
+        {
+          "id": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0",
+          "run": {
+            "contentHash": "c57ed24bccd2c37fbf9177714279ac32409e4c6cbdbef304504d0cdf9e43404c",
+            "kind": "sql",
+            "name": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0.sql"
+          }
+        },
+        {
+          "id": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1",
+          "run": {
+            "contentHash": "51e39c66af3c7da9fb48a080267bf64a9464d50c63800a9ac4b8ab6d13d24966",
+            "kind": "sql",
+            "name": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1.sql"
+          }
+        },
+        {
+          "id": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2",
+          "run": {
+            "contentHash": "ab0be354ee0d6b850ab07923341102ca944101a0daf4d222b89d0870941e4b63",
+            "kind": "sql",
+            "name": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2.sql"
+          }
+        },
+        {
+          "id": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3",
+          "run": {
+            "contentHash": "e31fae565677f55f7ec9eb056601fde71f10cb5dc4e3ff23a45b1f7a372c62f6",
+            "kind": "sql",
+            "name": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3.sql"
+          }
+        },
+        {
+          "id": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4",
+          "run": {
+            "contentHash": "999985f8483322f5dc45bebbe78eda09de9bcd24c941b3e1c4b3fc794235c644",
+            "kind": "sql",
+            "name": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4.sql"
+          }
+        },
+        {
+          "id": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5",
+          "run": {
+            "contentHash": "28e3f452e09b809dd3e9b3acba057d161cd9bdfc06eae83fae8061a556076c5c",
+            "kind": "sql",
+            "name": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5.sql"
+          }
+        },
+        {
+          "id": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6",
+          "run": {
+            "contentHash": "f7d65c41a43cc2a5c36d4a9ee9d01276bda61280b3707eb6f84335fe02b2bf8f",
+            "kind": "sql",
+            "name": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6.sql"
+          }
+        },
+        {
+          "id": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7",
+          "run": {
+            "contentHash": "8dcfd8beee74f51f7b551d89cd1e2cd709b7d629b2d9fe9f085b251009ad4507",
+            "kind": "sql",
+            "name": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7.sql"
+          }
+        },
+        {
+          "id": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8",
+          "run": {
+            "contentHash": "c5917f58adb04b688e6bb8bd6b4416f4a5a2b301bc0930c0cd5ef86b172b69d3",
+            "kind": "sql",
+            "name": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8.sql"
+          }
+        },
+        {
+          "id": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9",
+          "run": {
+            "contentHash": "e5adf969bc56afdc07dc77c79bdb59c303ec32aec887b36c1f013a47d3d0b35c",
+            "kind": "sql",
+            "name": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9.sql"
+          }
+        },
+        {
+          "id": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10",
+          "run": {
+            "contentHash": "fe02bc7f0f055572c1a9202d7021a2b91ca25358ca9b50c4c16befae21b47367",
+            "kind": "sql",
+            "name": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10.sql"
+          }
+        },
+        {
+          "id": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11",
+          "run": {
+            "contentHash": "c8b7ba2cb1e7a171327fab610e0e55381ad1601d0d71d08092a3905fe7782b02",
+            "kind": "sql",
+            "name": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11.sql"
+          }
+        },
+        {
+          "id": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12",
+          "run": {
+            "contentHash": "25ab01b39d3b029477e7ce7fff4f0bfdd47eb87d3727df42a694d60218bbb3ef",
+            "kind": "sql",
+            "name": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12.sql"
+          }
+        },
+        {
+          "id": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13",
+          "run": {
+            "contentHash": "f3494576561cbf1d492cfaba578fa7c1461921227aea74988e0df7a809a70fb3",
+            "kind": "sql",
+            "name": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13.sql"
+          }
+        },
+        {
+          "id": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14",
+          "run": {
+            "contentHash": "42bedaec24032772a329d6a8876210ceda3af935e5d1b2fbb027fbf65bf1add6",
+            "kind": "sql",
+            "name": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14.sql"
+          }
+        }
+      ],
+      "to": {
+        "releaseHash": "5e77588a4363094246cf1ed1b989fdbfd1515a846cb545e144844fef1bc49c35",
+        "releaseId": "initial",
+        "systemId": "ssot2026"
+      }
+    },
+    "migrationHash": "0cb4872a86d6550192f79d3b3c41ebf6c77ff7084e697bea1b95cd8c69e64a01",
+    "resources": {
+      "byteLength": 4237,
+      "contentHash": "69f6fd6ad6f4f67cc6b4bbd05802048159f6c440d493c7d089cdcff09de1724d",
+      "path": "resources.json"
+    }
+  },
+  "resources.json": [
+    {
+      "ref": {
+        "contentHash": "c57ed24bccd2c37fbf9177714279ac32409e4c6cbdbef304504d0cdf9e43404c",
+        "kind": "sql",
+        "name": "structure:099d7a428fcb3b5de91ba0c2c8321050a48d8967e7692530ee6438ce1cc61b19:0.sql"
+      },
+      "text": "CREATE TABLE \"ssot\".\"planes\" ();\n"
+    },
+    {
+      "ref": {
+        "contentHash": "51e39c66af3c7da9fb48a080267bf64a9464d50c63800a9ac4b8ab6d13d24966",
+        "kind": "sql",
+        "name": "structure:2df005db24a53f3ca75c8bcb8b9d0a7fb858d0a80c295d7f3b7ec6d70c8135a3:1.sql"
+      },
+      "text": "CREATE TABLE \"ssot\".\"materias\" ();\n"
+    },
+    {
+      "ref": {
+        "contentHash": "ab0be354ee0d6b850ab07923341102ca944101a0daf4d222b89d0870941e4b63",
+        "kind": "sql",
+        "name": "structure:8440c4c02fe04032f46ae10b6deecc76bff64c31553b956d6b410a8c08c2a5d4:2.sql"
+      },
+      "text": "CREATE TABLE \"ssot\".\"pabellones\" ();\n"
+    },
+    {
+      "ref": {
+        "contentHash": "e31fae565677f55f7ec9eb056601fde71f10cb5dc4e3ff23a45b1f7a372c62f6",
+        "kind": "sql",
+        "name": "structure:109220a737bd3b2a28d770d2c8dfc471c7de4406ef522d97f98e0ebadc83130f:3.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"pabellones\" ADD COLUMN \"pab\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "999985f8483322f5dc45bebbe78eda09de9bcd24c941b3e1c4b3fc794235c644",
+        "kind": "sql",
+        "name": "structure:11d963514814f5f70c6df8ea3433e06907e2e2ca2359f956f993e5b8d3868db6:4.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"materias\" ADD COLUMN \"plan\" \"pg_catalog\".\"int4\";\n"
+    },
+    {
+      "ref": {
+        "contentHash": "28e3f452e09b809dd3e9b3acba057d161cd9bdfc06eae83fae8061a556076c5c",
+        "kind": "sql",
+        "name": "structure:13db89c86cc34ca6732bc1c0dcf07508e81b3f4e472888d9bb3601cac8ef16e7:5.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"materias\" ADD COLUMN \"obligatoria\" \"pg_catalog\".\"bool\";\n"
+    },
+    {
+      "ref": {
+        "contentHash": "f7d65c41a43cc2a5c36d4a9ee9d01276bda61280b3707eb6f84335fe02b2bf8f",
+        "kind": "sql",
+        "name": "structure:352c4bfa505b619ab6fd19bdaead551365b14b06ae9244ddc462e4d573b9ee4c:6.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"materias\" ADD COLUMN \"materia\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "8dcfd8beee74f51f7b551d89cd1e2cd709b7d629b2d9fe9f085b251009ad4507",
+        "kind": "sql",
+        "name": "structure:37dad258eb4049c8b339fa796fd0828102cd047a9f71dd7468a34dabf306c974:7.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"pabellones\" ADD COLUMN \"pabellon\" \"pg_catalog\".\"text\";\n"
+    },
+    {
+      "ref": {
+        "contentHash": "c5917f58adb04b688e6bb8bd6b4416f4a5a2b301bc0930c0cd5ef86b172b69d3",
+        "kind": "sql",
+        "name": "structure:93e871d310fdf8bfbc524655a08d49e364625368ed2c4c9ff6092caa922c3a44:8.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"planes\" ADD COLUMN \"plan\" \"pg_catalog\".\"int4\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "e5adf969bc56afdc07dc77c79bdb59c303ec32aec887b36c1f013a47d3d0b35c",
+        "kind": "sql",
+        "name": "structure:b0a9efb960a40273fb62e1aeaa13eedbb0dbb7dd18de84af21f754877da8d66a:9.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"pabellones\" ADD COLUMN \"pisos\" \"pg_catalog\".\"int4\";\n"
+    },
+    {
+      "ref": {
+        "contentHash": "fe02bc7f0f055572c1a9202d7021a2b91ca25358ca9b50c4c16befae21b47367",
+        "kind": "sql",
+        "name": "structure:c652ea1b41a2c48d7098b8b906298966a052f6d4444df04ecf5bdbcd35ad8472:10.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"planes\" ADD COLUMN \"descripcion\" \"pg_catalog\".\"text\";\n"
+    },
+    {
+      "ref": {
+        "contentHash": "c8b7ba2cb1e7a171327fab610e0e55381ad1601d0d71d08092a3905fe7782b02",
+        "kind": "sql",
+        "name": "structure:d76195a751ae5d84c44cbba2c9961565e967a143fde04688f2982e1d2f814f1f:11.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"materias\" ADD COLUMN \"cod_mat\" \"pg_catalog\".\"text\";\n"
+    },
+    {
+      "ref": {
+        "contentHash": "25ab01b39d3b029477e7ce7fff4f0bfdd47eb87d3727df42a694d60218bbb3ef",
+        "kind": "sql",
+        "name": "structure:872d614a0311e7fe7cfe2a214517fae595415091499e32dcbc30611aab840503:12.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"planes\" ADD CONSTRAINT \"planes_pkey\" PRIMARY KEY (\"plan\");\n"
+    },
+    {
+      "ref": {
+        "contentHash": "f3494576561cbf1d492cfaba578fa7c1461921227aea74988e0df7a809a70fb3",
+        "kind": "sql",
+        "name": "structure:c45cc831115eddeb657c386b4fcb430ace9a5aaecb7f734a8abfb99d605fe361:13.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"pabellones\" ADD CONSTRAINT \"pabellones_pkey\" PRIMARY KEY (\"pab\");\n"
+    },
+    {
+      "ref": {
+        "contentHash": "42bedaec24032772a329d6a8876210ceda3af935e5d1b2fbb027fbf65bf1add6",
+        "kind": "sql",
+        "name": "structure:d01af5fee50e5a8ab06174eb9139b72ac06ba6d6636cbf0259d7073eabdf9de0:14.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"materias\" ADD CONSTRAINT \"materias_pkey\" PRIMARY KEY (\"materia\");\n"
+    }
+  ],
+  "states/from.json": {
+    "namespace": "ssot",
+    "persistence": {
+      "entities": [],
+      "representations": {
+        "postgres": {
+          "boolean": "boolean",
+          "integer": "integer",
+          "text": "text"
+        }
+      }
+    },
+    "releaseId": "empty",
+    "schema": {
+      "engineVersion": "18.6",
+      "formatVersion": 1,
+      "objects": [],
+      "schemas": [
+        "ssot"
+      ]
+    },
+    "ssot": {
+      "entities": {},
+      "formatVersion": 1,
+      "records": {
+        "materia": {
+          "cod_mat": {
+            "description": "",
+            "isName": false,
+            "label": "cod mat",
+            "maxLength": 100,
+            "name": "cod_mat",
+            "nullable": true,
+            "type": "text"
+          },
+          "materia": {
+            "description": "",
+            "isName": false,
+            "label": "materia",
+            "maxLength": 100,
+            "name": "materia",
+            "nullable": true,
+            "type": "text"
+          },
+          "obligatoria": {
+            "description": "",
+            "isName": false,
+            "label": "obligatoria",
+            "maxLength": 100,
+            "name": "obligatoria",
+            "nullable": true,
+            "type": "boolean"
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "pabellon": {
+          "pab": {
+            "description": "",
+            "isName": false,
+            "label": "pab",
+            "maxLength": 100,
+            "name": "pab",
+            "nullable": true,
+            "type": "text"
+          },
+          "pabellon": {
+            "description": "",
+            "isName": false,
+            "label": "pabellon",
+            "maxLength": 100,
+            "name": "pabellon",
+            "nullable": true,
+            "type": "text"
+          },
+          "pisos": {
+            "description": "",
+            "isName": false,
+            "label": "pisos",
+            "maxLength": 100,
+            "name": "pisos",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "plan": {
+          "descripcion": {
+            "description": "",
+            "isName": false,
+            "label": "descripcion",
+            "maxLength": 100,
+            "name": "descripcion",
+            "nullable": true,
+            "type": "text"
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "type": "integer"
+          }
+        }
+      },
+      "systemId": "ssot2026",
+      "typeNames": [
+        "text",
+        "integer",
+        "boolean"
+      ]
+    }
+  },
+  "states/to.json": {
+    "namespace": "ssot",
+    "persistence": {
+      "entities": [
+        "materias",
+        "pabellones",
+        "planes"
+      ],
+      "representations": {
+        "postgres": {
+          "boolean": "boolean",
+          "integer": "integer",
+          "text": "text"
+        }
+      }
+    },
+    "releaseId": "initial",
+    "schema": {
+      "engineVersion": "18.6",
+      "formatVersion": 1,
+      "objects": [
+        {
+          "identity": {
+            "kind": "table",
+            "name": "materias",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "cod_mat",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "materia",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "obligatoria",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "materia"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"materia\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "materias_pkey",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "pabellones",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pab",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pabellon",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pisos",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "pab"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"pab\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "pabellones_pkey",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "planes",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "descripcion",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "plan"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"plan\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "planes_pkey",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        }
+      ],
+      "schemas": [
+        "ssot"
+      ]
+    },
+    "ssot": {
+      "entities": {
+        "materias": {
+          "fields": {
+            "cod_mat": {
+              "description": "",
+              "isName": false,
+              "label": "cod mat",
+              "maxLength": 100,
+              "name": "cod_mat",
+              "nullable": true,
+              "type": "text"
+            },
+            "materia": {
+              "description": "",
+              "isName": false,
+              "label": "materia",
+              "maxLength": 100,
+              "name": "materia",
+              "nullable": false,
+              "type": "text"
+            },
+            "obligatoria": {
+              "description": "",
+              "isName": false,
+              "label": "obligatoria",
+              "maxLength": 100,
+              "name": "obligatoria",
+              "nullable": true,
+              "type": "boolean"
+            },
+            "plan": {
+              "description": "",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": true,
+              "type": "integer"
+            }
+          },
+          "fks": {},
+          "name": "materias",
+          "pk": [
+            "materia"
+          ],
+          "record": "materia",
+          "uks": {},
+          "validators": [
+            "validarPlan1993SinObligatorias"
+          ]
+        },
+        "pabellones": {
+          "fields": {
+            "pab": {
+              "description": "",
+              "isName": false,
+              "label": "pab",
+              "maxLength": 100,
+              "name": "pab",
+              "nullable": false,
+              "type": "text"
+            },
+            "pabellon": {
+              "description": "",
+              "isName": false,
+              "label": "pabellon",
+              "maxLength": 100,
+              "name": "pabellon",
+              "nullable": true,
+              "type": "text"
+            },
+            "pisos": {
+              "description": "",
+              "isName": false,
+              "label": "pisos",
+              "maxLength": 100,
+              "name": "pisos",
+              "nullable": true,
+              "type": "integer"
+            }
+          },
+          "fks": {},
+          "name": "pabellones",
+          "pk": [
+            "pab"
+          ],
+          "record": "pabellon",
+          "uks": {},
+          "validators": []
+        },
+        "planes": {
+          "fields": {
+            "descripcion": {
+              "description": "",
+              "isName": false,
+              "label": "descripcion",
+              "maxLength": 100,
+              "name": "descripcion",
+              "nullable": true,
+              "type": "text"
+            },
+            "plan": {
+              "description": "",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": false,
+              "type": "integer"
+            }
+          },
+          "fks": {},
+          "name": "planes",
+          "pk": [
+            "plan"
+          ],
+          "record": "plan",
+          "uks": {},
+          "validators": []
+        }
+      },
+      "formatVersion": 1,
+      "records": {
+        "materia": {
+          "cod_mat": {
+            "description": "",
+            "isName": false,
+            "label": "cod mat",
+            "maxLength": 100,
+            "name": "cod_mat",
+            "nullable": true,
+            "type": "text"
+          },
+          "materia": {
+            "description": "",
+            "isName": false,
+            "label": "materia",
+            "maxLength": 100,
+            "name": "materia",
+            "nullable": true,
+            "type": "text"
+          },
+          "obligatoria": {
+            "description": "",
+            "isName": false,
+            "label": "obligatoria",
+            "maxLength": 100,
+            "name": "obligatoria",
+            "nullable": true,
+            "type": "boolean"
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "pabellon": {
+          "pab": {
+            "description": "",
+            "isName": false,
+            "label": "pab",
+            "maxLength": 100,
+            "name": "pab",
+            "nullable": true,
+            "type": "text"
+          },
+          "pabellon": {
+            "description": "",
+            "isName": false,
+            "label": "pabellon",
+            "maxLength": 100,
+            "name": "pabellon",
+            "nullable": true,
+            "type": "text"
+          },
+          "pisos": {
+            "description": "",
+            "isName": false,
+            "label": "pisos",
+            "maxLength": 100,
+            "name": "pisos",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "plan": {
+          "descripcion": {
+            "description": "",
+            "isName": false,
+            "label": "descripcion",
+            "maxLength": 100,
+            "name": "descripcion",
+            "nullable": true,
+            "type": "text"
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "type": "integer"
+          }
+        }
+      },
+      "systemId": "ssot2026",
+      "typeNames": [
+        "text",
+        "integer",
+        "boolean"
+      ]
+    }
+  },
+  "script.json": {
+    "path": "0001_initial.sql",
+    "contentHash": "9d2ca73399a7f156a06573ea780a03308038b511a88529a9f4e0f8dabb0f2717",
+    "byteLength": 3746
+  }
+}
