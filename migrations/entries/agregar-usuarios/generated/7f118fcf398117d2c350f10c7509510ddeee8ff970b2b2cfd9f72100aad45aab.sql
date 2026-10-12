@@ -1,0 +1,1 @@
+CREATE TABLE "ssot"."usuarios" ();
