@@ -25,15 +25,14 @@ and persistence decoders. It returns `{ssot, persistence}`.
 the PostgreSQL connection settings and schema, the initial provisioning connection,
 the owner role, and the app role. The connection
 uses the driver's existing `ClientConfig` type. The backend uses the same settings
-with the app role. The loader requires distinct owner/app names; applying database
-permissions is a later step. CLI output includes connection identity and role names.
+with the app role. The loader requires distinct owner/app names. CLI output
+includes connection identity and role names.
 `initialUser` takes the driver's `ClientConfig` with a required username. The app
 supplies it through `POSTGRES_USER`/`POSTGRES_PASSWORD`; its credentials are omitted
 from CLI output. It is reserved for initial role and permission setup.
 The load commands do not connect to PostgreSQL. Schema assessment is a separate
-read-only command. Bootstrap, permission setup, generation, and installation
-will be handled separately. The previous automatic migration commands and Compose
-initialization services have been removed.
+read-only command. The apply command provisions initial roles and permissions,
+then executes migrations through the owner connection.
 
 ## Assess schema differences
 
@@ -86,8 +85,7 @@ current revision. Decisions use the existing `discard`, `migrate`, or `check`
 definitions. Transformation references must exist in the draft. Valid partial
 answers are saved while other changes remain pending; invalid or stale answers
 leave the draft untouched. No project adapter or conflict report is required.
-SSOT draft creation and assembly are available as library functions; complete CLI
-composition remains a separate step.
+Inference, generation and apply reuse the same decision validation.
 
 ## Migration assembly
 
@@ -126,6 +124,35 @@ file hashes. It reads files without executing SQL or importing validator code.
 New manifests also bind the resource registry through the existing `FileInfo`
 contract; older manifests remain readable.
 
+The [24-point assessment](docs/migration-assessment.md) records capability status,
+source responsibilities, remaining duplication and legacy workflows beyond that scope.
+
+SSOT authoring also supports `infer`, `generate` and standalone `data` commands
+with `--ssot` and `--database`. New migrations bind saved source/target schemas
+to their immutable authoring files. Role settings now use `{user, password, ...}`
+driver connections for `initialUser`, `owner` and `appUser`; the backend uses the
+app connection. Role provisioning and permission checks are separate SDK APIs.
+The apply command generates migrations from the SSOT when needed, then verifies
+immutable files, history integrity and drift before using locked owner transactions.
+Ambiguous changes save a draft and block until its data decisions are resolved.
+Schema, declared data requirements and permissions are checked before success and
+pointer advancement. Failed operations roll back and retain an execution attempt.
+Deployment activation, readiness and separate corrective workflows were removed.
+
+```sh
+npm run migration:apply
+npm run migration:status
+```
+
+These scripts import the existing initial release as their baseline. For a fresh
+empty database, use the SDK apply command without `--baseline` so it generates
+the initial schema migration:
+
+```sh
+npm run build
+npx postgres-migrations apply --ssot ./dist/backend/system.js --database ./dist/backend/database.js --directory ./migrations/fresh
+```
+
 ```sh
 npm run test:history
 ```
@@ -140,9 +167,9 @@ docker compose up --build -d --wait
 ```
 
 Compose runs PostgreSQL 18.6 and the backend. The backend connects as the app user
-using `PGUSER`/`PGPASSWORD` or `DATABASE_URL`. This currently requires an existing
-database with its roles and tables already provisioned, such as the current local
-Docker volume. Fresh-volume database setup is outside this step.
+using `PGUSER`/`PGPASSWORD` or `DATABASE_URL`. Compose starts the database and app;
+run the SDK apply command above to provision a fresh database before using the app.
+Migration execution remains an explicit command.
 
 For a host process, configure `.env`, start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.

@@ -11,7 +11,7 @@ const system = value(decodeSqlSsot(ssot, sqlMapping));
 test('assessment reports live schema differences without changing schema or data', async () => {
     const {schema} = databaseSettings.database;
     const scratch = createPostgresScratch({...databaseSettings.database,
-        user: databaseSettings.owner, password: process.env.MIGRATION_PGPASSWORD}, [schema]);
+        ...databaseSettings.owner}, [schema]);
     const handle = value(await scratch.create('clean-target'));
     try {
         const expected = value(projectSsotSchema(system, schema));
@@ -60,7 +60,7 @@ test('the configured live database already matches the SSOT', async () => {
 
 test('generated SQL preserves a rename and stages the required-field change around a backfill', async () => {
     const {schema} = databaseSettings.database;
-    const scratch = createPostgresScratch({...databaseSettings.database, user: databaseSettings.owner, password: process.env.MIGRATION_PGPASSWORD}, [schema]);
+    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.owner}, [schema]);
     const handle = value(await scratch.create('clean-target'));
     try {
         const current = value(projectSsotSchema(system, schema));
@@ -92,7 +92,7 @@ test('generated SQL preserves a rename and stages the required-field change arou
 
 test('generated migration SQL maps the backend definitions and all provided SQL types into PostgreSQL', async () => {
     const {schema} = databaseSettings.database;
-    const scratch = createPostgresScratch({...databaseSettings.database, user: databaseSettings.owner, password: process.env.MIGRATION_PGPASSWORD}, [schema]);
+    const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.owner}, [schema]);
     const handle = value(await scratch.create('clean-target'));
     try {
         const current = {formatVersion: 1, engineVersion: '18.6', schemas: [schema], objects: []};
