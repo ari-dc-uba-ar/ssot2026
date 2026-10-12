@@ -21,16 +21,19 @@ function rechazar(res: Response) {
 }
 
 async function autenticar(req: Request, res: Response, next: NextFunction) {
+    // está vacio?
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Basic ')) return rechazar(res);
 
     const decodificado = Buffer.from(header.slice('Basic '.length), 'base64').toString();
 
+    // chequea formato (deberia ser usuario:contraseña)
     const pos = decodificado.indexOf(':');
     if (pos === -1) return rechazar(res);
     const usuario = decodificado.slice(0, pos);
     const clave = decodificado.slice(pos + 1);
 
+    // compara contra la base de datos
     const result = await pool.query('SELECT clave FROM ssot.usuarios WHERE usuario = $1', [usuario]);
     const fila = result.rows[0];
 
@@ -54,7 +57,8 @@ app.get('/menu', (_, res) => {
     res.send('SSOT2026 - Solo Somos Otros Tenaces en 2026');
 })
 
-Object.values(myEntities).forEach(entityDef => {
+// Filtro evita crear endpoints para la tabla de usuarios
+Object.values(myEntities).filter(entityDef => entityDef.name !== 'usuarios').forEach(entityDef => {
     const entity = completeEntity(myRecords, entityDef);
     const tabla = entity.name;
 
