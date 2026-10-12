@@ -68,6 +68,21 @@ developer validators remain runtime rules; the current SQL vocabulary supplies
 The published initial release remains under `migrations/releases/initial`.
 The SSOT test confirms that the current domain model matches its saved snapshot.
 
+## Migration history
+
+The migration library uses an ordered core catalog and the database's recorded
+baseline/current pointer. Applied migrations must be an unchanged prefix; later
+entries are pending. `bootstrapHistory` creates only the pointer and applied-history
+tables. `appendCommittedMigration` updates both in the same transaction as the SQL.
+`readMigrationHistory` also rejects drift from the schema saved for the applied head.
+
+```sh
+npm run test:history
+```
+
+The test uses an owned scratch database to verify pending status, commit/rollback,
+checksums and drift. The existing local journal and immutable releases are retained.
+
 ## Run the backend
 
 ```sh
