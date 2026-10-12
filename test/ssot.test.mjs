@@ -6,13 +6,14 @@ import test from 'node:test';
 import {loadSsot} from '@system-definition/postgres-migrations/ssot';
 import {loadDatabaseSettings} from '@system-definition/postgres-migrations/database';
 import {decodeSystemSnapshot} from 'system-definition';
-import {ssot} from '../dist/backend/system.js';
+import {decodeSqlSsot} from '@system-definition/postgres-migrations';
+import {ssot, sqlMapping} from '../dist/backend/system.js';
 import {databaseSettings, databaseConfig} from '../dist/backend/database.js';
 import {spawnSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 
 test('the migration loader reads the backend SSOT using the core contract', async () => {
-    assert.deepEqual(await loadSsot('dist/backend/system.js'), {ok: true, value: ssot});
+    assert.deepEqual(await loadSsot('dist/backend/system.js'), decodeSqlSsot(ssot, sqlMapping));
     assert.deepEqual(Object.keys(ssot.entities), ['materias', 'pabellones']);
     const initial = decodeSystemSnapshot(JSON.parse(await readFile('migrations/releases/initial/snapshot.json', 'utf8')));
     assert.equal(initial.ok, true);
@@ -42,6 +43,7 @@ test('the CLI loads both inputs without returning connection secrets', async () 
         const loaded = JSON.parse(result.stdout);
         assert.equal(loaded.ok, true);
         assert.equal(loaded.value.ssot.systemId, ssot.systemId);
+        assert.deepEqual(loaded.value.persistence.representations.postgres, sqlMapping);
         assert.equal(loaded.value.database.owner, databaseSettings.owner);
         assert.equal(loaded.value.database.appUser, databaseSettings.appUser);
         assert.deepEqual(loaded.value.database.initialUser, {user: databaseSettings.initialUser.user});

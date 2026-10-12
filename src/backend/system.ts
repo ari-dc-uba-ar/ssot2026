@@ -1,5 +1,6 @@
 import { commonTypeDefs, defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
     withRecords, defineEntity, defineEntities, captureSystemSnapshot,
+    sqlTypes, type SqlTypeMapping,
     type Problem,
     withValidators
 } from 'system-definition'
@@ -75,3 +76,9 @@ const snapshot = captureSystemSnapshot(myReordsValidators, {
 });
 if (!snapshot.ok) throw new Error(JSON.stringify(snapshot.problems));
 export const ssot = snapshot.value;
+
+export const sqlMapping = {
+    text: sqlTypes.text,
+    integer: sqlTypes.integer,
+    boolean: sqlTypes.boolean,
+} satisfies SqlTypeMapping<typeof ssot>;

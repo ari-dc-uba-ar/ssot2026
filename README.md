@@ -1,9 +1,12 @@
 # ssot2026
 
 The backend defines its entities with `system-definition` in `src/backend/system.ts`.
-It exports `ssot`, the model produced by the core's `captureSystemSnapshot`.
-The migration package reads that value using the existing `SystemSnapshotInfo`
-and `ValidationResult` types. The app needs no PostgreSQL-specific SSOT constructor.
+It exports `ssot`, the model produced by the core's `captureSystemSnapshot`, and
+`sqlMapping`, which explicitly maps every backend type to a supplied SQL type.
+The mapping uses `sqlTypes` and `SqlTypeMapping<typeof ssot>` from `system-definition`.
+Missing keys and unsupported choices fail typing; the migration loader also rejects
+missing, extra or invalid mappings at runtime. The app needs no PostgreSQL-specific
+SSOT constructor.
 
 ## Load the SSOT
 
@@ -16,7 +19,8 @@ npm run migration:load
 npm run test:ssot
 ```
 
-The command loads the app's exported model and validates it with the core decoder.
+The command loads the app's exported model and SQL mapping, using the core snapshot
+and persistence decoders. It returns `{ssot, persistence}`.
 `migration:load` also reads `databaseSettings` from `src/backend/database.ts`:
 the PostgreSQL connection settings and schema, the initial provisioning connection,
 the owner role, and the app role. The connection
@@ -51,12 +55,33 @@ data-sensitive changes require validation or a conversion/backfill decision.
 Table removals group their children into one decision. Possible renames remain
 removal plus addition until the user supplies an explicit correspondence.
 Constraint backing indexes are represented by their constraints; independent
-indexes remain visible as differences. Current mappings cover text, integer, and
-boolean; unsupported domains produce a mapping error. Migration planning and
+indexes remain visible as differences. Mapping comes from the backend's explicit
+choices rather than defaults or TypeScript type inference. Migration planning and
 execution are separate steps.
+
+`generateMigrationSql(changes, current, target, schema)` renders resolved schema
+changes with the loaded SSOT and its mapping. It reuses the existing SQL renderers
+and returns ordered SQL statements without connecting or applying them. Arbitrary
+developer validators remain runtime rules; the current SQL vocabulary supplies
+17 scalar types without length/precision parameters.
 
 The published initial release remains under `migrations/releases/initial`.
 The SSOT test confirms that the current domain model matches its saved snapshot.
+
+## Migration history
+
+The migration library uses an ordered core catalog and the database's recorded
+baseline/current pointer. Applied migrations must be an unchanged prefix; later
+entries are pending. `bootstrapHistory` creates only the pointer and applied-history
+tables. `appendCommittedMigration` updates both in the same transaction as the SQL.
+`readMigrationHistory` also rejects drift from the schema saved for the applied head.
+
+```sh
+npm run test:history
+```
+
+The test uses an owned scratch database to verify pending status, commit/rollback,
+checksums and drift. The existing local journal and immutable releases are retained.
 
 ## Run the backend
 
