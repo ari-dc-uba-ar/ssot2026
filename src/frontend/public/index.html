@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SSOT2026 · Registros</title>
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/assets/main.js"></script>
+</head>
+<body>
+    <main>
+        <header><p class="eyebrow">SSOT2026</p><h1>Registros</h1><p>Consultá y administrá los datos de cada entidad.</p></header>
+        <p id="status" role="status" aria-live="polite"></p>
+        <fieldset id="workspace" disabled>
+            <label for="entity">Entidad</label>
+            <select id="entity" aria-controls="content"></select>
+            <section id="content" aria-label="Registros de la entidad"></section>
+        </fieldset>
+    </main>
+    <dialog id="editor" aria-labelledby="editor-title">
+        <h2 id="editor-title"></h2>
+        <p id="editor-status" role="alert"></p>
+        <form id="form"><fieldset id="fields"></fieldset></form>
+    </dialog>
+</body>
+</html>

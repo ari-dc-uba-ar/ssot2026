@@ -59,22 +59,22 @@ function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatori
     return problemas;
 }
 
-const myReordsValidators = withValidators(myRecords, {validarPlan1993SinObligatorias})
+export const myContext = withValidators(myRecords, {validarPlan1993SinObligatorias})
 
-const materias = defineEntity(myReordsValidators, {
+const materias = defineEntity(myContext, {
     name: 'materias',
     record: 'materia',
     pk: ['materia'],
     validators: ['validarPlan1993SinObligatorias']
 })
 
-const pabellones = defineEntity(myReordsValidators, {
+const pabellones = defineEntity(myContext, {
     name: 'pabellones',
     record: 'pabellon',
     pk: ['pab']
 })
 
-const planes = defineEntity(myReordsValidators, {
+const planes = defineEntity(myContext, {
     name: 'planes',
     record: 'plan',
     pk: ['plan']
@@ -82,7 +82,7 @@ const planes = defineEntity(myReordsValidators, {
 
 export const myEntities = defineEntities({materias, pabellones, planes})
 
-const snapshot = captureSystemSnapshot(myReordsValidators, {
+const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',
     entities: myEntities,
     records: myRecords.records,

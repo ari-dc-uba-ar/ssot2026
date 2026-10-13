@@ -2,6 +2,8 @@
     "extends": "../src/backend/tsconfig.json",
     "compilerOptions": {
         "rootDir": "..",
+        "composite": false,
+        "incremental": false,
         "noEmit": true
     },
     "include": ["api-contract.typecheck.ts"]
