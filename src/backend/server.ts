@@ -1,14 +1,11 @@
-import express from "express";
+import express from 'express';
 import type {Request, Response, NextFunction} from 'express';
-import { Pool } from 'pg'
-
-import { completeEntity } from 'system-definition'
-import { myRecords, myEntities } from './system.js';
-import { databaseConfig } from './database.js';
-import { registerEntityApi } from './api.js';
+import {fileURLToPath} from 'node:url';
+import {Pool} from 'pg';
+import {databaseConfig} from './database.js';
+import {registerEntityApi} from './api.js';
 
 const pool = new Pool(databaseConfig);
-
 const app = express();
 
 // no se encriptar claves 😭
@@ -43,100 +40,18 @@ async function autenticar(req: Request, res: Response, next: NextFunction) {
     next();
 }
 
-app.use(express.urlencoded({ extended: true }));
-registerEntityApi(app, pool);
-
-app.use('/poc', autenticar);
-
+// /health queda sin autenticación: el healthcheck de Docker no manda credenciales
 app.get('/health', async (_, res) => {
     await pool.query('SELECT 1');
     res.json({ok: true});
 });
 
-app.get('/menu', (_, res) => {
-    res.send('SSOT2026 - Solo Somos Otros Tenaces en 2026');
-})
+app.use(autenticar);
 
-// Filtro evita crear endpoints para la tabla de usuarios
-Object.values(myEntities).filter(entityDef => entityDef.name !== 'usuarios').forEach(entityDef => {
-    const entity = completeEntity(myRecords, entityDef);
-    const tabla = entity.name;
-
-app.get(`/poc/lista-${tabla}`, async (_, res) => {
-    const result = await pool.query(`
-        SELECT ${Object.keys(entity.fields).join(',')} 
-            FROM ssot.${tabla}
-            ORDER BY ${entity.pk}
-    `);
-    res.send(`<table>
-            <tr>
-                ${Object.values(entity.fields).map(campo => 
-                    `<th>${campo.label}</th>`
-                ).join('')}
-            </tr>
-        ${result.rows.map((row:Record<string,any>)=>
-            `<tr>
-                ${Object.entries(row).map(([_, value]:string[])=>
-                    `<td>${value}</td>`
-                ).join('')}
-            </tr>`
-        ).join('')}
-    </table>`)
-})
-
-app.post(`/poc/insertar-${tabla}`, async (req, res) => {
-    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
-    const fields = Object.keys(entity.fields).join(',');
-
-    const insertQuery = `
-        INSERT INTO ssot.${tabla} (${fields})
-        VALUES (${values.map((_, index) => `$${index + 1}`).join(',')})
-    `;
-
-    await pool.query(insertQuery, values);
-
-    res.send(`
-        <H2>Dato insertado</H2>
-    `);
-});
-
-app.patch(`/poc/actualizar-${tabla}`, async (req, res) => {
-    const values = Object.values(entity.fields).map((field) => req.body[field.name]);
-    const fields = Object.keys(entity.fields);
-
-    const updateQuery = `
-        UPDATE ssot.${tabla}
-        SET ${fields.map((field, index) => `${field} = $${index + 1}`).join(', ')}
-        WHERE ${entity.pk.map((pkField, index) => `${pkField} = $${fields.length + index + 1}`).join(' AND ')}
-    `;
-
-    await pool.query(updateQuery, [...values, ...entity.pk.map(pkField => req.body[pkField])]);
-
-    res.send(`
-        <H2>Dato actualizado</H2>
-    `);
-});
-app.delete(`/poc/eliminar-${tabla}`, async (req, res) => {
-    const deleteQuery = `
-        DELETE FROM ssot.${tabla}
-        WHERE ${entity.pk.map((pkField, index) => `${pkField} = $${index + 1}`).join(' AND ')}
-    `;
-
-    await pool.query(deleteQuery, entity.pk.map(pkField => req.body[pkField]));
-
-    res.send(`
-        <H2>Dato eliminado</H2>
-    `);
-
-});
-});
-
-
-
+registerEntityApi(app, pool);
+app.get('/menu', (_, res) => { res.redirect('/'); });
+app.use('/assets', express.static(fileURLToPath(new URL('../frontend', import.meta.url))));
+app.use(express.static(fileURLToPath(new URL('../../src/frontend/public', import.meta.url))));
 
 const port = 3000;
-
-app.listen(port, (error) => {
-    if (error) throw error;
-    console.log(`SSOT2026 escuchando en http://localhost:${port}/menu`);
-})
+app.listen(port, () => console.log(`SSOT2026 escuchando en http://localhost:${port}`));

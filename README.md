@@ -179,12 +179,46 @@ Migration execution remains an explicit command.
 For a host process, configure `.env`, start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.
 
-## API contract
+## Frontend and API contract
+
+Open `http://localhost:3000/` after starting the backend (`/menu` redirects there).
+The small TypeScript page discovers entities from the API and provides a table,
+create/edit form and delete confirmation for each one. Entity and field names
+are not hardcoded. Text, integer and boolean editors preserve null separately
+from empty text, zero and false. New types require an editor at compile time.
+
+`npm run build` compiles the backend and browser separately, using a TypeScript
+project reference for the backend declarations. The frontend imports the API
+contract with `import type`; no SSOT implementation, database settings, validators
+or migration code is emitted into the browser. There is no frontend framework
+or additional dependency.
+
+Every route except `/health` (the page, its assets and the API) requires HTTP Basic
+authentication against `ssot.usuarios`. The `usuarios` entity is part of the SSOT
+schema but is not exposed by the API. Create a local test user after applying
+migrations:
+
+```sh
+docker exec ssot2026-postgres-1 psql -U ssot2026_owner -d ssot2026 -c "INSERT INTO ssot.usuarios (usuario, clave) VALUES ('admin', 'admin123');"
+```
 
 `GET /health` checks the database connection. `GET /api/entities` returns the
-available entity names. `GET /api/entities/:name` returns `{name, columns, rows}`,
-with only `{name, label, type}` for each column. Unknown names return HTTP 404;
-query failures or rows inconsistent with the SSOT return HTTP 500.
+available entity names. `GET /api/entities/:name` returns `{name, pk, columns, rows}`,
+with only `{name, label, type, nullable}` for each column. Keys identify rows for
+editing/deletion; nullability controls the form's explicit "Sin valor" option.
+
+All mutations use JSON at `/api/entities/:name`:
+
+- `POST`: the complete new row.
+- `PUT`: `{key, row}`, with the original primary key and the complete replacement row.
+- `DELETE`: the primary-key object.
+
+Successful mutations return HTTP 204. The backend checks exact field sets, types,
+nullability and declared entity validators using system-definition before writing
+through the app connection. SQL values are parameterized. Unknown entities or
+missing rows return 404, invalid input returns 400, and database constraint
+conflicts return 409. Unexpected failures return 500 without exposing SQL details.
+The old `/poc/*` handlers were replaced by this shared API.
 
 The types in `src/backend/api-contract.ts` derive field names, value types,
 nullability, and primary keys from the backend definitions. Browser code can
@@ -192,4 +226,10 @@ import this contract with `import type`.
 
 ```sh
 npm run test:api
+npm run test:crud
 ```
+
+`test:api` includes API contract type checks and HTTP behavior tests. `test:crud`
+requires the configured database and exercises the app role inside a transaction
+that is always rolled back. This initial page loads all rows; pagination and
+specialized field widgets are separate future steps.

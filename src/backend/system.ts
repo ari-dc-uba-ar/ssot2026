@@ -64,39 +64,42 @@ function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatori
     return problemas;
 }
 
-const myReordsValidators = withValidators(myRecords, {validarPlan1993SinObligatorias})
+export const myContext = withValidators(myRecords, {validarPlan1993SinObligatorias})
 
-const materias = defineEntity(myReordsValidators, {
+const materias = defineEntity(myContext, {
     name: 'materias',
     record: 'materia',
     pk: ['materia'],
     validators: ['validarPlan1993SinObligatorias']
 })
 
-const pabellones = defineEntity(myReordsValidators, {
+const pabellones = defineEntity(myContext, {
     name: 'pabellones',
     record: 'pabellon',
     pk: ['pab']
 })
 
-const planes = defineEntity(myReordsValidators, {
+const planes = defineEntity(myContext, {
     name: 'planes',
     record: 'plan',
     pk: ['plan']
 })
 
-const usuarios = defineEntity(myReordsValidators, {
+const usuarios = defineEntity(myContext, {
     name: 'usuarios',
     record: 'usuario',
     pk: ['usuario']
 })
 
+// Entidades expuestas por la API; usuarios queda afuera para no exponer las claves
+export const myEntities = defineEntities({materias, pabellones, planes})
 
-export const myEntities = defineEntities({materias, pabellones, planes, usuarios})
+// Todas las entidades del esquema (las migraciones crean también usuarios)
+const allEntities = defineEntities({materias, pabellones, planes, usuarios})
 
-const snapshot = captureSystemSnapshot(myReordsValidators, {
+const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',
-    entities: myEntities,
+    entities: allEntities,
     records: myRecords.records,
 });
 if (!snapshot.ok) throw new Error(JSON.stringify(snapshot.problems));

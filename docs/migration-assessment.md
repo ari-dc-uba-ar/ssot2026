@@ -67,6 +67,7 @@ that every line is minimal.
 | `compiled-artifact.ts` | 10, 12, 18, 19 |
 | `create-resources.ts` | 9, 10, 17, 18 |
 | `data-validation.ts` | 19 |
+| `data-authoring-codec.ts` | 7, 8, 10, 19 |
 | `database-permissions.ts` | 9, 15, 20 |
 | `database-settings.ts` | 2 |
 | `dependency-order.ts` | 10 |
@@ -136,12 +137,23 @@ ValidationResult/Problem. Manual/create dependency ordering, hashing, comparison
 decision validation and execution are reused.
 Normal failure propagation needs no generic orchestration framework.
 JSON, database rows and imported modules still require boundary validation.
+Drafts now decode their complete nested shape before revision checking. Data
+authoring and immutable checkpoints share field/domain/port decoders; semantic
+compatibility checks consume those typed values. Catalog arrays reuse the core
+decoder. The unreachable manual-row compilation loop was removed.
 
-Narrower type/API improvements remain: editable-draft loading and runtime callbacks
-still have casts; optional scratch/storage APIs carry broader configuration;
-generated-data ordering still has a separate traversal with its
-own tie policy. Manual row-check authoring is limited. These do not constitute
-missing checklist capabilities. SQL mappings support 17 scalar types without
+Manual/create/data ordering now shares one dependency sorter with the existing
+lexical-queue and complete-layer policies preserved. Ancestor lookup is shared
+by overlapping-writer checks. Unused artifact wrappers, latest-attempt lookup,
+runtime grant execution, aliases, helpers and imports were removed. SQL literal
+quoting and UTF-8 hashing reuse existing primitives. TypeScript now rejects unused
+locals and parameters; exported type assertions remain compiled checks.
+
+The remaining runtime-module cast validates callable exports at the import boundary;
+TypeScript cannot verify an imported JavaScript function's signature at runtime.
+Scratch/storage APIs remain in use by baseline and verification workflows.
+Manual row-check authoring is limited. These do not constitute missing checklist
+capabilities. SQL mappings support 17 scalar types without
 length/precision parameters; arbitrary application validators are not inferred
 into SQL constraints.
 
@@ -164,8 +176,9 @@ historical declaration; new initial migrations save that resource authoritativel
 
 ## Verification
 
-- SDK checks: 146 core tests, 233 consumer tests and 22 regression tests passed.
+- SDK checks: 146 core tests, 237 consumer tests and 22 regression tests passed in the complete `test:all` run after pruning.
 - PostgreSQL 18.6 generated/manual/mixed/data integrations and historical validators passed.
 - SSOT CLI integration verified fresh roles/schema/journal, app CRUD/DDL separation, idempotence, upgrades, required-column decisions, file/drift/permission gates, concurrent rejection and rollback without pointer advancement.
-- App checks: all 9 passed. The user reset the database to the current SSOT; tests no longer depend on the deleted archived initial release. Scratch database creation uses the initial administrator, while migration execution uses the restricted owner.
-- No migration was applied to the live application database. Writes used owned scratch databases and test roles.
+- App checks: all 17 passed, including SSOT loading, migration assembly/assessment/history, API contracts and CRUD. Scratch database creation uses the initial administrator, while migration execution uses the restricted owner.
+- No migration was applied to the live application database. Migration tests used owned scratch databases and test roles; app CRUD test writes were rolled back.
+- The pruning pass removed a net 287 production lines, including the new shared decoder. Review covered unused compiler symbols, exported helpers and their consumers, duplicate implementation blocks, and the authoring/execution boundaries. No further concrete deletion was identified that preserves the supported workflows; this is a review result, not a claim that future simplification is impossible.
