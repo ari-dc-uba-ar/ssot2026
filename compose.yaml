@@ -20,14 +20,16 @@ services:
 
   backend:
     image: ssot2026-backend:local
-    build:
+    build: &backend-build
       context: .
       additional_contexts:
         system-definition: ../system-definition
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
+      migrations:
+        condition: service_completed_successfully
+    environment: &app-database
       PGHOST: postgres
       PGPORT: "5432"
       PGDATABASE: ${PGDATABASE:-ssot2026}
@@ -42,6 +44,24 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+
+  migrations:
+    image: ssot2026-backend:local
+    build: *backend-build
+    command: ["npm", "run", "migration:apply", "--", "--non-interactive"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      <<: *app-database
+      POSTGRES_USER: ${POSTGRES_USER:-ssot2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ssot2026_local}
+      MIGRATION_PGUSER: ${MIGRATION_PGUSER:-ssot2026_owner}
+      MIGRATION_PGPASSWORD: ${MIGRATION_PGPASSWORD:-ssot2026_owner_local}
+    volumes:
+      - ./migrations:/workspace/ssot2026/migrations
+    restart: "no"
+    init: true
 
 volumes:
   postgres_data:

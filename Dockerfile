@@ -10,7 +10,7 @@ WORKDIR /workspace/ssot2026
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY src ./src
-RUN npm run build
+RUN npm run migration:load
 COPY migrations ./migrations
 COPY test ./test
 

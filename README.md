@@ -161,20 +161,59 @@ npm run test:history
 The test uses an owned scratch database to verify pending status, commit/rollback,
 checksums and drift. Scratch databases use the initial administrator; production
 migrations use the owner. The current initial migration was compacted into
-[`0001_initial.sql`](migrations/entries/initial/0001_initial.sql) and metadata without
+[`0001_initial.sql`](migrations/entries/0001_initial/0001_initial.sql) and metadata without
 changing its recorded hash. Its originally external role setup is marked as a
 historical declaration. Newly generated initial migrations record that phase too.
 
 ## Run the backend
 
+Only Docker with Compose is required on the host. Node, npm and the migration
+CLI run inside the image and containers.
+
 ```sh
-docker compose up --build -d --wait
+docker compose build
+docker compose run --rm migrations
+docker compose up -d --wait
 ```
 
-Compose runs PostgreSQL 18.6 and the backend. The backend connects as the app user
-using `PGUSER`/`PGPASSWORD` or `DATABASE_URL`. Compose starts the database and app;
-run the SDK apply command above to provision a fresh database before using the app.
-Migration execution remains an explicit command.
+The build and foreground migration command print their output, including errors,
+directly in the terminal and return a nonzero exit code on failure. Continue to the
+next command after the previous one succeeds. The last command starts the app in
+the background and waits for the backend to become healthy.
+
+The image build compiles the app and loads the SSOT, SQL mapping and database
+settings with `migration:load`. Database work runs at startup: Compose waits for
+PostgreSQL 18.6 to become healthy, runs `migration:apply` in the `migrations`
+service, then starts the backend only after that service exits successfully.
+Apply provisions roles, generates migrations when needed, verifies history and
+drift, and applies pending schema/data/permission changes. Existing migrations
+are retained and already applied entries are verified on subsequent starts.
+
+The migration service receives the initial administrator and owner credentials
+from `.env` or the local defaults in `compose.yaml`. The backend connects as the
+app user using `PGUSER`/`PGPASSWORD`. Migration files and unresolved drafts persist
+in the checkout's `migrations/` directory. Changes needing data decisions stop
+startup and report the problem; resolve the saved draft before retrying.
+
+`docker compose up --build -d --wait` also applies migrations automatically.
+Detached Compose reports a failed dependency; inspect the detailed migration
+output with `docker compose logs migrations`. For a single command with live
+output, use `docker compose up --build`.
+
+To inspect migration status or review automatic startup output:
+
+```sh
+docker compose run --rm migrations npm run migration:status
+docker compose logs migrations
+```
+
+Other migration scripts can also run inside the service with
+`docker compose run --rm migrations npm run <script>`. To resolve a saved draft,
+put its answers in `migrations/answers.json` and run:
+
+```sh
+docker compose run --rm migrations npm run migration:decide -- --draft migrations/draft.json --answers migrations/answers.json
+```
 
 For a host process, configure `.env`, start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.
