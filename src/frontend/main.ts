@@ -1,5 +1,6 @@
 import type {EntityColumn, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
-import {createRow, deleteRow, listEntities, loadEntity, updateRow} from './api.js';
+import {ApiRequestError, createRow, deleteRow, listEntities, loadEntity, updateRow} from './api.js';
+import {messageOf} from './messages.js';
 
 type Column = EntityColumn<EntityName>;
 type Row = EntityRow<EntityName>;
@@ -91,7 +92,10 @@ function edit(entity: EntityResponse, row?: Row): void {
             empty.onchange = () => { editor.input.disabled = empty.checked; };
         }
         editor.input.disabled = empty.checked;
-        return {field, name: column.name, read: () => empty.checked ? null : editor.read()};
+        const error = element('span');
+        error.className = 'field-error';
+        field.append(error);
+        return {field, name: column.name, error, read: () => empty.checked ? null : editor.read()};
     });
     fields.replaceChildren(...readers.map(reader => reader.field));
     const actions = element('div');
@@ -107,8 +111,20 @@ function edit(entity: EntityResponse, row?: Row): void {
         // Editors follow the API's type/nullability metadata; the backend validates the row again.
         const next = Object.fromEntries(readers.map(reader => [reader.name, reader.read()])) as Row;
         void run(async () => {
-            if (row) await updateRow(entity.name, {key: rowKey(entity, row), row: next} as EntityUpdate<EntityName>);
-            else await createRow(entity.name, next);
+            try {
+                if (row) await updateRow(entity.name, {key: rowKey(entity, row), row: next} as EntityUpdate<EntityName>);
+                else await createRow(entity.name, next);
+            } catch (error) {
+                // The backend reports structured problems; show each one next to its field.
+                if (!(error instanceof ApiRequestError) || !error.problems.length) throw error;
+                for (const reader of readers) reader.error.textContent = '';
+                for (const problem of error.problems) {
+                    const reader = readers.find(candidate => candidate.name === problem.field);
+                    if (reader) reader.error.textContent = messageOf(problem);
+                    else editorStatus.textContent = [editorStatus.textContent, messageOf(problem)].filter(Boolean).join('; ');
+                }
+                return;
+            }
             dialog.close();
             await show(entity.name);
         });

@@ -1,6 +1,6 @@
 import express, {type Express, type Request, type Response, type NextFunction} from 'express';
 import type {Pool} from 'pg';
-import {completeEntity, instanceProblems, isPlainObject, validateInstance, type EntityInfo} from 'system-definition';
+import {completeEntity, instanceProblems, isPlainObject, validateInstance, type EntityInfo, type Problem} from 'system-definition';
 import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
 import {myContext, myEntities} from './system.js';
 import {databaseSettings} from './database.js';
@@ -8,7 +8,12 @@ import type {ApiError, EntityNamesResponse, EntityResponse} from './api-contract
 
 class ApiFailure extends Error {
     readonly status: number;
-    constructor(status: number, message: string) { super(message); this.status = status; }
+    readonly problems: readonly Problem[];
+    constructor(status: number, message: string, problems: readonly Problem[] = []) {
+        super(message);
+        this.status = status;
+        this.problems = problems;
+    }
 }
 
 function readRow(fields: EntityInfo<typeof myContext>['fields'], value: unknown): Record<string, unknown> {
@@ -18,7 +23,7 @@ function readRow(fields: EntityInfo<typeof myContext>['fields'], value: unknown)
     }
     const problems = instanceProblems(myContext, fields, value);
     if (problems.length) {
-        throw new ApiFailure(400, problems.map(p => `${p.field}: ${p.messageKey}`).join('; '));
+        throw new ApiFailure(400, problems.map(p => `${p.field}: ${p.messageKey}`).join('; '), problems);
     }
     return value;
 }
@@ -44,7 +49,7 @@ export function registerEntityApi(app: Express, pool: Pool): void {
         const validatedRow = (body: unknown) => {
             const row = readRow(entity.fields, body);
             const problems = validateInstance(myContext.validators, entity.validators, row);
-            if (problems.length) throw new ApiFailure(400, problems.map(p => p.messageKey).join('; '));
+            if (problems.length) throw new ApiFailure(400, problems.map(p => p.messageKey).join('; '), problems);
             return row;
         };
         app.route(`/api/entities/${entity.name}`)
@@ -98,6 +103,6 @@ export function registerEntityApi(app: Express, pool: Pool): void {
         const status = error instanceof ApiFailure ? error.status : conflict ? 409 : malformed ? 400 : 500;
         const message = error instanceof ApiFailure ? error.message : conflict ?? (malformed ? 'JSON inválido.' : 'No se pudieron procesar los datos.');
         if (status === 500) console.error('Entity API query failed:', error);
-        res.status(status).json({error: message} satisfies ApiError);
+        res.status(status).json({error: message, ...(error instanceof ApiFailure && error.problems.length ? {problems: error.problems} : {})} satisfies ApiError);
     });
 }

@@ -1,4 +1,13 @@
 import type {ApiError, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
+import type {Problem} from 'system-definition';
+
+export class ApiRequestError extends Error {
+    readonly problems: readonly Problem[];
+    constructor(message: string, problems: readonly Problem[] = []) {
+        super(message);
+        this.problems = problems;
+    }
+}
 
 async function request(path: string, method = 'GET', body?: unknown): Promise<Response> {
     const response = await fetch(path, {
@@ -8,7 +17,7 @@ async function request(path: string, method = 'GET', body?: unknown): Promise<Re
     });
     if (!response.ok) {
         const error = await response.json() as ApiError;
-        throw new Error(error.error);
+        throw new ApiRequestError(error.error, error.problems ?? []);
     }
     return response;
 }
