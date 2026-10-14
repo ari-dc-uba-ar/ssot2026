@@ -1,5 +1,6 @@
 :root { font-family: system-ui, sans-serif; color: #18352f; background: #f4f6f3; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; }
 main { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
 h1 { font-size: 2.5rem; margin: 8px 0; letter-spacing: -.04em; }
@@ -28,6 +29,9 @@ tr:last-child td { border-bottom: 0; }
 .actions { display: flex; gap: 8px; }
 #status { min-height: 24px; }
 #status, #editor-status { color: #8d302d; }
+#auth-status, #account-status { color: #8d302d; }
+#authentication { max-width: 480px; }
+#codes { overflow-x: auto; line-height: 1.8; }
 dialog { width: min(500px, calc(100% - 32px)); max-height: 90vh; border: 1px solid #b3c4bc; border-radius: 12px; padding: 28px; color: inherit; }
 dialog::backdrop { background: #142e2866; }
 .field { margin: 18px 0; }

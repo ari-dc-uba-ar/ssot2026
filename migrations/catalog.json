@@ -10,6 +10,11 @@
       "systemId": "ssot2026",
       "releaseId": "0001_initial",
       "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f"
+    },
+    {
+      "systemId": "ssot2026",
+      "releaseId": "0002_authentication",
+      "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a"
     }
   ],
   "migrations": [
@@ -161,6 +166,115 @@
         "after": []
       },
       "migrationHash": "dfa0e9d03681b601f50cb14abdd48b4ec02fb27df9f22d3202cad80601ebe618"
+    },
+    {
+      "migration": {
+        "id": "0002_authentication",
+        "from": {
+          "systemId": "ssot2026",
+          "releaseId": "0001_initial",
+          "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f"
+        },
+        "to": {
+          "systemId": "ssot2026",
+          "releaseId": "0002_authentication",
+          "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a"
+        },
+        "description": "",
+        "before": [],
+        "steps": [
+          {
+            "id": "001_add_table_usuarios",
+            "run": {
+              "name": "001_add_table_usuarios.sql",
+              "kind": "sql",
+              "contentHash": "7f118fcf398117d2c350f10c7509510ddeee8ff970b2b2cfd9f72100aad45aab"
+            }
+          },
+          {
+            "id": "002_add_column_usuarios_activo",
+            "run": {
+              "name": "002_add_column_usuarios_activo.sql",
+              "kind": "sql",
+              "contentHash": "fe239a6c520e557b7ed6a92806e2474eca81711e12fa61244c396cfaf0e38c80"
+            }
+          },
+          {
+            "id": "003_add_column_usuarios_recuperacion_hashes",
+            "run": {
+              "name": "003_add_column_usuarios_recuperacion_hashes.sql",
+              "kind": "sql",
+              "contentHash": "c2bd48fa1d647ba425b3998d4d12f47aa2352302bb45031f37b4a17aa2c79181"
+            }
+          },
+          {
+            "id": "004_add_column_usuarios_administrador",
+            "run": {
+              "name": "004_add_column_usuarios_administrador.sql",
+              "kind": "sql",
+              "contentHash": "b1dcd6849bf8fea0b0553c7567745ccbd8a090da2a42d1ce06ad2d1f361bb39c"
+            }
+          },
+          {
+            "id": "005_add_column_usuarios_contrasena_hash",
+            "run": {
+              "name": "005_add_column_usuarios_contrasena_hash.sql",
+              "kind": "sql",
+              "contentHash": "e57464c4cd9a03d10dfe8b593c98a3b3248f7d2a08c00ab769c043ca7045e970"
+            }
+          },
+          {
+            "id": "006_add_column_usuarios_usuario",
+            "run": {
+              "name": "006_add_column_usuarios_usuario.sql",
+              "kind": "sql",
+              "contentHash": "47fd5e144462c640fa4a75545199a1e4c61fde7ac39092b62b33d1b22d925a9e"
+            }
+          },
+          {
+            "id": "007_add_column_usuarios_version_sesion",
+            "run": {
+              "name": "007_add_column_usuarios_version_sesion.sql",
+              "kind": "sql",
+              "contentHash": "7c6cb3639d09554aca7bc157ec53260a8993b93f4de538730cefd2bf8eb3378c"
+            }
+          },
+          {
+            "id": "008_add_column_usuarios_id",
+            "run": {
+              "name": "008_add_column_usuarios_id.sql",
+              "kind": "sql",
+              "contentHash": "90045095d80e4d13435390d9b2d2223b99a7ea8f5373c6c3c7b30b37eea17b8c"
+            }
+          },
+          {
+            "id": "009_add_constraint_usuarios_usuarios_usuario_unico_key",
+            "run": {
+              "name": "009_add_constraint_usuarios_usuarios_usuario_unico_key.sql",
+              "kind": "sql",
+              "contentHash": "870bf958e151d80d6bea8a71ee60cf8c22984e5e7a2f90c50f7225fe29b8600a"
+            }
+          },
+          {
+            "id": "010_add_constraint_usuarios_usuarios_pkey",
+            "run": {
+              "name": "010_add_constraint_usuarios_usuarios_pkey.sql",
+              "kind": "sql",
+              "contentHash": "fcf247b0b16767be34d01ea7f1a3e42bf06b93159a36b07d34dc36dc74e00b70"
+            }
+          },
+          {
+            "id": "app-permissions",
+            "run": {
+              "name": "app-permissions.sql",
+              "kind": "sql",
+              "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e"
+            }
+          }
+        ],
+        "after": []
+      },
+      "migrationHash": "79ad8130feb00b7aad6514b59fa3c6b779bb6d321512335db4999f7fb9a73292"
     }
   ]
 }

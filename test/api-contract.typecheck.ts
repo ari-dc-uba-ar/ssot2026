@@ -1,4 +1,4 @@
-import type {EntityColumn, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
+import type {EntityColumn, EntityCreate, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
 import {createRow, deleteRow, updateRow} from '../src/frontend/api.js';
 
 type Assert<T extends true> = T;
@@ -8,7 +8,7 @@ export type NullableText = Assert<Equal<EntityRow<'materias'>['cod_mat'], string
 export type NullableBoolean = Assert<Equal<EntityRow<'materias'>['obligatoria'], boolean | null>>;
 export type NullableInteger = Assert<Equal<EntityRow<'pabellones'>['pisos'], number | null>>;
 export type ColumnLiteral = Assert<Equal<Extract<EntityColumn<'materias'>, {name: 'obligatoria'}>['type'], 'boolean'>>;
-export type MinimumMetadata = Assert<Equal<keyof EntityColumn<'materias'>, 'name' | 'label' | 'type' | 'nullable'>>;
+export type MinimumMetadata = Assert<Equal<keyof EntityColumn<'materias'>, 'name' | 'label' | 'type' | 'nullable' | 'writable'>>;
 export type PrimaryKey = Assert<Equal<keyof EntityKey<'materias'>, 'materia'>>;
 export type EntityAndRowsStayTogether = Assert<Equal<Extract<EntityResponse, {name: 'pabellones'}>['rows'][number], EntityRow<'pabellones'>>>;
 // @ts-expect-error Entity names come from the SSOT.
@@ -30,3 +30,13 @@ void createRow('planes', {materia: 'Wrong entity'});
 void deleteRow('planes', {materia: 'Wrong key'});
 // @ts-expect-error A key cannot be null.
 void deleteRow('planes', {plan: null});
+
+export type PublicUserFields = Assert<Equal<keyof EntityRow<'usuarios'>, 'id' | 'usuario' | 'administrador' | 'activo'>>;
+export type PublicUserColumns = Assert<Equal<EntityColumn<'usuarios'>['name'], keyof EntityRow<'usuarios'>>>;
+export type WritableUserFields = Assert<Equal<keyof EntityInput<'usuarios'>, 'usuario' | 'administrador' | 'activo' | 'contrasena'>>;
+// @ts-expect-error Password hashes cannot be read through the public API.
+export type HiddenPassword = EntityRow<'usuarios'>['contrasena_hash'];
+// @ts-expect-error A password is required when creating a user.
+export const missingPassword: EntityCreate<'usuarios'> = {usuario: 'usuario', administrador: false, activo: true};
+// @ts-expect-error Recovery hashes cannot be assigned through the public API.
+void createRow('usuarios', {usuario: 'usuario', administrador: false, activo: true, contrasena: 'a-long-password', recuperacion_hashes: '[]'});

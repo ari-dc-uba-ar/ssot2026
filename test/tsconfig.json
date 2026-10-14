@@ -4,7 +4,8 @@
         "rootDir": "..",
         "composite": false,
         "incremental": false,
-        "noEmit": true
+        "noEmit": true,
+        "lib": ["es2024", "dom", "dom.iterable"]
     },
     "include": ["api-contract.typecheck.ts"]
 }

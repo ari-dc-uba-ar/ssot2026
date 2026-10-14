@@ -3,10 +3,13 @@ import {fileURLToPath} from 'node:url';
 import {Pool} from 'pg';
 import {databaseConfig} from './database.js';
 import {registerEntityApi} from './api.js';
+import {createAuthentication, registerAuthApi} from './auth.js';
 
 const pool = new Pool(databaseConfig);
 const app = express();
-registerEntityApi(app, pool);
+const auth = createAuthentication(pool);
+registerAuthApi(app, pool, auth);
+registerEntityApi(app, pool, auth);
 
 app.get('/health', async (_, res) => {
     await pool.query('SELECT 1');

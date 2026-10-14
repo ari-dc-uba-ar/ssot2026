@@ -1,6 +1,7 @@
-import type {EntityColumn, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
-import {ApiRequestError, createRow, deleteRow, listEntities, loadEntity, updateRow} from './api.js';
+import type {EntityColumn, EntityCreate, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
+import {ApiRequestError, createRow, deleteRow, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
 import {messageOf} from './messages.js';
+import {initializeAuthentication} from './auth-ui.js';
 
 type Column = EntityColumn<EntityName>;
 type Row = EntityRow<EntityName>;
@@ -52,7 +53,8 @@ async function run(work: () => Promise<void>): Promise<void> {
     } catch (error) {
         status.textContent = editorStatus.textContent = error instanceof Error ? error.message : 'No se pudo completar la operación.';
     } finally {
-        workspace.disabled = fields.disabled = false;
+        workspace.disabled = !isAuthenticated();
+        fields.disabled = false;
     }
 }
 
@@ -71,11 +73,11 @@ function rowKey(entity: EntityResponse, row: Row): EntityKey<EntityName> {
 
 function edit(entity: EntityResponse, row?: Row): void {
     const values: Readonly<Record<string, Value>> = row ?? {};
-    const readers = entity.columns.map(column => {
+    const readers: {field: HTMLDivElement; name: string; error: HTMLSpanElement; read: () => Value}[] = entity.columns.filter(column => column.writable).map(column => {
         const editor = editors[column.type]();
         editor.input.id = `field-${column.name}`;
         editor.input.name = column.name;
-        editor.input.value = String(values[column.name] ?? (column.type === 'boolean' ? false : ''));
+        editor.input.value = String(values[column.name] ?? (column.type === 'boolean' ? entity.name === 'usuarios' && column.name === 'activo' : ''));
         const label = element('label', column.label);
         label.htmlFor = editor.input.id;
         const field = element('div');
@@ -97,6 +99,21 @@ function edit(entity: EntityResponse, row?: Row): void {
         field.append(error);
         return {field, name: column.name, error, read: () => empty.checked ? null : editor.read()};
     });
+    if (entity.name === 'usuarios') {
+        const field = element('div');
+        field.className = 'field';
+        const input = element('input');
+        input.type = 'password';
+        input.autocomplete = 'new-password';
+        input.minLength = 12;
+        input.maxLength = 128;
+        input.required = !row;
+        input.id = 'field-contrasena';
+        const label = element('label', row ? 'Nueva contraseña (opcional)' : 'Contraseña (12–128 caracteres)');
+        label.htmlFor = input.id;
+        field.append(label, input);
+        readers.push({field, name: 'contrasena', error: element('span'), read: () => input.value});
+    }
     fields.replaceChildren(...readers.map(reader => reader.field));
     const actions = element('div');
     actions.className = 'actions';
@@ -109,11 +126,12 @@ function edit(entity: EntityResponse, row?: Row): void {
     form.onsubmit = event => {
         event.preventDefault();
         // Editors follow the API's type/nullability metadata; the backend validates the row again.
-        const next = Object.fromEntries(readers.map(reader => [reader.name, reader.read()])) as Row;
+        const next = Object.fromEntries(readers.map(reader => [reader.name, reader.read()])) as Record<string, Value>;
+        if (row && next['contrasena'] === '') delete next['contrasena'];
         void run(async () => {
             try {
                 if (row) await updateRow(entity.name, {key: rowKey(entity, row), row: next} as EntityUpdate<EntityName>);
-                else await createRow(entity.name, next);
+                else await createRow(entity.name, next as EntityCreate<EntityName>);
             } catch (error) {
                 // The backend reports structured problems; show each one next to its field.
                 if (!(error instanceof ApiRequestError) || !error.problems.length) throw error;
@@ -126,6 +144,7 @@ function edit(entity: EntityResponse, row?: Row): void {
                 return;
             }
             dialog.close();
+            form.reset();
             await show(entity.name);
         });
     };
@@ -173,13 +192,23 @@ async function show(name: EntityName): Promise<void> {
     if (!entity.rows.length) content.append(element('p', 'No hay registros. Creá el primero para comenzar.'));
 }
 
-void run(async () => {
-    const names = await listEntities();
-    selector.replaceChildren(...names.map(name => new Option(name, name)));
-    selector.onchange = () => {
-        const name = names[selector.selectedIndex];
-        if (name) void run(() => show(name));
-    };
-    if (names[0]) await show(names[0]);
-    else content.textContent = 'No hay entidades disponibles.';
+initializeAuthentication(active => {
+    workspace.hidden = !active;
+    if (!active) {
+        dialog.close();
+        form.reset();
+        content.replaceChildren();
+        selector.replaceChildren();
+        return;
+    }
+    void run(async () => {
+        const names = await listEntities();
+        selector.replaceChildren(...names.map(name => new Option(name, name)));
+        selector.onchange = () => {
+            const name = names[selector.selectedIndex];
+            if (name) void run(() => show(name));
+        };
+        if (names[0]) await show(names[0]);
+        else content.textContent = 'No hay entidades disponibles.';
+    });
 });

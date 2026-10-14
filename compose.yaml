@@ -29,12 +29,14 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
-    environment: &app-database
-      PGHOST: postgres
-      PGPORT: "5432"
-      PGDATABASE: ${PGDATABASE:-ssot2026}
-      PGUSER: ${PGUSER:-ssot2026_user}
-      PGPASSWORD: ${PGPASSWORD:-ssot2026_app_local}
+    environment:
+      <<: &app-database
+        PGHOST: postgres
+        PGPORT: "5432"
+        PGDATABASE: ${PGDATABASE:-ssot2026}
+        PGUSER: ${PGUSER:-ssot2026_user}
+        PGPASSWORD: ${PGPASSWORD:-ssot2026_app_local}
+      JWT_SECRET: ${JWT_SECRET:?Configurá JWT_SECRET con al menos 32 bytes aleatorios}
     ports:
       - "127.0.0.1:3000:3000"
     init: true

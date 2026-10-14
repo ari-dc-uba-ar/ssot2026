@@ -1,108 +1,100 @@
-import express, {type Express, type Request, type Response, type NextFunction} from 'express';
+import express, {type Express} from 'express';
 import type {Pool} from 'pg';
-import {completeEntity, instanceProblems, isPlainObject, validateInstance, type EntityInfo, type Problem} from 'system-definition';
+import {completeEntity, instanceProblems, validateInstance, type EntityInfo} from 'system-definition';
 import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
-import {myContext, myEntities} from './system.js';
+import {myContext, myEntities, authenticationEntity} from './system.js';
 import {databaseSettings} from './database.js';
 import type {ApiError, EntityNamesResponse, EntityResponse} from './api-contract.js';
-
-class ApiFailure extends Error {
-    readonly status: number;
-    readonly problems: readonly Problem[];
-    constructor(status: number, message: string, problems: readonly Problem[] = []) {
-        super(message);
-        this.status = status;
-        this.problems = problems;
-    }
-}
+import {ApiFailure, apiErrorHandler, readObject} from './api-errors.js';
+import {type Authentication, principal, requireAdministrator} from './auth.js';
+import {allowedFields} from './column-security.js';
+import {administerUser, insertUser, updateUser} from './users.js';
 
 function readRow(fields: EntityInfo<typeof myContext>['fields'], value: unknown): Record<string, unknown> {
-    const names = Object.keys(fields);
-    if (!isPlainObject(value) || Object.keys(value).length !== names.length || names.some(name => !Object.hasOwn(value, name))) {
-        throw new ApiFailure(400, 'Se deben enviar exactamente los campos indicados por la API.');
-    }
-    const problems = instanceProblems(myContext, fields, value);
-    if (problems.length) {
-        throw new ApiFailure(400, problems.map(p => `${p.field}: ${p.messageKey}`).join('; '), problems);
-    }
-    return value;
+    const row = readObject(value, Object.keys(fields));
+    const problems = instanceProblems(myContext, fields, row);
+    if (problems.length) throw new ApiFailure(400, problems.map(p => `${p.field}: ${p.messageKey}`).join('; '), problems);
+    return row;
 }
 
-export function registerEntityApi(app: Express, pool: Pool): void {
-    app.use('/api/entities', express.json({limit: '64kb'}));
-    app.get('/api/entities', (_, res) => {
-        res.json(Object.values(myEntities).map(entity => entity.name) satisfies EntityNamesResponse);
+export function registerEntityApi(app: Express, pool: Pool, auth: Authentication): void {
+    const router = express.Router();
+    router.use(auth.requireUser);
+    router.use(express.json({limit: '64kb'}));
+    router.get('/', (_req, res) => {
+        res.json(Object.values(myEntities).filter(entity => entity.name !== authenticationEntity || principal(res).administrador)
+            .map(entity => entity.name) satisfies EntityNamesResponse);
     });
     for (const definition of Object.values(myEntities)) {
         const entity: EntityInfo<typeof myContext> = completeEntity(myContext, definition);
-        const names = Object.keys(entity.fields);
-        const fields = names.map(quote).join(', ');
+        const isUsers = entity.name === authenticationEntity;
+        const readable = allowedFields(entity, 'read');
+        const writable = allowedFields(entity, 'write');
+        const readNames = Object.keys(readable), writeNames = Object.keys(writable);
+        const fields = readNames.map(quote).join(', ');
+        const writeFields = writeNames.map(quote).join(', ');
         const table = `${quote(databaseSettings.database.schema)}.${quote(entity.name)}`;
         const keys = Object.fromEntries(entity.pk.map(name => [name, entity.fields[name]!]));
-        const columns = Object.values(entity.fields).map(({name, label, type, nullable}) => ({name, label, type, nullable}));
-        const values = (row: Record<string, unknown>) => names.map(name => row[name]);
+        const columns = Object.values(readable).map(({name, label, type, nullable, writable}) => ({name, label, type, nullable, writable}));
+        const values = (row: Record<string, unknown>) => writeNames.map(name => row[name]);
         const keyValues = (key: unknown) => {
             const row = readRow(keys, key);
             return entity.pk.map(name => row[name]);
         };
         const where = (offset = 0) => entity.pk.map((name, i) => `${quote(name)} = $${offset + i + 1}`).join(' AND ');
-        const validatedRow = (body: unknown) => {
-            const row = readRow(entity.fields, body);
+        const validatedRow = (body: unknown, create: boolean) => {
+            const input = readObject(body, [...writeNames, ...(isUsers && create ? ['contrasena'] : [])], isUsers && !create ? ['contrasena'] : []);
+            const row = readRow(writable, Object.fromEntries(writeNames.map(name => [name, input[name]])));
             const problems = validateInstance(myContext.validators, entity.validators, row);
             if (problems.length) throw new ApiFailure(400, problems.map(p => p.messageKey).join('; '), problems);
-            return row;
+            return {row, password: input['contrasena']};
         };
-        app.route(`/api/entities/${entity.name}`)
-            .get(async (_, res) => {
+        if (isUsers) router.use(`/${entity.name}`, requireAdministrator);
+        router.route(`/${entity.name}`)
+            .get(async (_req, res) => {
                 const result = await pool.query<Record<string, unknown>>(`SELECT ${fields} FROM ${table} ORDER BY ${entity.pk.map(quote).join(', ')}`);
                 const rows = result.rows.map(row => {
-                    const projected = Object.fromEntries(names.map(name => [name, row[name]]));
-                    if (names.some(name => !Object.hasOwn(row, name)) || instanceProblems(myContext, entity.fields, projected).length) {
+                    const projected = Object.fromEntries(readNames.map(name => [name, row[name]]));
+                    if (readNames.some(name => !Object.hasOwn(row, name)) || instanceProblems(myContext, readable, projected).length) {
                         throw new Error(`Database row does not match the SSOT for ${entity.name}`);
                     }
                     return projected;
                 });
-                // Reflection loses field literals; every returned value was checked against the SSOT.
                 res.json({name: entity.name, pk: entity.pk, columns, rows} as EntityResponse);
             })
             .post(async (req, res) => {
-                const row = validatedRow(req.body);
-                await pool.query(`INSERT INTO ${table} (${fields}) VALUES (${names.map((_, i) => `$${i + 1}`).join(', ')})`, values(row));
+                const {row, password} = validatedRow(req.body, true);
+                if (isUsers) await administerUser(pool, principal(res), client => insertUser(client, row, password));
+                else await pool.query(`INSERT INTO ${table} (${writeFields}) VALUES (${writeNames.map((_, i) => `$${i + 1}`).join(', ')})`, values(row));
                 res.sendStatus(204);
             })
             .put(async (req, res) => {
-                const body: unknown = req.body;
-                if (!isPlainObject(body) || Object.keys(body).length !== 2 || !Object.hasOwn(body, 'key') || !Object.hasOwn(body, 'row')) {
-                    throw new ApiFailure(400, 'Se requiere {key, row}.');
+                const body = readObject(req.body, ['key', 'row']);
+                const {row, password} = validatedRow(body['row'], false);
+                const key = keyValues(body['key']);
+                if (isUsers) await administerUser(pool, principal(res), client => updateUser(client, principal(res), key[0] as string, row, password));
+                else {
+                    const result = await pool.query(`UPDATE ${table} SET ${writeNames.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(writeNames.length)}`, [...values(row), ...key]);
+                    if (result.rowCount === 0) throw new ApiFailure(404, 'El registro ya no existe.');
                 }
-                const row = validatedRow(body['row']);
-                const result = await pool.query(`UPDATE ${table} SET ${names.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(names.length)}`, [...values(row), ...keyValues(body['key'])]);
-                if (result.rowCount === 0) throw new ApiFailure(404, 'El registro ya no existe.');
                 res.sendStatus(204);
             })
             .delete(async (req, res) => {
-                const result = await pool.query(`DELETE FROM ${table} WHERE ${where()}`, keyValues(req.body));
-                if (result.rowCount === 0) throw new ApiFailure(404, 'El registro ya no existe.');
+                const key = keyValues(req.body);
+                if (isUsers) {
+                    if (key[0] === principal(res).id) throw new ApiFailure(409, 'No podés eliminar tu propia cuenta.');
+                    await administerUser(pool, principal(res), async client => {
+                        const result = await client.query(`DELETE FROM ${table} WHERE ${where()}`, key);
+                        if (!result.rowCount) throw new ApiFailure(404, 'El registro ya no existe.');
+                    });
+                } else {
+                    const result = await pool.query(`DELETE FROM ${table} WHERE ${where()}`, key);
+                    if (!result.rowCount) throw new ApiFailure(404, 'El registro ya no existe.');
+                }
                 res.sendStatus(204);
             });
     }
-    app.use('/api/entities', (_, res) => {
-        res.status(404).json({error: 'Entidad desconocida'} satisfies ApiError);
-    });
-    app.use('/api/entities', (error: unknown, _req: Request, res: Response, _next: NextFunction) => {
-        const conflicts: Record<string, string> = {
-            '23505': 'Ya existe un registro con esa clave.',
-            '23503': 'El registro tiene una referencia inválida o está siendo utilizado.',
-            '23502': 'Falta un campo obligatorio.',
-            '23514': 'Los datos no cumplen una restricción.',
-            '22003': 'Un número está fuera del rango permitido.',
-        };
-        const code = error instanceof Error && 'code' in error ? String(error.code) : '';
-        const conflict = conflicts[code];
-        const malformed = error instanceof SyntaxError && 'body' in error;
-        const status = error instanceof ApiFailure ? error.status : conflict ? 409 : malformed ? 400 : 500;
-        const message = error instanceof ApiFailure ? error.message : conflict ?? (malformed ? 'JSON inválido.' : 'No se pudieron procesar los datos.');
-        if (status === 500) console.error('Entity API query failed:', error);
-        res.status(status).json({error: message, ...(error instanceof ApiFailure && error.problems.length ? {problems: error.problems} : {})} satisfies ApiError);
-    });
+    router.use((_req, res) => { res.status(404).json({error: 'Entidad desconocida'} satisfies ApiError); });
+    router.use(apiErrorHandler);
+    app.use('/api/entities', router);
 }

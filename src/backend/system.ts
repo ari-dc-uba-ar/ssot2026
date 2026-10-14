@@ -11,6 +11,8 @@ type MyFieldDef = CoreFieldDef<typeof commonTypeDefs> & {
     label?: string
     description?: string
     maxLength?: number
+    readable?: boolean
+    writable?: boolean
 }
 
 const myTypes = defineTypes({
@@ -22,7 +24,9 @@ const myTypes = defineTypes({
         isName     : fieldDef.isName ?? false,
         label      : fieldDef.label ?? name.replace(/_/g,' '),
         description: fieldDef.description ?? '',
-        maxLength  : fieldDef.maxLength ?? 100
+        maxLength  : fieldDef.maxLength ?? 100,
+        readable   : fieldDef.readable ?? true,
+        writable   : fieldDef.writable ?? true,
     }),
 })
 
@@ -44,7 +48,17 @@ const pabellon = defineRecord(myTypes,{
     pisos       : {type:'integer'},
 });
 
-export const myRecords = withRecords(myTypes, {materia, pabellon, plan})
+const usuario = defineRecord(myTypes, {
+    id: {type: 'text', nullable: false, writable: false as const},
+    usuario: {type: 'text', nullable: false},
+    administrador: {type: 'boolean', nullable: false},
+    activo: {type: 'boolean', nullable: false},
+    contrasena_hash: {type: 'text', nullable: false, readable: false as const, writable: false as const},
+    recuperacion_hashes: {type: 'text', nullable: false, readable: false as const, writable: false as const},
+    version_sesion: {type: 'text', nullable: false, readable: false as const, writable: false as const},
+});
+
+export const myRecords = withRecords(myTypes, {materia, pabellon, plan, usuario})
 
 function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatoria?:boolean | null}){
     var problemas: Problem[] = []
@@ -80,7 +94,16 @@ const planes = defineEntity(myContext, {
     pk: ['plan']
 })
 
-export const myEntities = defineEntities({materias, pabellones, planes})
+// Required by authentication, including the narrowly scoped anonymous login/recovery operations.
+export const authenticationEntity = 'usuarios';
+const usuarios = defineEntity(myContext, {
+    name: authenticationEntity,
+    record: 'usuario',
+    pk: ['id'],
+    uks: {usuario_unico: ['usuario']},
+});
+
+export const myEntities = defineEntities({materias, pabellones, planes, usuarios})
 
 const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',

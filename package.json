@@ -3,6 +3,7 @@
     "type": "module",
     "dependencies": {
         "express": "^5.2.1",
+        "jose": "^6.2.12",
         "pg": "^8.23.0",
         "system-definition": "file:../system-definition",
         "@system-definition/postgres-migrations": "file:../system-definition/consumers/postgres-migrations"
@@ -16,6 +17,7 @@
     "scripts": {
         "build": "tsc -b ./src/backend && tsc -p ./src/frontend",
         "start": "node --env-file-if-exists=.env ./dist/backend/server",
+        "auth:create-admin": "node --env-file-if-exists=.env ./dist/backend/create-admin.js",
         "ssot:load": "npm run build && postgres-migrations capture --ssot ./dist/backend/system.js",
         "migration:load": "npm run build && postgres-migrations capture --ssot ./dist/backend/system.js --database ./dist/backend/database.js",
         "migration:assess": "npm run build && postgres-migrations assess --ssot ./dist/backend/system.js --database ./dist/backend/database.js",
@@ -29,7 +31,7 @@
         "test:assembly": "npm run build && node --env-file-if-exists=.env --test test/assembly.test.mjs",
         "test:history": "npm run build && node --env-file-if-exists=.env --test test/history.test.mjs",
         "test:ssot": "npm run build && node --test test/ssot.test.mjs",
-        "test:api": "npm run build && tsc -p test && node --test test/api.test.mjs",
-        "test:crud": "npm run build && node --env-file-if-exists=.env --test test/crud.integration.test.mjs"
+        "test:api": "npm run build && tsc -p test && node --test test/api.test.mjs test/auth.test.mjs",
+        "test:crud": "npm run build && node --env-file-if-exists=.env --test test/crud.integration.test.mjs test/auth.integration.test.mjs"
     }
 }

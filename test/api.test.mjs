@@ -3,15 +3,26 @@ import test from 'node:test';
 import express from 'express';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {myEntities} from '../dist/backend/system.js';
+import {createAuthentication} from '../dist/backend/auth.js';
+
+const tokens = new Map();
+const fetch = (url, options = {}) => globalThis.fetch(url, {...options,
+    headers: {...options.headers, Authorization: `Bearer ${tokens.get(new URL(url).origin)}`},
+});
 
 async function startApi(t, query) {
     const app = express();
-    registerEntityApi(app, {query});
+    const user = {id: 'admin', usuario: 'admin', administrador: true, activo: true, version_sesion: 'test-version'};
+    const auth = createAuthentication({query: async () => ({rows: [user]})}, 'test-only-secret-with-at-least-32-bytes');
+    registerEntityApi(app, {query}, auth);
     const server = await new Promise(resolve => {
         const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
     });
     t.after(() => new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())));
-    return `http://127.0.0.1:${server.address().port}`;
+    const base = `http://127.0.0.1:${server.address().port}`;
+    tokens.set(base, (await auth.issueToken(user)).token);
+    t.after(() => tokens.delete(base));
+    return base;
 }
 
 test('entity discovery comes from the SSOT and needs no database query', async t => {
@@ -38,10 +49,10 @@ test('entity data preserves JSON value types and exposes only display metadata',
         name: 'materias',
         pk: ['materia'],
         columns: [
-            {name: 'cod_mat', label: 'cod mat', type: 'text', nullable: true},
-            {name: 'materia', label: 'materia', type: 'text', nullable: false},
-            {name: 'plan', label: 'plan', type: 'integer', nullable: true},
-            {name: 'obligatoria', label: 'obligatoria', type: 'boolean', nullable: true},
+            {name: 'cod_mat', label: 'cod mat', type: 'text', nullable: true, writable: true},
+            {name: 'materia', label: 'materia', type: 'text', nullable: false, writable: true},
+            {name: 'plan', label: 'plan', type: 'integer', nullable: true, writable: true},
+            {name: 'obligatoria', label: 'obligatoria', type: 'boolean', nullable: true, writable: true},
         ],
         rows: [{cod_mat: null, materia: 'Álgebra', plan: 2026, obligatoria: false}],
     });

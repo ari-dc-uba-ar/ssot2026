@@ -1,0 +1,1952 @@
+{
+  "states/from.json": {
+    "namespace": "ssot",
+    "persistence": {
+      "entities": [
+        "materias",
+        "pabellones",
+        "planes"
+      ],
+      "representations": {
+        "postgres": {
+          "boolean": "boolean",
+          "integer": "integer",
+          "text": "text"
+        }
+      }
+    },
+    "releaseId": "0001_initial",
+    "schema": {
+      "engineVersion": "18.6",
+      "formatVersion": 1,
+      "objects": [
+        {
+          "identity": {
+            "kind": "table",
+            "name": "materias",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "cod_mat",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "materia",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "obligatoria",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "materia"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"materia\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "materias_pkey",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "pabellones",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pab",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pabellon",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pisos",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "pab"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"pab\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "pabellones_pkey",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "planes",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "descripcion",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "plan"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"plan\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "planes_pkey",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        }
+      ],
+      "schemas": [
+        "ssot"
+      ]
+    },
+    "ssot": {
+      "entities": {
+        "materias": {
+          "fields": {
+            "cod_mat": {
+              "description": "",
+              "isName": false,
+              "label": "cod mat",
+              "maxLength": 100,
+              "name": "cod_mat",
+              "nullable": true,
+              "type": "text"
+            },
+            "materia": {
+              "description": "",
+              "isName": false,
+              "label": "materia",
+              "maxLength": 100,
+              "name": "materia",
+              "nullable": false,
+              "type": "text"
+            },
+            "obligatoria": {
+              "description": "",
+              "isName": false,
+              "label": "obligatoria",
+              "maxLength": 100,
+              "name": "obligatoria",
+              "nullable": true,
+              "type": "boolean"
+            },
+            "plan": {
+              "description": "",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": true,
+              "type": "integer"
+            }
+          },
+          "fks": {},
+          "name": "materias",
+          "pk": [
+            "materia"
+          ],
+          "record": "materia",
+          "uks": {},
+          "validators": [
+            "validarPlan1993SinObligatorias"
+          ]
+        },
+        "pabellones": {
+          "fields": {
+            "pab": {
+              "description": "",
+              "isName": false,
+              "label": "pab",
+              "maxLength": 100,
+              "name": "pab",
+              "nullable": false,
+              "type": "text"
+            },
+            "pabellon": {
+              "description": "",
+              "isName": false,
+              "label": "pabellon",
+              "maxLength": 100,
+              "name": "pabellon",
+              "nullable": true,
+              "type": "text"
+            },
+            "pisos": {
+              "description": "",
+              "isName": false,
+              "label": "pisos",
+              "maxLength": 100,
+              "name": "pisos",
+              "nullable": true,
+              "type": "integer"
+            }
+          },
+          "fks": {},
+          "name": "pabellones",
+          "pk": [
+            "pab"
+          ],
+          "record": "pabellon",
+          "uks": {},
+          "validators": []
+        },
+        "planes": {
+          "fields": {
+            "descripcion": {
+              "description": "",
+              "isName": false,
+              "label": "descripcion",
+              "maxLength": 100,
+              "name": "descripcion",
+              "nullable": true,
+              "type": "text"
+            },
+            "plan": {
+              "description": "",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": false,
+              "type": "integer"
+            }
+          },
+          "fks": {},
+          "name": "planes",
+          "pk": [
+            "plan"
+          ],
+          "record": "plan",
+          "uks": {},
+          "validators": []
+        }
+      },
+      "formatVersion": 1,
+      "records": {
+        "materia": {
+          "cod_mat": {
+            "description": "",
+            "isName": false,
+            "label": "cod mat",
+            "maxLength": 100,
+            "name": "cod_mat",
+            "nullable": true,
+            "type": "text"
+          },
+          "materia": {
+            "description": "",
+            "isName": false,
+            "label": "materia",
+            "maxLength": 100,
+            "name": "materia",
+            "nullable": true,
+            "type": "text"
+          },
+          "obligatoria": {
+            "description": "",
+            "isName": false,
+            "label": "obligatoria",
+            "maxLength": 100,
+            "name": "obligatoria",
+            "nullable": true,
+            "type": "boolean"
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "pabellon": {
+          "pab": {
+            "description": "",
+            "isName": false,
+            "label": "pab",
+            "maxLength": 100,
+            "name": "pab",
+            "nullable": true,
+            "type": "text"
+          },
+          "pabellon": {
+            "description": "",
+            "isName": false,
+            "label": "pabellon",
+            "maxLength": 100,
+            "name": "pabellon",
+            "nullable": true,
+            "type": "text"
+          },
+          "pisos": {
+            "description": "",
+            "isName": false,
+            "label": "pisos",
+            "maxLength": 100,
+            "name": "pisos",
+            "nullable": true,
+            "type": "integer"
+          }
+        },
+        "plan": {
+          "descripcion": {
+            "description": "",
+            "isName": false,
+            "label": "descripcion",
+            "maxLength": 100,
+            "name": "descripcion",
+            "nullable": true,
+            "type": "text"
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "type": "integer"
+          }
+        }
+      },
+      "systemId": "ssot2026",
+      "typeNames": [
+        "text",
+        "integer",
+        "boolean"
+      ]
+    }
+  },
+  "states/to.json": {
+    "namespace": "ssot",
+    "persistence": {
+      "entities": [
+        "materias",
+        "pabellones",
+        "planes",
+        "usuarios"
+      ],
+      "representations": {
+        "postgres": {
+          "boolean": "boolean",
+          "integer": "integer",
+          "text": "text"
+        }
+      }
+    },
+    "releaseId": "0002_authentication",
+    "schema": {
+      "engineVersion": "18.6",
+      "formatVersion": 1,
+      "objects": [
+        {
+          "identity": {
+            "kind": "table",
+            "name": "materias",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "cod_mat",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "materia",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "obligatoria",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "materia"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"materia\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "materias_pkey",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "pabellones",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pab",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pabellon",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pisos",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "pab"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"pab\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "pabellones_pkey",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "planes",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "descripcion",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "plan"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"plan\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "planes_pkey",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "usuarios",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "activo",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "administrador",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "contrasena_hash",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "id",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "recuperacion_hashes",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "usuario",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "version_sesion",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "id"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"id\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "usuarios_pkey",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "columns": [
+            "usuario"
+          ],
+          "constraintKind": "unique",
+          "deferrable": false,
+          "definition": "UNIQUE (\"usuario\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "usuarios_usuario_unico_key",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        }
+      ],
+      "schemas": [
+        "ssot"
+      ]
+    },
+    "ssot": {
+      "entities": {
+        "materias": {
+          "fields": {
+            "cod_mat": {
+              "description": "",
+              "isName": false,
+              "label": "cod mat",
+              "maxLength": 100,
+              "name": "cod_mat",
+              "nullable": true,
+              "readable": true,
+              "type": "text",
+              "writable": true
+            },
+            "materia": {
+              "description": "",
+              "isName": false,
+              "label": "materia",
+              "maxLength": 100,
+              "name": "materia",
+              "nullable": false,
+              "readable": true,
+              "type": "text",
+              "writable": true
+            },
+            "obligatoria": {
+              "description": "",
+              "isName": false,
+              "label": "obligatoria",
+              "maxLength": 100,
+              "name": "obligatoria",
+              "nullable": true,
+              "readable": true,
+              "type": "boolean",
+              "writable": true
+            },
+            "plan": {
+              "description": "",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": true,
+              "readable": true,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "materias",
+          "pk": [
+            "materia"
+          ],
+          "record": "materia",
+          "uks": {},
+          "validators": [
+            "validarPlan1993SinObligatorias"
+          ]
+        },
+        "pabellones": {
+          "fields": {
+            "pab": {
+              "description": "",
+              "isName": false,
+              "label": "pab",
+              "maxLength": 100,
+              "name": "pab",
+              "nullable": false,
+              "readable": true,
+              "type": "text",
+              "writable": true
+            },
+            "pabellon": {
+              "description": "",
+              "isName": false,
+              "label": "pabellon",
+              "maxLength": 100,
+              "name": "pabellon",
+              "nullable": true,
+              "readable": true,
+              "type": "text",
+              "writable": true
+            },
+            "pisos": {
+              "description": "",
+              "isName": false,
+              "label": "pisos",
+              "maxLength": 100,
+              "name": "pisos",
+              "nullable": true,
+              "readable": true,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "pabellones",
+          "pk": [
+            "pab"
+          ],
+          "record": "pabellon",
+          "uks": {},
+          "validators": []
+        },
+        "planes": {
+          "fields": {
+            "descripcion": {
+              "description": "",
+              "isName": false,
+              "label": "descripcion",
+              "maxLength": 100,
+              "name": "descripcion",
+              "nullable": true,
+              "readable": true,
+              "type": "text",
+              "writable": true
+            },
+            "plan": {
+              "description": "",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": false,
+              "readable": true,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "planes",
+          "pk": [
+            "plan"
+          ],
+          "record": "plan",
+          "uks": {},
+          "validators": []
+        },
+        "usuarios": {
+          "fields": {
+            "activo": {
+              "description": "",
+              "isName": false,
+              "label": "activo",
+              "maxLength": 100,
+              "name": "activo",
+              "nullable": false,
+              "readable": true,
+              "type": "boolean",
+              "writable": true
+            },
+            "administrador": {
+              "description": "",
+              "isName": false,
+              "label": "administrador",
+              "maxLength": 100,
+              "name": "administrador",
+              "nullable": false,
+              "readable": true,
+              "type": "boolean",
+              "writable": true
+            },
+            "contrasena_hash": {
+              "description": "",
+              "isName": false,
+              "label": "contrasena hash",
+              "maxLength": 100,
+              "name": "contrasena_hash",
+              "nullable": false,
+              "readable": false,
+              "type": "text",
+              "writable": false
+            },
+            "id": {
+              "description": "",
+              "isName": false,
+              "label": "id",
+              "maxLength": 100,
+              "name": "id",
+              "nullable": false,
+              "readable": true,
+              "type": "text",
+              "writable": false
+            },
+            "recuperacion_hashes": {
+              "description": "",
+              "isName": false,
+              "label": "recuperacion hashes",
+              "maxLength": 100,
+              "name": "recuperacion_hashes",
+              "nullable": false,
+              "readable": false,
+              "type": "text",
+              "writable": false
+            },
+            "usuario": {
+              "description": "",
+              "isName": false,
+              "label": "usuario",
+              "maxLength": 100,
+              "name": "usuario",
+              "nullable": false,
+              "readable": true,
+              "type": "text",
+              "writable": true
+            },
+            "version_sesion": {
+              "description": "",
+              "isName": false,
+              "label": "version sesion",
+              "maxLength": 100,
+              "name": "version_sesion",
+              "nullable": false,
+              "readable": false,
+              "type": "text",
+              "writable": false
+            }
+          },
+          "fks": {},
+          "name": "usuarios",
+          "pk": [
+            "id"
+          ],
+          "record": "usuario",
+          "uks": {
+            "usuario_unico": [
+              "usuario"
+            ]
+          },
+          "validators": []
+        }
+      },
+      "formatVersion": 1,
+      "records": {
+        "materia": {
+          "cod_mat": {
+            "description": "",
+            "isName": false,
+            "label": "cod mat",
+            "maxLength": 100,
+            "name": "cod_mat",
+            "nullable": true,
+            "readable": true,
+            "type": "text",
+            "writable": true
+          },
+          "materia": {
+            "description": "",
+            "isName": false,
+            "label": "materia",
+            "maxLength": 100,
+            "name": "materia",
+            "nullable": true,
+            "readable": true,
+            "type": "text",
+            "writable": true
+          },
+          "obligatoria": {
+            "description": "",
+            "isName": false,
+            "label": "obligatoria",
+            "maxLength": 100,
+            "name": "obligatoria",
+            "nullable": true,
+            "readable": true,
+            "type": "boolean",
+            "writable": true
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "readable": true,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "pabellon": {
+          "pab": {
+            "description": "",
+            "isName": false,
+            "label": "pab",
+            "maxLength": 100,
+            "name": "pab",
+            "nullable": true,
+            "readable": true,
+            "type": "text",
+            "writable": true
+          },
+          "pabellon": {
+            "description": "",
+            "isName": false,
+            "label": "pabellon",
+            "maxLength": 100,
+            "name": "pabellon",
+            "nullable": true,
+            "readable": true,
+            "type": "text",
+            "writable": true
+          },
+          "pisos": {
+            "description": "",
+            "isName": false,
+            "label": "pisos",
+            "maxLength": 100,
+            "name": "pisos",
+            "nullable": true,
+            "readable": true,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "plan": {
+          "descripcion": {
+            "description": "",
+            "isName": false,
+            "label": "descripcion",
+            "maxLength": 100,
+            "name": "descripcion",
+            "nullable": true,
+            "readable": true,
+            "type": "text",
+            "writable": true
+          },
+          "plan": {
+            "description": "",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "readable": true,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "usuario": {
+          "activo": {
+            "description": "",
+            "isName": false,
+            "label": "activo",
+            "maxLength": 100,
+            "name": "activo",
+            "nullable": false,
+            "readable": true,
+            "type": "boolean",
+            "writable": true
+          },
+          "administrador": {
+            "description": "",
+            "isName": false,
+            "label": "administrador",
+            "maxLength": 100,
+            "name": "administrador",
+            "nullable": false,
+            "readable": true,
+            "type": "boolean",
+            "writable": true
+          },
+          "contrasena_hash": {
+            "description": "",
+            "isName": false,
+            "label": "contrasena hash",
+            "maxLength": 100,
+            "name": "contrasena_hash",
+            "nullable": false,
+            "readable": false,
+            "type": "text",
+            "writable": false
+          },
+          "id": {
+            "description": "",
+            "isName": false,
+            "label": "id",
+            "maxLength": 100,
+            "name": "id",
+            "nullable": false,
+            "readable": true,
+            "type": "text",
+            "writable": false
+          },
+          "recuperacion_hashes": {
+            "description": "",
+            "isName": false,
+            "label": "recuperacion hashes",
+            "maxLength": 100,
+            "name": "recuperacion_hashes",
+            "nullable": false,
+            "readable": false,
+            "type": "text",
+            "writable": false
+          },
+          "usuario": {
+            "description": "",
+            "isName": false,
+            "label": "usuario",
+            "maxLength": 100,
+            "name": "usuario",
+            "nullable": false,
+            "readable": true,
+            "type": "text",
+            "writable": true
+          },
+          "version_sesion": {
+            "description": "",
+            "isName": false,
+            "label": "version sesion",
+            "maxLength": 100,
+            "name": "version_sesion",
+            "nullable": false,
+            "readable": false,
+            "type": "text",
+            "writable": false
+          }
+        }
+      },
+      "systemId": "ssot2026",
+      "typeNames": [
+        "text",
+        "integer",
+        "boolean"
+      ]
+    }
+  },
+  "authoring.json": {
+    "base": {
+      "from": {
+        "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f",
+        "releaseId": "0001_initial",
+        "systemId": "ssot2026"
+      },
+      "fromPersistenceHash": "7cdd17033f1dcf8c2c94e15a6bac1702b62b25eccf90da7640705c8c72b2f7fe",
+      "fromSnapshotHash": "d230ab5721ce03d80d3120cb54209384db1ffcb5f1d357aec100f7d309b93789",
+      "to": {
+        "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a",
+        "releaseId": "0002_authentication",
+        "systemId": "ssot2026"
+      },
+      "toPersistenceHash": "9d5713e2d9a48ba662c2a1de61fc865649e0d6168944b8f260c84e5677d3b4ee",
+      "toSnapshotHash": "c09c9d45179e08f658a8699ae22178f12cece9f8ef6f5b3adc13cd4e69816bb3"
+    },
+    "checkpoints": [],
+    "decisions": [],
+    "draftHash": "9d7520fd3c4ec2b6b15a947d32e4e46ab593a6b06c69d9ca560ebb24e26cd270",
+    "formatVersion": 1,
+    "migration": {
+      "after": [],
+      "before": [],
+      "description": "",
+      "from": {
+        "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f",
+        "releaseId": "0001_initial",
+        "systemId": "ssot2026"
+      },
+      "id": "0002_authentication",
+      "steps": [
+        {
+          "id": "001_add_table_usuarios",
+          "run": {
+            "contentHash": "7f118fcf398117d2c350f10c7509510ddeee8ff970b2b2cfd9f72100aad45aab",
+            "kind": "sql",
+            "name": "001_add_table_usuarios.sql"
+          }
+        },
+        {
+          "id": "002_add_column_usuarios_activo",
+          "run": {
+            "contentHash": "fe239a6c520e557b7ed6a92806e2474eca81711e12fa61244c396cfaf0e38c80",
+            "kind": "sql",
+            "name": "002_add_column_usuarios_activo.sql"
+          }
+        },
+        {
+          "id": "003_add_column_usuarios_recuperacion_hashes",
+          "run": {
+            "contentHash": "c2bd48fa1d647ba425b3998d4d12f47aa2352302bb45031f37b4a17aa2c79181",
+            "kind": "sql",
+            "name": "003_add_column_usuarios_recuperacion_hashes.sql"
+          }
+        },
+        {
+          "id": "004_add_column_usuarios_administrador",
+          "run": {
+            "contentHash": "b1dcd6849bf8fea0b0553c7567745ccbd8a090da2a42d1ce06ad2d1f361bb39c",
+            "kind": "sql",
+            "name": "004_add_column_usuarios_administrador.sql"
+          }
+        },
+        {
+          "id": "005_add_column_usuarios_contrasena_hash",
+          "run": {
+            "contentHash": "e57464c4cd9a03d10dfe8b593c98a3b3248f7d2a08c00ab769c043ca7045e970",
+            "kind": "sql",
+            "name": "005_add_column_usuarios_contrasena_hash.sql"
+          }
+        },
+        {
+          "id": "006_add_column_usuarios_usuario",
+          "run": {
+            "contentHash": "47fd5e144462c640fa4a75545199a1e4c61fde7ac39092b62b33d1b22d925a9e",
+            "kind": "sql",
+            "name": "006_add_column_usuarios_usuario.sql"
+          }
+        },
+        {
+          "id": "007_add_column_usuarios_version_sesion",
+          "run": {
+            "contentHash": "7c6cb3639d09554aca7bc157ec53260a8993b93f4de538730cefd2bf8eb3378c",
+            "kind": "sql",
+            "name": "007_add_column_usuarios_version_sesion.sql"
+          }
+        },
+        {
+          "id": "008_add_column_usuarios_id",
+          "run": {
+            "contentHash": "90045095d80e4d13435390d9b2d2223b99a7ea8f5373c6c3c7b30b37eea17b8c",
+            "kind": "sql",
+            "name": "008_add_column_usuarios_id.sql"
+          }
+        },
+        {
+          "id": "009_add_constraint_usuarios_usuarios_usuario_unico_key",
+          "run": {
+            "contentHash": "870bf958e151d80d6bea8a71ee60cf8c22984e5e7a2f90c50f7225fe29b8600a",
+            "kind": "sql",
+            "name": "009_add_constraint_usuarios_usuarios_usuario_unico_key.sql"
+          }
+        },
+        {
+          "id": "010_add_constraint_usuarios_usuarios_pkey",
+          "run": {
+            "contentHash": "fcf247b0b16767be34d01ea7f1a3e42bf06b93159a36b07d34dc36dc74e00b70",
+            "kind": "sql",
+            "name": "010_add_constraint_usuarios_usuarios_pkey.sql"
+          }
+        },
+        {
+          "id": "app-permissions",
+          "run": {
+            "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e",
+            "kind": "sql",
+            "name": "app-permissions.sql"
+          }
+        }
+      ],
+      "to": {
+        "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a",
+        "releaseId": "0002_authentication",
+        "systemId": "ssot2026"
+      }
+    },
+    "operations": [
+      {
+        "changeIds": [
+          "7fbff69ce49aeba8a66317f29c4d01b9c5399b26ecb5a72f192b8fdb4b3a3039"
+        ],
+        "dataMigrationIds": [],
+        "id": "001_add_table_usuarios",
+        "stepIds": [
+          "001_add_table_usuarios"
+        ]
+      },
+      {
+        "changeIds": [
+          "2ea2e35dcb71d73672268cc22b101e5afcfb8085f3511d5f1d1c23bc0390b556"
+        ],
+        "dataMigrationIds": [],
+        "id": "002_add_column_usuarios_activo",
+        "stepIds": [
+          "002_add_column_usuarios_activo"
+        ]
+      },
+      {
+        "changeIds": [
+          "327949779c7b82cd886a9a303aeaff2f6983acfa122d571dcad360ffdcecf4bd"
+        ],
+        "dataMigrationIds": [],
+        "id": "003_add_column_usuarios_recuperacion_hashes",
+        "stepIds": [
+          "003_add_column_usuarios_recuperacion_hashes"
+        ]
+      },
+      {
+        "changeIds": [
+          "7a1ce73aefb068a3a8aa9135e58172288fa24bcfa2afd958263a03e8eedb9512"
+        ],
+        "dataMigrationIds": [],
+        "id": "004_add_column_usuarios_administrador",
+        "stepIds": [
+          "004_add_column_usuarios_administrador"
+        ]
+      },
+      {
+        "changeIds": [
+          "9914bcfe72047a7ea4e5828844a4fac4fe6e4cdd89b2a42c338c68dc1cc1d6b3"
+        ],
+        "dataMigrationIds": [],
+        "id": "005_add_column_usuarios_contrasena_hash",
+        "stepIds": [
+          "005_add_column_usuarios_contrasena_hash"
+        ]
+      },
+      {
+        "changeIds": [
+          "d3c6c3c2dff9cdd7a6e7aa70c4414b2f02bd91e0fcc80bed4681abe39f18b8d5"
+        ],
+        "dataMigrationIds": [],
+        "id": "006_add_column_usuarios_usuario",
+        "stepIds": [
+          "006_add_column_usuarios_usuario"
+        ]
+      },
+      {
+        "changeIds": [
+          "e59c76d32065ec1ac9b43b0c27235ea2ff0372d9be450fe1d41658b9cf0aceee"
+        ],
+        "dataMigrationIds": [],
+        "id": "007_add_column_usuarios_version_sesion",
+        "stepIds": [
+          "007_add_column_usuarios_version_sesion"
+        ]
+      },
+      {
+        "changeIds": [
+          "e89aca140a70478ad73790e08fdd0c223be1d399fdad85e9cd8eda0129415470"
+        ],
+        "dataMigrationIds": [],
+        "id": "008_add_column_usuarios_id",
+        "stepIds": [
+          "008_add_column_usuarios_id"
+        ]
+      },
+      {
+        "changeIds": [
+          "2c570fb277032ecadf9198ca4e83b9c383d1afc0f5585e1966161356cd8dafa2"
+        ],
+        "dataMigrationIds": [],
+        "id": "009_add_constraint_usuarios_usuarios_usuario_unico_key",
+        "stepIds": [
+          "009_add_constraint_usuarios_usuarios_usuario_unico_key"
+        ]
+      },
+      {
+        "changeIds": [
+          "ea811509a9a5d8adc61faf8e46f59002132c27d286e6d157d4799d372d25da94"
+        ],
+        "dataMigrationIds": [],
+        "id": "010_add_constraint_usuarios_usuarios_pkey",
+        "stepIds": [
+          "010_add_constraint_usuarios_usuarios_pkey"
+        ]
+      },
+      {
+        "changeIds": [],
+        "dataMigrationIds": [],
+        "id": "app-permissions",
+        "stepIds": [
+          "app-permissions"
+        ]
+      }
+    ],
+    "queryResources": {},
+    "states": {
+      "from": {
+        "byteLength": 7282,
+        "contentHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f",
+        "path": "states/from.json"
+      },
+      "to": {
+        "byteLength": 13435,
+        "contentHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a",
+        "path": "states/to.json"
+      }
+    },
+    "validationArtifacts": []
+  },
+  "resources.json": [
+    {
+      "ref": {
+        "contentHash": "7f118fcf398117d2c350f10c7509510ddeee8ff970b2b2cfd9f72100aad45aab",
+        "kind": "sql",
+        "name": "001_add_table_usuarios.sql"
+      },
+      "text": "CREATE TABLE \"ssot\".\"usuarios\" ();\n"
+    },
+    {
+      "ref": {
+        "contentHash": "fe239a6c520e557b7ed6a92806e2474eca81711e12fa61244c396cfaf0e38c80",
+        "kind": "sql",
+        "name": "002_add_column_usuarios_activo.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"activo\" \"pg_catalog\".\"bool\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "c2bd48fa1d647ba425b3998d4d12f47aa2352302bb45031f37b4a17aa2c79181",
+        "kind": "sql",
+        "name": "003_add_column_usuarios_recuperacion_hashes.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"recuperacion_hashes\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "b1dcd6849bf8fea0b0553c7567745ccbd8a090da2a42d1ce06ad2d1f361bb39c",
+        "kind": "sql",
+        "name": "004_add_column_usuarios_administrador.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"administrador\" \"pg_catalog\".\"bool\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "e57464c4cd9a03d10dfe8b593c98a3b3248f7d2a08c00ab769c043ca7045e970",
+        "kind": "sql",
+        "name": "005_add_column_usuarios_contrasena_hash.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"contrasena_hash\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "47fd5e144462c640fa4a75545199a1e4c61fde7ac39092b62b33d1b22d925a9e",
+        "kind": "sql",
+        "name": "006_add_column_usuarios_usuario.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"usuario\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "7c6cb3639d09554aca7bc157ec53260a8993b93f4de538730cefd2bf8eb3378c",
+        "kind": "sql",
+        "name": "007_add_column_usuarios_version_sesion.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"version_sesion\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "90045095d80e4d13435390d9b2d2223b99a7ea8f5373c6c3c7b30b37eea17b8c",
+        "kind": "sql",
+        "name": "008_add_column_usuarios_id.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD COLUMN \"id\" \"pg_catalog\".\"text\" NOT NULL;\n"
+    },
+    {
+      "ref": {
+        "contentHash": "870bf958e151d80d6bea8a71ee60cf8c22984e5e7a2f90c50f7225fe29b8600a",
+        "kind": "sql",
+        "name": "009_add_constraint_usuarios_usuarios_usuario_unico_key.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD CONSTRAINT \"usuarios_usuario_unico_key\" UNIQUE (\"usuario\");\n"
+    },
+    {
+      "ref": {
+        "contentHash": "fcf247b0b16767be34d01ea7f1a3e42bf06b93159a36b07d34dc36dc74e00b70",
+        "kind": "sql",
+        "name": "010_add_constraint_usuarios_usuarios_pkey.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"usuarios\" ADD CONSTRAINT \"usuarios_pkey\" PRIMARY KEY (\"id\");\n"
+    },
+    {
+      "ref": {
+        "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e",
+        "kind": "sql",
+        "name": "app-permissions.sql"
+      },
+      "text": "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"materias\" TO \"ssot2026_user\";\n\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"pabellones\" TO \"ssot2026_user\";\n\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"planes\" TO \"ssot2026_user\";\n\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"usuarios\" TO \"ssot2026_user\";\n"
+    }
+  ],
+  "migration.json": {
+    "authoring": {
+      "byteLength": 5710,
+      "contentHash": "ec853dcd4fa321c75ccea3cf08ae92a3f6de4d914f8d5d74576786dee44ba87a",
+      "path": "authoring.json"
+    },
+    "formatVersion": 1,
+    "migration": {
+      "after": [],
+      "before": [],
+      "description": "",
+      "from": {
+        "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f",
+        "releaseId": "0001_initial",
+        "systemId": "ssot2026"
+      },
+      "id": "0002_authentication",
+      "steps": [
+        {
+          "id": "001_add_table_usuarios",
+          "run": {
+            "contentHash": "7f118fcf398117d2c350f10c7509510ddeee8ff970b2b2cfd9f72100aad45aab",
+            "kind": "sql",
+            "name": "001_add_table_usuarios.sql"
+          }
+        },
+        {
+          "id": "002_add_column_usuarios_activo",
+          "run": {
+            "contentHash": "fe239a6c520e557b7ed6a92806e2474eca81711e12fa61244c396cfaf0e38c80",
+            "kind": "sql",
+            "name": "002_add_column_usuarios_activo.sql"
+          }
+        },
+        {
+          "id": "003_add_column_usuarios_recuperacion_hashes",
+          "run": {
+            "contentHash": "c2bd48fa1d647ba425b3998d4d12f47aa2352302bb45031f37b4a17aa2c79181",
+            "kind": "sql",
+            "name": "003_add_column_usuarios_recuperacion_hashes.sql"
+          }
+        },
+        {
+          "id": "004_add_column_usuarios_administrador",
+          "run": {
+            "contentHash": "b1dcd6849bf8fea0b0553c7567745ccbd8a090da2a42d1ce06ad2d1f361bb39c",
+            "kind": "sql",
+            "name": "004_add_column_usuarios_administrador.sql"
+          }
+        },
+        {
+          "id": "005_add_column_usuarios_contrasena_hash",
+          "run": {
+            "contentHash": "e57464c4cd9a03d10dfe8b593c98a3b3248f7d2a08c00ab769c043ca7045e970",
+            "kind": "sql",
+            "name": "005_add_column_usuarios_contrasena_hash.sql"
+          }
+        },
+        {
+          "id": "006_add_column_usuarios_usuario",
+          "run": {
+            "contentHash": "47fd5e144462c640fa4a75545199a1e4c61fde7ac39092b62b33d1b22d925a9e",
+            "kind": "sql",
+            "name": "006_add_column_usuarios_usuario.sql"
+          }
+        },
+        {
+          "id": "007_add_column_usuarios_version_sesion",
+          "run": {
+            "contentHash": "7c6cb3639d09554aca7bc157ec53260a8993b93f4de538730cefd2bf8eb3378c",
+            "kind": "sql",
+            "name": "007_add_column_usuarios_version_sesion.sql"
+          }
+        },
+        {
+          "id": "008_add_column_usuarios_id",
+          "run": {
+            "contentHash": "90045095d80e4d13435390d9b2d2223b99a7ea8f5373c6c3c7b30b37eea17b8c",
+            "kind": "sql",
+            "name": "008_add_column_usuarios_id.sql"
+          }
+        },
+        {
+          "id": "009_add_constraint_usuarios_usuarios_usuario_unico_key",
+          "run": {
+            "contentHash": "870bf958e151d80d6bea8a71ee60cf8c22984e5e7a2f90c50f7225fe29b8600a",
+            "kind": "sql",
+            "name": "009_add_constraint_usuarios_usuarios_usuario_unico_key.sql"
+          }
+        },
+        {
+          "id": "010_add_constraint_usuarios_usuarios_pkey",
+          "run": {
+            "contentHash": "fcf247b0b16767be34d01ea7f1a3e42bf06b93159a36b07d34dc36dc74e00b70",
+            "kind": "sql",
+            "name": "010_add_constraint_usuarios_usuarios_pkey.sql"
+          }
+        },
+        {
+          "id": "app-permissions",
+          "run": {
+            "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e",
+            "kind": "sql",
+            "name": "app-permissions.sql"
+          }
+        }
+      ],
+      "to": {
+        "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a",
+        "releaseId": "0002_authentication",
+        "systemId": "ssot2026"
+      }
+    },
+    "migrationHash": "79ad8130feb00b7aad6514b59fa3c6b779bb6d321512335db4999f7fb9a73292",
+    "resources": {
+      "byteLength": 3059,
+      "contentHash": "65c37fb676983b6e8cf976f00edeb8067f622789f0a3570eb69babc52c1fc0c3",
+      "path": "resources.json"
+    },
+    "script": {
+      "byteLength": 1878,
+      "contentHash": "e7af15c8005a98a89d6853ba9f5cff96c3da5257f6b65ee7d29cf1171468737e",
+      "path": "0002_authentication.sql"
+    }
+  },
+  "script.json": {
+    "path": "0002_authentication.sql",
+    "contentHash": "e7af15c8005a98a89d6853ba9f5cff96c3da5257f6b65ee7d29cf1171468737e",
+    "byteLength": 1878
+  }
+}

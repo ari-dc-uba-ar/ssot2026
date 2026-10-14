@@ -170,6 +170,9 @@ historical declaration. Newly generated initial migrations record that phase too
 Only Docker with Compose is required on the host. Node, npm and the migration
 CLI run inside the image and containers.
 
+Copy `.env.example` to `.env` and set `JWT_SECRET` to a random secret of at least
+32 bytes before running Compose (see Authentication and users below).
+
 ```sh
 docker compose build
 docker compose run --rm migrations
@@ -215,8 +218,71 @@ put its answers in `migrations/answers.json` and run:
 docker compose run --rm migrations npm run migration:decide -- --draft migrations/draft.json --answers migrations/answers.json
 ```
 
-For a host process, configure `.env`, start PostgreSQL, build, and run `npm start`.
+For a host process, configure `.env` (including `JWT_SECRET`), start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.
+
+## Authentication and users
+
+Set `JWT_SECRET` to a random secret of at least 32 bytes before starting the backend
+or Compose. Generate one with
+`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+The backend rejects missing/short secrets. Apply the included incremental migration
+with `npm run migration:apply`; it adds `usuarios` and preserves the initial migration.
+
+To create the first administrator, set `AUTH_ADMIN_USERNAME` and
+`AUTH_ADMIN_PASSWORD` (12–128 characters) in the process environment or `.env`, then
+run `npm run auth:create-admin` after building and applying migrations. The command
+creates an account, never overwrites an existing one, and prints eight recovery
+codes once. Save them and remove the bootstrap password from `.env` afterwards.
+With Compose and the same environment variables set in the shell, run:
+
+```sh
+docker compose run --rm -e AUTH_ADMIN_USERNAME -e AUTH_ADMIN_PASSWORD backend npm run auth:create-admin
+```
+
+Log in on the home page. Administrators can create, edit, disable and delete users
+through the `usuarios` entity. Usernames are case-insensitive and accept 3–64 ASCII
+letters, digits, underscores, dots or hyphens. IDs are generated on the server.
+The password is required on creation and optional on editing; omission preserves
+the existing hash. An administrator cannot delete, disable or demote their own
+account. Administration locks the acting administrator until commit so concurrent
+cross-demotions cannot remove every active administrator.
+
+Passwords use salted scrypt (`N=32768, r=8, p=3`). JWTs use HS256 through `jose`,
+expire after 15 minutes and validate the algorithm, issuer, audience and required
+claims. Every authenticated request also checks the account's current active
+status and session version. Account updates, password resets/changes and logout
+revoke existing sessions. Logout closes all sessions for that account. The browser
+keeps its token in memory; reloading requires logging in again.
+
+The users table is a required SSOT entity. Anonymous access is limited to login
+and recovery handlers; its generic CRUD requires an authenticated administrator.
+The app's PostgreSQL role reads credential hashes internally for authentication.
+Column security is enforced by the API: `readable: false` excludes a column from
+SQL SELECTs, response rows, column metadata and public TypeScript row types;
+`writable: false` rejects direct assignment. The ID is read-only, and password
+hashes, recovery hashes and session versions are private and server-managed.
+Other entity fields keep their existing read/write behavior after authentication.
+
+From **Contraseña y códigos de recuperación**, each user can generate and download
+eight random 128-bit recovery codes after confirming their password. Newly created
+users should do this after their first login. Only SHA-256 hashes are stored. The
+codes are displayed once and are replaced on regeneration. On the public recovery
+form, a username, one code and a new password reset the account in one atomic SQL
+update. Concurrent reuse succeeds once. Recovery replaces the entire previous set,
+returns eight new codes to save, and requires logging in again. Changing a password
+also replaces the code set. An administrator reset clears the old codes; the user
+can generate new ones after logging in. Login, recovery and password verification
+share a limit of 20 requests per IP per 15 minutes in each backend process.
+
+| Endpoint | Authentication | JSON body / result |
+| --- | --- | --- |
+| `POST /api/auth/login` | Public | `{usuario, contrasena}` → `{token, expiresIn, user}` |
+| `POST /api/auth/recover` | Public | `{usuario, codigo, contrasena}` → `{codes}` |
+| `GET /api/auth/me` | Bearer JWT | `{id, usuario, administrador}` |
+| `POST /api/auth/password` | Bearer JWT | `{contrasenaActual, contrasena}` → `{codes}` |
+| `POST /api/auth/recovery-codes` | Bearer JWT | `{contrasena}` → `{codes}` |
+| `POST /api/auth/logout` | Bearer JWT | HTTP 204 |
 
 ## Frontend and API contract
 
@@ -232,15 +298,16 @@ contract with `import type`; no SSOT implementation, database settings, validato
 or migration code is emitted into the browser. There is no frontend framework
 or additional dependency.
 
-`GET /health` checks the database connection. `GET /api/entities` returns the
+`GET /health` checks the database connection. All `/api/entities` requests require
+`Authorization: Bearer <JWT>`. `GET /api/entities` returns the
 available entity names. `GET /api/entities/:name` returns `{name, pk, columns, rows}`,
-with only `{name, label, type, nullable}` for each column. Keys identify rows for
+with only `{name, label, type, nullable, writable}` for each readable column. Keys identify rows for
 editing/deletion; nullability controls the form's explicit "Sin valor" option.
 
 All mutations use JSON at `/api/entities/:name`:
 
-- `POST`: the complete new row.
-- `PUT`: `{key, row}`, with the original primary key and the complete replacement row.
+- `POST`: the complete new row of writable fields (`usuarios` also requires `contrasena`).
+- `PUT`: `{key, row}`, with the original primary key and all writable fields (`usuarios` optionally accepts `contrasena`).
 - `DELETE`: the primary-key object.
 
 Successful mutations return HTTP 204. The backend checks exact field sets, types,
@@ -259,7 +326,9 @@ npm run test:api
 npm run test:crud
 ```
 
-`test:api` includes API contract type checks and HTTP behavior tests. `test:crud`
-requires the configured database and exercises the app role inside a transaction
-that is always rolled back. This initial page loads all rows; pagination and
+`test:api` includes API contract type checks and HTTP authentication, authorization
+and column-security tests. `test:crud` requires the configured migrated database;
+it exercises domain CRUD in a rolled-back transaction and authentication with the
+app role in owned scratch databases, including concurrent recovery-code reuse,
+user administration and session revocation. This initial page loads all rows; pagination and
 specialized field widgets are separate future steps.

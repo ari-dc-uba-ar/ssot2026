@@ -1,0 +1,186 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import express from 'express';
+import {SignJWT} from 'jose';
+import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
+import {registerEntityApi} from '../dist/backend/api.js';
+import {hashPassword, verifyPassword, createRecoveryCodes, hashRecoveryCode} from '../dist/backend/credentials.js';
+
+const secret = 'test-only-signing-key-with-at-least-32-bytes';
+const password = 'test-password-with-enough-length';
+const user = {id: 'admin-id', usuario: 'admin', administrador: true, activo: true, version_sesion: 'version-1'};
+const passwordHash = await hashPassword(password);
+
+async function start(t, query = async () => ({rows: [user], rowCount: 1}), connect) {
+    const app = express();
+    const pool = {query, connect};
+    const auth = createAuthentication(pool, secret);
+    registerAuthApi(app, pool, auth);
+    registerEntityApi(app, pool, auth);
+    const server = await new Promise(resolve => {
+        const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
+    });
+    t.after(() => new Promise(resolve => server.close(resolve)));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    const token = (await auth.issueToken(user)).token;
+    return {
+        token, auth,
+        request: (path, method = 'GET', body, jwt = token) => fetch(base + path, {method,
+            headers: {'Content-Type': 'application/json', ...(jwt ? {Authorization: `Bearer ${jwt}`} : {})},
+            ...(body === undefined ? {} : {body: JSON.stringify(body)}),
+        }),
+    };
+}
+
+test('passwords are salted, verifiable and never stored as plaintext; recovery codes have 128 random bits', async () => {
+    const otherHash = await hashPassword(password);
+    assert.notEqual(otherHash, passwordHash);
+    assert.ok(!passwordHash.includes(password));
+    assert.equal(await verifyPassword(password, passwordHash), true);
+    assert.equal(await verifyPassword('wrong-password', passwordHash), false);
+    assert.equal(await verifyPassword(password, 'malformed'), false);
+    const {codes, hashes} = createRecoveryCodes();
+    assert.equal(new Set(codes).size, 8);
+    for (const code of codes) {
+        assert.match(code, /^[a-f0-9]{8}(?:-[a-f0-9]{8}){3}$/);
+        assert.ok(!hashes.includes(code));
+        assert.ok(JSON.parse(hashes).includes(hashRecoveryCode(code)));
+    }
+});
+
+test('JWT configuration rejects a missing/short signing secret', () => {
+    assert.throws(() => createAuthentication({}, ''), /JWT_SECRET/);
+    assert.throws(() => createAuthentication({}, 'short'), /JWT_SECRET/);
+});
+
+test('anonymous access to all entity operations fails before touching the database', async t => {
+    const {request} = await start(t, () => { throw new Error('Unexpected query'); });
+    for (const method of ['GET', 'POST', 'PUT', 'DELETE']) {
+        for (const path of ['/api/entities', '/api/entities/usuarios', '/api/entities/materias']) {
+            const result = await request(path, method, method === 'GET' ? undefined : {}, '');
+            assert.equal(result.status, 401);
+            assert.equal(typeof (await result.json()).error, 'string');
+        }
+    }
+});
+
+test('JWT verification rejects tampering, wrong keys, algorithms, audience, issuer, expiration and missing claims', async t => {
+    const {request, token} = await start(t, () => { throw new Error('JWT must be rejected before querying'); });
+    const key = new TextEncoder().encode(secret);
+    const claims = {sub: user.id, ver: user.version_sesion, iss: 'ssot2026', aud: 'ssot2026-api', iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 900};
+    const sign = (payload, signingKey = key, alg = 'HS256') => new SignJWT(payload).setProtectedHeader({alg, typ: 'JWT'}).sign(signingKey);
+    const {exp: _exp, ...withoutExpiration} = claims;
+    const invalid = [
+        'bad', token.slice(0, -5) + 'xxxxx',
+        Buffer.from('{"alg":"none","typ":"JWT"}').toString('base64url') + '.' + Buffer.from(JSON.stringify(claims)).toString('base64url') + '.',
+        await sign(claims, new TextEncoder().encode('another-test-only-key-of-at-least-32-bytes')),
+        await sign(claims, new Uint8Array(64), 'HS512'),
+        await sign({...claims, aud: 'another-app'}), await sign({...claims, iss: 'another-issuer'}),
+        await sign({...claims, exp: claims.iat - 1}), await sign(withoutExpiration),
+        await sign({...claims, sub: 7}), await sign({...claims, ver: 1}),
+    ];
+    for (const jwt of invalid) assert.equal((await request('/api/entities', 'GET', undefined, jwt)).status, 401);
+});
+
+test('login is public, normalizes usernames, returns a JWT and safe identity, and disables caching', async t => {
+    const queries = [];
+    const {request} = await start(t, async (sql, values) => {
+        queries.push({sql, values});
+        return {rows: [{...user, contrasena_hash: passwordHash}]};
+    });
+    const response = await request('/api/auth/login', 'POST', {usuario: 'ADMIN', contrasena: password}, '');
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('cache-control'), 'no-store');
+    const result = await response.json();
+    assert.equal(result.expiresIn, 900);
+    assert.deepEqual(result.user, {id: user.id, usuario: user.usuario, administrador: true});
+    assert.equal(result.token.split('.').length, 3);
+    assert.ok(!JSON.stringify(result).includes(passwordHash));
+    assert.deepEqual(queries[0].values, ['admin']);
+    assert.equal((await request('/api/auth/me', 'GET', undefined, result.token)).status, 200);
+});
+
+test('bad credentials, missing and disabled users return the same error without disclosing secrets', async t => {
+    for (const rows of [[], [{...user, contrasena_hash: passwordHash}], [{...user, activo: false, contrasena_hash: passwordHash}]]) {
+        const {request} = await start(t, async () => ({rows}));
+        const response = await request('/api/auth/login', 'POST', {usuario: 'admin', contrasena: 'incorrect-long-password'}, '');
+        assert.equal(response.status, 401);
+        assert.deepEqual(await response.json(), {error: 'Usuario o contraseña incorrectos.'});
+    }
+});
+
+test('revoked, disabled and deleted accounts cannot use an otherwise valid JWT', async t => {
+    for (const rows of [[], [{...user, activo: false}], [{...user, version_sesion: 'new-version'}]]) {
+        const {request} = await start(t, async () => ({rows}));
+        assert.equal((await request('/api/entities')).status, 401);
+    }
+});
+
+test('regular users can use domain entities but cannot discover or administer users', async t => {
+    let queries = 0;
+    const {request} = await start(t, async () => { queries++; return {rows: [{...user, administrador: false}]}; });
+    const discovery = await request('/api/entities');
+    assert.equal(discovery.status, 200);
+    assert.ok(!(await discovery.json()).includes('usuarios'));
+    for (const method of ['GET', 'POST', 'PUT', 'DELETE']) assert.equal((await request('/api/entities/usuarios', method, method === 'GET' ? undefined : {})).status, 403);
+    assert.equal(queries, 5, 'only authentication reads are allowed');
+});
+
+test('column security excludes secrets from SELECT, response metadata and rows, including unexpected extra database fields', async t => {
+    let selection;
+    const {request} = await start(t, async sql => {
+        if (sql.includes('WHERE id = $1')) return {rows: [user]};
+        selection = sql;
+        return {rows: [{...user, contrasena_hash: 'private-hash', recuperacion_hashes: 'private-codes'}]};
+    });
+    const response = await request('/api/entities/usuarios');
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    assert.deepEqual(body.rows, [{id: user.id, usuario: user.usuario, administrador: true, activo: true}]);
+    assert.deepEqual(body.columns.map(c => c.name), ['id', 'usuario', 'administrador', 'activo']);
+    assert.equal(body.columns[0].writable, false);
+    assert.doesNotMatch(selection, /contrasena|recuperacion|version_sesion|\*/);
+    assert.doesNotMatch(JSON.stringify(body), /private-|contrasena|recuperacion|version_sesion/);
+});
+
+test('column security rejects writes to generated ids, password hashes, recovery hashes and session versions', async t => {
+    const {request} = await start(t);
+    const row = {usuario: 'nuevo', activo: true, administrador: false, contrasena: password};
+    for (const field of ['id', 'contrasena_hash', 'recuperacion_hashes', 'version_sesion']) {
+        assert.equal((await request('/api/entities/usuarios', 'POST', {...row, [field]: 'attacker-value'})).status, 400);
+        assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: 'other'}, row: {...row, [field]: 'attacker-value'}})).status, 400);
+    }
+});
+
+test('administrators create users with server-generated ids, hashed passwords and no recoverable plaintext', async t => {
+    const queries = [];
+    const client = {query: async (sql, values) => { queries.push({sql, values}); return {rowCount: 1}; }, release() {}};
+    const {request} = await start(t, async () => ({rows: [user]}), async () => client);
+    const response = await request('/api/entities/usuarios', 'POST', {usuario: 'NUEVO', activo: true, administrador: false, contrasena: password});
+    assert.equal(response.status, 204);
+    const inserted = queries.find(q => q.sql.startsWith('INSERT'));
+    assert.equal(inserted.values[1], 'nuevo');
+    assert.equal(await verifyPassword(password, inserted.values[4]), true);
+    assert.ok(!inserted.values.includes(password));
+    assert.equal(inserted.values[5], '[]');
+    assert.equal(queries[0].sql, 'BEGIN');
+    assert.match(queries[1].sql, /FOR UPDATE/);
+    assert.equal(queries.at(-1).sql, 'COMMIT');
+});
+
+test('an administrator cannot delete, disable or demote their own account', async t => {
+    const client = {query: async () => ({rowCount: 1}), release() {}};
+    const {request} = await start(t, async () => ({rows: [user]}), async () => client);
+    assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: user.id})).status, 409);
+    for (const row of [{usuario: 'admin', activo: false, administrador: true}, {usuario: 'admin', activo: true, administrador: false}]) {
+        assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: user.id}, row})).status, 409);
+    }
+});
+
+test('anonymous authentication operations limit repeated attempts', async t => {
+    const {request} = await start(t, () => { throw new Error('Malformed input must not query'); });
+    for (let index = 0; index < 20; index++) assert.equal((await request('/api/auth/login', 'POST', {}, '')).status, 400);
+    const response = await request('/api/auth/recover', 'POST', {}, '');
+    assert.equal(response.status, 429);
+    assert.ok(Number(response.headers.get('retry-after')) > 0);
+});
