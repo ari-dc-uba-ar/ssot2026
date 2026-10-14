@@ -44,7 +44,12 @@ const pabellon = defineRecord(myTypes,{
     pisos       : {type:'integer'},
 });
 
-export const myRecords = withRecords(myTypes, {materia, pabellon, plan})
+const usuario = defineRecord(myTypes,{
+    usuario     : {type:'text'   },
+    clave       : {type:'text'   },
+});
+
+export const myRecords = withRecords(myTypes, {materia, pabellon, plan, usuario})
 
 function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatoria?:boolean | null}){
     var problemas: Problem[] = []
@@ -80,11 +85,21 @@ const planes = defineEntity(myContext, {
     pk: ['plan']
 })
 
+const usuarios = defineEntity(myContext, {
+    name: 'usuarios',
+    record: 'usuario',
+    pk: ['usuario']
+})
+
+// Entidades expuestas por la API; usuarios queda afuera para no exponer las claves
 export const myEntities = defineEntities({materias, pabellones, planes})
+
+// Todas las entidades del esquema (las migraciones crean también usuarios)
+const allEntities = defineEntities({materias, pabellones, planes, usuarios})
 
 const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',
-    entities: myEntities,
+    entities: allEntities,
     records: myRecords.records,
 });
 if (!snapshot.ok) throw new Error(JSON.stringify(snapshot.problems));

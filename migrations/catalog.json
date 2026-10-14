@@ -10,6 +10,11 @@
       "systemId": "ssot2026",
       "releaseId": "0001_initial",
       "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f"
+    },
+    {
+      "systemId": "ssot2026",
+      "releaseId": "0002_agregar_usuarios",
+      "releaseHash": "9650d1825b42b63ad7dc5077c3e759542056a032fc69ba9ecd3ea8f1f7505c1d"
     }
   ],
   "migrations": [
@@ -161,6 +166,67 @@
         "after": []
       },
       "migrationHash": "dfa0e9d03681b601f50cb14abdd48b4ec02fb27df9f22d3202cad80601ebe618"
+    },
+    {
+      "migration": {
+        "id": "0002_agregar_usuarios",
+        "from": {
+          "systemId": "ssot2026",
+          "releaseId": "0001_initial",
+          "releaseHash": "b51247ba3a1747ae9d33fa559541b51a60029ae6a333f6731494e6414347d50f"
+        },
+        "to": {
+          "systemId": "ssot2026",
+          "releaseId": "0002_agregar_usuarios",
+          "releaseHash": "9650d1825b42b63ad7dc5077c3e759542056a032fc69ba9ecd3ea8f1f7505c1d"
+        },
+        "description": "",
+        "before": [],
+        "steps": [
+          {
+            "id": "001_add_table_usuarios",
+            "run": {
+              "name": "001_add_table_usuarios.sql",
+              "kind": "sql",
+              "contentHash": "7f118fcf398117d2c350f10c7509510ddeee8ff970b2b2cfd9f72100aad45aab"
+            }
+          },
+          {
+            "id": "002_add_column_usuarios_usuario",
+            "run": {
+              "name": "002_add_column_usuarios_usuario.sql",
+              "kind": "sql",
+              "contentHash": "47fd5e144462c640fa4a75545199a1e4c61fde7ac39092b62b33d1b22d925a9e"
+            }
+          },
+          {
+            "id": "003_add_column_usuarios_clave",
+            "run": {
+              "name": "003_add_column_usuarios_clave.sql",
+              "kind": "sql",
+              "contentHash": "925363984654b14c28125f2fdfcd4180dd3751ca79505219762f3834761bf06b"
+            }
+          },
+          {
+            "id": "004_add_constraint_usuarios_usuarios_pkey",
+            "run": {
+              "name": "004_add_constraint_usuarios_usuarios_pkey.sql",
+              "kind": "sql",
+              "contentHash": "e0c05753bcb61540efea28155d05600dcc9ac3e1ad06d2dc388ef905e78355e6"
+            }
+          },
+          {
+            "id": "app-permissions",
+            "run": {
+              "name": "app-permissions.sql",
+              "kind": "sql",
+              "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e"
+            }
+          }
+        ],
+        "after": []
+      },
+      "migrationHash": "da03704bfccc9c9efec4bd322f4fc0c7e36c31c42474d52958332214e5d03ea2"
     }
   ]
 }

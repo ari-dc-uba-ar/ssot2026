@@ -232,6 +232,15 @@ contract with `import type`; no SSOT implementation, database settings, validato
 or migration code is emitted into the browser. There is no frontend framework
 or additional dependency.
 
+Every route except `/health` (the page, its assets and the API) requires HTTP Basic
+authentication against `ssot.usuarios`. The `usuarios` entity is part of the SSOT
+schema but is not exposed by the API. Create a local test user after applying
+migrations:
+
+```sh
+docker exec ssot2026-postgres-1 psql -U ssot2026_owner -d ssot2026 -c "INSERT INTO ssot.usuarios (usuario, clave) VALUES ('admin', 'admin123');"
+```
+
 `GET /health` checks the database connection. `GET /api/entities` returns the
 available entity names. `GET /api/entities/:name` returns `{name, pk, columns, rows}`,
 with only `{name, label, type, nullable}` for each column. Keys identify rows for
