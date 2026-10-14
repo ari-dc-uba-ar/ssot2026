@@ -1,5 +1,6 @@
 import type {EntityColumn, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
 import {ApiRequestError, createRow, deleteRow, listEntities, loadEntity, updateRow} from './api.js';
+import {messageOf} from './messages.js';
 
 type Column = EntityColumn<EntityName>;
 type Row = EntityRow<EntityName>;
@@ -119,8 +120,8 @@ function edit(entity: EntityResponse, row?: Row): void {
                 for (const reader of readers) reader.error.textContent = '';
                 for (const problem of error.problems) {
                     const reader = readers.find(candidate => candidate.name === problem.field);
-                    if (reader) reader.error.textContent = problem.messageKey;
-                    else editorStatus.textContent = [editorStatus.textContent, problem.messageKey].filter(Boolean).join('; ');
+                    if (reader) reader.error.textContent = messageOf(problem);
+                    else editorStatus.textContent = [editorStatus.textContent, messageOf(problem)].filter(Boolean).join('; ');
                 }
                 return;
             }
