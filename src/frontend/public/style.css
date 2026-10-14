@@ -33,4 +33,5 @@ dialog::backdrop { background: #142e2866; }
 .field { margin: 18px 0; }
 .field > input, .field > select { width: 100%; }
 .null-option { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-weight: 400; color: #53655f; }
+.field-error { display: block; margin-top: 6px; font-size: .85rem; font-weight: 400; color: #8d302d; }
 @media (max-width: 600px) { main { padding: 24px 16px; } th, td { padding: 10px; } .toolbar h2 { width: 100%; } }

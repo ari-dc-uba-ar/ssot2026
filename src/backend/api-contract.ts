@@ -1,5 +1,5 @@
 // Browser consumers import these types only; domain definitions stay in the backend.
-import type {EntityInfoOf, EntityInstanceType} from 'system-definition';
+import type {EntityInfoOf, EntityInstanceType, Problem} from 'system-definition';
 import type {myRecords, myEntities} from './system.js';
 
 export type EntityName = keyof typeof myEntities;
@@ -25,4 +25,4 @@ export type EntityUpdate<E extends EntityName> = E extends EntityName ? {
     key: EntityKey<E>;
     row: EntityRow<E>;
 } : never;
-export type ApiError = {error: string};
+export type ApiError = {error: string; problems?: readonly Problem[]};
