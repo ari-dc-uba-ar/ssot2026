@@ -170,7 +170,7 @@
         ],
         "after": []
       },
-      "migrationHash": "dfa0e9d03681b601f50cb14abdd48b4ec02fb27df9f22d3202cad80601ebe618"
+      "migrationHash": "8a2a8f4abe6ba1a58b9f04854da421e3c73cc29590d8e2260441b8fbd0ecb261"
     },
     {
       "migration": {
@@ -273,13 +273,13 @@
             "run": {
               "name": "app-permissions.sql",
               "kind": "sql",
-              "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e"
+              "contentHash": "5a76815eac6c7aec66da696c192754995b0e86ef0e05bbbb65b231ef4ac05783"
             }
           }
         ],
         "after": []
       },
-      "migrationHash": "79ad8130feb00b7aad6514b59fa3c6b779bb6d321512335db4999f7fb9a73292"
+      "migrationHash": "607772bf7370791d8ae59dea60384eacf647001a35a692b606d2aa21780c0d25"
     },
     {
       "migration": {
@@ -312,19 +312,11 @@
               "kind": "sql",
               "contentHash": "b09aa0c91972b89dc6846646a2fce9b7f111af15aad1cd41d7e371ab97b331df"
             }
-          },
-          {
-            "id": "app-permissions",
-            "run": {
-              "name": "app-permissions.sql",
-              "kind": "sql",
-              "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e"
-            }
           }
         ],
         "after": []
       },
-      "migrationHash": "89d5cd34f9bb25af40a6f441b88d98eccc27f9b083f355bdd2a4bbc18ffa3768"
+      "migrationHash": "cf28ff98a3910c91fad3a3e3a0956d65369cf565afd1d8369741081a3928e83b"
     }
   ]
 }

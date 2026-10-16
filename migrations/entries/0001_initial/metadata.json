@@ -676,7 +676,7 @@
     "draftHash": "b6454b9c0c0277ecb4aaaaeccefb185efc890fce9243affa6b6b7ca9a617a446",
     "formatVersion": 1,
     "initial": {
-      "contentHash": "a6976c4d641e0b5eeb189a81629e9b82ca518c1797d2c0ab4c50abb046183899",
+      "contentHash": "c2c6ecf5e68e79a1089a1a98e2f377bbe1ae50a3a9c6301ea4299f7efe878ae8",
       "kind": "sql",
       "name": "initial-users.sql"
     },
@@ -1124,11 +1124,11 @@
     },
     {
       "ref": {
-        "contentHash": "a6976c4d641e0b5eeb189a81629e9b82ca518c1797d2c0ab4c50abb046183899",
+        "contentHash": "c2c6ecf5e68e79a1089a1a98e2f377bbe1ae50a3a9c6301ea4299f7efe878ae8",
         "kind": "sql",
         "name": "initial-users.sql"
       },
-      "text": "DO $roles$\nBEGIN\n    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ssot2026_owner') THEN\n        CREATE ROLE \"ssot2026_owner\" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;\n        EXECUTE format('ALTER ROLE %I PASSWORD %L', 'ssot2026_owner', NULLIF(current_setting('migration.owner_password', true), ''));\n    END IF;\nEND;\n$roles$;\n\nDO $roles$\nBEGIN\n    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ssot2026_user') THEN\n        CREATE ROLE \"ssot2026_user\" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;\n        EXECUTE format('ALTER ROLE %I PASSWORD %L', 'ssot2026_user', NULLIF(current_setting('migration.app_password', true), ''));\n    END IF;\nEND;\n$roles$;\n\nCREATE SCHEMA IF NOT EXISTS \"ssot\" AUTHORIZATION \"ssot2026_owner\";\n\nCREATE SCHEMA IF NOT EXISTS \"ssot_migrations\" AUTHORIZATION \"ssot2026_owner\";\n\nREVOKE CREATE ON SCHEMA \"ssot\" FROM PUBLIC, \"ssot2026_user\";\n\nGRANT USAGE ON SCHEMA \"ssot\" TO \"ssot2026_user\";\n\nALTER DEFAULT PRIVILEGES FOR ROLE \"ssot2026_owner\" IN SCHEMA \"ssot\" GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO \"ssot2026_user\";\n"
+      "text": "DO $roles$\nBEGIN\n    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ssot2026_owner') THEN\n        CREATE ROLE \"ssot2026_owner\" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;\n        EXECUTE format('ALTER ROLE %I PASSWORD %L', 'ssot2026_owner', NULLIF(current_setting('migration.owner_password', true), ''));\n    END IF;\nEND;\n$roles$;\n\nDO $roles$\nBEGIN\n    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'ssot2026_user') THEN\n        CREATE ROLE \"ssot2026_user\" LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;\n        EXECUTE format('ALTER ROLE %I PASSWORD %L', 'ssot2026_user', NULLIF(current_setting('migration.app_password', true), ''));\n    END IF;\nEND;\n$roles$;\n\nCREATE SCHEMA IF NOT EXISTS \"ssot\" AUTHORIZATION \"ssot2026_owner\";\n\nCREATE SCHEMA IF NOT EXISTS \"ssot_migrations\" AUTHORIZATION \"ssot2026_owner\";\n\nREVOKE CREATE ON SCHEMA \"ssot\" FROM PUBLIC, \"ssot2026_user\";\n\nGRANT USAGE ON SCHEMA \"ssot\" TO \"ssot2026_user\";\n\nALTER DEFAULT PRIVILEGES FOR ROLE \"ssot2026_owner\" IN SCHEMA \"ssot\" REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLES FROM \"ssot2026_user\";\n"
     },
     {
       "ref": {
@@ -1142,7 +1142,7 @@
   "migration.json": {
     "authoring": {
       "byteLength": 7501,
-      "contentHash": "df2bfa2b05692f7a050169d0ef111dd3b1f7e2c729fe2ae195488476bc631a79",
+      "contentHash": "a245e732972c276c9575790affd8e70fc19aec6b9e79a9e1cf47e6593146321e",
       "path": "authoring.json"
     },
     "formatVersion": 1,
@@ -1292,21 +1292,21 @@
         "systemId": "ssot2026"
       }
     },
-    "migrationHash": "dfa0e9d03681b601f50cb14abdd48b4ec02fb27df9f22d3202cad80601ebe618",
+    "migrationHash": "8a2a8f4abe6ba1a58b9f04854da421e3c73cc29590d8e2260441b8fbd0ecb261",
     "resources": {
-      "byteLength": 5288,
-      "contentHash": "ea9163d220b1d4af72ae7cd51ce7a60b79f442d4708332ec2c8874f5dd82322f",
+      "byteLength": 5291,
+      "contentHash": "70fb9f4a77b53da20bfab3b87f63f6cea5953807e72bf3a786c1659445927884",
       "path": "resources.json"
     },
     "script": {
-      "byteLength": 3444,
-      "contentHash": "9cbf53387d722175da301567109ec91c3ac216189e51d87d12b7a97d0b54619a",
+      "byteLength": 2452,
+      "contentHash": "dd61fed135f53f3e1af8d74000f1b55cbca8b8b61884d6016a5b78efb2b1f4d9",
       "path": "0001_initial.sql"
     }
   },
   "script.json": {
     "path": "0001_initial.sql",
-    "contentHash": "9cbf53387d722175da301567109ec91c3ac216189e51d87d12b7a97d0b54619a",
-    "byteLength": 3444
+    "contentHash": "dd61fed135f53f3e1af8d74000f1b55cbca8b8b61884d6016a5b78efb2b1f4d9",
+    "byteLength": 2452
   }
 }

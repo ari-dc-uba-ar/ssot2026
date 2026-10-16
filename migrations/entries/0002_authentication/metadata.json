@@ -1592,7 +1592,7 @@
         {
           "id": "app-permissions",
           "run": {
-            "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e",
+            "contentHash": "5a76815eac6c7aec66da696c192754995b0e86ef0e05bbbb65b231ef4ac05783",
             "kind": "sql",
             "name": "app-permissions.sql"
           }
@@ -1812,17 +1812,17 @@
     },
     {
       "ref": {
-        "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e",
+        "contentHash": "5a76815eac6c7aec66da696c192754995b0e86ef0e05bbbb65b231ef4ac05783",
         "kind": "sql",
         "name": "app-permissions.sql"
       },
-      "text": "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"materias\" TO \"ssot2026_user\";\n\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"pabellones\" TO \"ssot2026_user\";\n\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"planes\" TO \"ssot2026_user\";\n\nGRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"usuarios\" TO \"ssot2026_user\";\n"
+      "text": "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE \"ssot\".\"usuarios\" TO \"ssot2026_user\";\n"
     }
   ],
   "migration.json": {
     "authoring": {
       "byteLength": 5710,
-      "contentHash": "ec853dcd4fa321c75ccea3cf08ae92a3f6de4d914f8d5d74576786dee44ba87a",
+      "contentHash": "644bb0480048350bddc094149ac1f2c30ff27a8858bdda63a5ef51bc81a0bec7",
       "path": "authoring.json"
     },
     "formatVersion": 1,
@@ -1920,7 +1920,7 @@
         {
           "id": "app-permissions",
           "run": {
-            "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e",
+            "contentHash": "5a76815eac6c7aec66da696c192754995b0e86ef0e05bbbb65b231ef4ac05783",
             "kind": "sql",
             "name": "app-permissions.sql"
           }
@@ -1932,21 +1932,21 @@
         "systemId": "ssot2026"
       }
     },
-    "migrationHash": "79ad8130feb00b7aad6514b59fa3c6b779bb6d321512335db4999f7fb9a73292",
+    "migrationHash": "607772bf7370791d8ae59dea60384eacf647001a35a692b606d2aa21780c0d25",
     "resources": {
-      "byteLength": 3059,
-      "contentHash": "65c37fb676983b6e8cf976f00edeb8067f622789f0a3570eb69babc52c1fc0c3",
+      "byteLength": 2780,
+      "contentHash": "6c260229288a4fca8bfebbb3c10414b6577631bda58169152f1dfe2a0bb440f0",
       "path": "resources.json"
     },
     "script": {
-      "byteLength": 1878,
-      "contentHash": "e7af15c8005a98a89d6853ba9f5cff96c3da5257f6b65ee7d29cf1171468737e",
+      "byteLength": 915,
+      "contentHash": "53da11726f7600ab745120ae79ebdcbe7ec24e956906d7f8568b582af7bc1541",
       "path": "0002_authentication.sql"
     }
   },
   "script.json": {
     "path": "0002_authentication.sql",
-    "contentHash": "e7af15c8005a98a89d6853ba9f5cff96c3da5257f6b65ee7d29cf1171468737e",
-    "byteLength": 1878
+    "contentHash": "53da11726f7600ab745120ae79ebdcbe7ec24e956906d7f8568b582af7bc1541",
+    "byteLength": 915
   }
 }

@@ -160,10 +160,27 @@ npm run test:history
 
 The test uses an owned scratch database to verify pending status, commit/rollback,
 checksums and drift. Scratch databases use the initial administrator; production
-migrations use the owner. The current initial migration was compacted into
-[`0001_initial.sql`](migrations/entries/0001_initial/0001_initial.sql) and metadata without
-changing its recorded hash. Its originally external role setup is marked as a
-historical declaration. Newly generated initial migrations record that phase too.
+migrations use the owner. Each migration is stored as numbered SQL plus metadata
+that binds its steps, resources, saved states and recorded hashes. Initial role
+setup runs through the initial administrator; schema changes and table grants run
+through the owner.
+
+Automatic `SELECT, INSERT, UPDATE, DELETE` grants apply only to tables created by
+that migration. Changes to existing tables preserve their permissions. A migration
+that creates no tables has no generated permissions step. Provisioning revokes the
+former default-privileges rule, so unrelated future tables receive no automatic
+app access. Generated scripts omit boilerplate comments and preserve authored SQL
+comments; metadata retains checks, validators and auxiliary resources.
+
+The migration artifacts were regenerated together under this policy, preserving
+their saved SSOT/schema states and updating SQL, resources, manifests and catalog
+hashes. Existing installations that recorded the previous migration hashes will
+reject this rewritten history; retain the previous artifacts for those
+installations or plan a separate baseline transition. Regeneration does not
+rewrite a database's migration journal.
+
+`npm run test:migrations` verifies the saved artifact hashes and the per-table grant
+policy without connecting to PostgreSQL.
 
 ## Run the backend
 
