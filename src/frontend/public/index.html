@@ -3,63 +3,151 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SSOT2026 · Registros</title>
+    <title>Gestión Académica · Planillas</title>
     <link rel="stylesheet" href="/style.css">
     <script type="module" src="/assets/main.js"></script>
 </head>
 <body>
     <main>
-        <header><p class="eyebrow">SSOT2026</p><h1>Registros</h1><p>Consultá y administrá los datos de cada entidad.</p></header>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">Gestión Académica</p>
+                <h1>Planillas de Datos</h1>
+                <p>Consulta y administración de materias, pabellones y planes de estudio.</p>
+            </div>
+            <div class="user-nav">
+                <div id="session" class="session-info" hidden>
+                    <span class="user-badge"><strong id="session-user"></strong></span>
+                    <button id="manage-account" type="button">Mi cuenta</button>
+                    <button id="logout" type="button" class="danger">Cerrar sesión</button>
+                </div>
+            </div>
+        </header>
+
         <p id="status" role="status" aria-live="polite"></p>
-        <p id="auth-status" role="alert"></p>
-        <section id="authentication" aria-label="Autenticación">
-            <form id="login-form">
-                <h2>Iniciar sesión</h2>
-                <div class="field"><label for="login-user">Usuario</label><input id="login-user" name="usuario" autocomplete="username" required minlength="3" maxlength="64"></div>
-                <div class="field"><label for="login-password">Contraseña</label><input id="login-password" name="contrasena" type="password" autocomplete="current-password" required minlength="12" maxlength="128"></div>
-                <div class="actions"><button type="submit">Ingresar</button><button id="show-recovery" type="button">Recuperar contraseña</button></div>
-            </form>
-            <form id="recovery-form" hidden>
-                <h2>Recuperar contraseña</h2>
-                <p>Usá uno de los códigos que guardaste. Al recuperar tu cuenta se reemplazarán todos los códigos anteriores y se cerrarán tus sesiones.</p>
-                <div class="field"><label for="recover-user">Usuario</label><input id="recover-user" name="usuario" autocomplete="username" required minlength="3" maxlength="64"></div>
-                <div class="field"><label for="recover-code">Código de recuperación</label><input id="recover-code" name="codigo" autocomplete="off" required maxlength="35" spellcheck="false"></div>
-                <div class="field"><label for="recover-password">Nueva contraseña</label><input id="recover-password" name="contrasena" type="password" autocomplete="new-password" required minlength="12" maxlength="128"></div>
-                <div class="actions"><button type="submit">Restablecer contraseña</button><button id="show-login" type="button">Volver a ingresar</button></div>
-            </form>
-        </section>
-        <div id="session" class="toolbar" hidden>
-            <strong id="session-user"></strong>
-            <button id="manage-account" type="button">Contraseña y códigos de recuperación</button>
-            <button id="logout" type="button">Cerrar sesión</button>
+
+        <div id="unauthenticated-notice" class="unauthenticated-notice" hidden>
+            <h2>Acceso a las planillas</h2>
+            <p>Iniciá sesión con tu cuenta para ver y editar las materias, pabellones y planes de estudio.</p>
+            <button id="login-prompt-btn" type="button" class="primary">Iniciar sesión</button>
         </div>
+
         <fieldset id="workspace" disabled hidden>
-            <label for="entity">Entidad</label>
-            <select id="entity" aria-controls="content"></select>
-            <section id="content" aria-label="Registros de la entidad"></section>
+            <nav id="tabs" class="tabs" role="tablist" aria-label="Planillas disponibles"></nav>
+            <section id="content" aria-label="Planilla activa" role="tabpanel"></section>
         </fieldset>
     </main>
-    <dialog id="editor" aria-labelledby="editor-title">
-        <h2 id="editor-title"></h2>
-        <p id="editor-status" role="alert"></p>
-        <form id="form"><fieldset id="fields"></fieldset></form>
+
+    <dialog id="account" aria-labelledby="account-dialog-title">
+        <div class="dialog-header">
+            <h2 id="account-dialog-title">Cuenta</h2>
+            <button id="close-account-dialog" type="button" class="close-btn" aria-label="Cerrar modal">✕</button>
+        </div>
+
+        <section id="authentication" aria-label="Autenticación">
+            <p id="auth-status" role="alert"></p>
+            <form id="login-form">
+                <h3>Iniciar sesión</h3>
+                <div class="field">
+                    <label for="login-user">Usuario</label>
+                    <input id="login-user" name="usuario" autocomplete="username" required minlength="3" maxlength="64">
+                </div>
+                <div class="field">
+                    <label for="login-password">Contraseña</label>
+                    <input id="login-password" name="contrasena" type="password" autocomplete="current-password" required minlength="12" maxlength="128">
+                </div>
+                <div class="actions">
+                    <button type="submit" class="primary">Ingresar</button>
+                    <button id="show-recovery" type="button">Recuperar contraseña</button>
+                </div>
+            </form>
+            <form id="recovery-form" hidden>
+                <h3>Recuperar contraseña</h3>
+                <p class="muted">Usá uno de los códigos que guardaste. Al recuperar tu cuenta se reemplazarán todos los códigos anteriores y se cerrarán tus sesiones.</p>
+                <div class="field">
+                    <label for="recover-user">Usuario</label>
+                    <input id="recover-user" name="usuario" autocomplete="username" required minlength="3" maxlength="64">
+                </div>
+                <div class="field">
+                    <label for="recover-code">Código de recuperación</label>
+                    <input id="recover-code" name="codigo" autocomplete="off" required maxlength="35" spellcheck="false">
+                </div>
+                <div class="field">
+                    <label for="recover-password">Nueva contraseña</label>
+                    <input id="recover-password" name="contrasena" type="password" autocomplete="new-password" required minlength="12" maxlength="128">
+                </div>
+                <div class="actions">
+                    <button type="submit" class="primary">Restablecer contraseña</button>
+                    <button id="show-login" type="button">Volver a ingresar</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="account-management" hidden aria-label="Administración de cuenta">
+            <p class="muted">Generá códigos y guardalos en un lugar seguro para recuperar tu cuenta. Cada generación reemplaza los códigos anteriores.</p>
+            <p id="account-status" role="alert"></p>
+            <form id="account-form">
+                <div class="field">
+                    <label for="account-current">Contraseña actual</label>
+                    <input id="account-current" name="actual" type="password" autocomplete="current-password" required minlength="12" maxlength="128">
+                </div>
+                <div class="field">
+                    <label for="account-new">Nueva contraseña (opcional)</label>
+                    <input id="account-new" name="nueva" type="password" autocomplete="new-password" minlength="12" maxlength="128">
+                </div>
+                <p class="muted">Si indicás una nueva contraseña, se cerrarán tus sesiones y recibirás códigos nuevos.</p>
+                <div class="actions">
+                    <button type="submit" class="primary">Guardar y generar códigos</button>
+                    <button id="close-account" type="button">Cancelar</button>
+                </div>
+            </form>
+        </section>
     </dialog>
-    <dialog id="account" aria-labelledby="account-title">
-        <h2 id="account-title">Contraseña y recuperación</h2>
-        <p>Generá códigos y guardalos en un lugar seguro para recuperar tu cuenta. Cada generación reemplaza los códigos anteriores.</p>
-        <p id="account-status" role="alert"></p>
-        <form id="account-form">
-            <div class="field"><label for="account-current">Contraseña actual</label><input id="account-current" name="actual" type="password" autocomplete="current-password" required minlength="12" maxlength="128"></div>
-            <div class="field"><label for="account-new">Nueva contraseña (opcional)</label><input id="account-new" name="nueva" type="password" autocomplete="new-password" minlength="12" maxlength="128"></div>
-            <p>Si indicás una nueva contraseña, se cerrarán tus sesiones y recibirás códigos nuevos.</p>
-            <div class="actions"><button type="submit">Guardar y generar códigos</button><button id="close-account" type="button">Cancelar</button></div>
+
+    <dialog id="create-user-dialog" aria-labelledby="create-user-title">
+        <div class="dialog-header">
+            <h2 id="create-user-title">Nuevo usuario</h2>
+            <button id="close-create-user" type="button" class="close-btn" aria-label="Cerrar">✕</button>
+        </div>
+        <p id="create-user-status" role="alert"></p>
+        <form id="create-user-form">
+            <div class="field">
+                <label for="new-user-username">Nombre de usuario</label>
+                <input id="new-user-username" name="usuario" type="text" autocomplete="off" required>
+            </div>
+            <div class="field">
+                <label for="new-user-password">Contraseña (mínimo 12 caracteres)</label>
+                <input id="new-user-password" name="contrasena" type="password" autocomplete="new-password" required minlength="12" maxlength="128">
+            </div>
+            <div class="actions">
+                <button type="submit" class="primary">Crear usuario</button>
+                <button id="cancel-create-user" type="button">Cancelar</button>
+            </div>
         </form>
     </dialog>
+
     <dialog id="recovery-codes" aria-labelledby="codes-title">
         <h2 id="codes-title">Guardá tus códigos de recuperación</h2>
-        <p>Se muestran una sola vez. Guardalos fuera de la app. Al usar uno se reemplazará todo este conjunto.</p>
+        <p class="muted">Se muestran una sola vez. Guardalos fuera de la app. Al usar uno se reemplazará todo este conjunto.</p>
         <pre id="codes"></pre>
-        <div class="actions"><button id="download-codes" type="button">Descargar códigos</button><button id="saved-codes" type="button">Ya los guardé</button></div>
+        <div class="actions">
+            <button id="download-codes" type="button">Descargar códigos</button>
+            <button id="saved-codes" type="button" class="primary">Ya los guardé</button>
+        </div>
+    </dialog>
+
+    <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+        <div class="confirm-content">
+            <div class="confirm-icon" aria-hidden="true">⚠️</div>
+            <div>
+                <h2 id="confirm-title">Confirmar acción</h2>
+                <p id="confirm-message"></p>
+            </div>
+        </div>
+        <div class="actions confirm-actions">
+            <button id="confirm-cancel" type="button">Cancelar</button>
+            <button id="confirm-ok" type="button" class="danger primary">Confirmar</button>
+        </div>
     </dialog>
 </body>
 </html>
