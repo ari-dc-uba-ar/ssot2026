@@ -49,7 +49,7 @@ td input:focus, td select:focus { background: white; outline: 2px solid #107c41;
 td.has-error { background: #fde7e9 !important; outline: 2px solid #d83b01 !important; outline-offset: -2px; }
 .actions { display: flex; gap: 8px; align-items: center; }
 #status { min-height: 22px; font-size: .85rem; color: #107c41; }
-#status.error, #auth-status, #account-status { color: #d83b01; font-weight: 600; font-size: .85rem; }
+#status.error, #auth-status, #account-status, #create-user-status { color: #d83b01; font-weight: 600; font-size: .85rem; }
 #codes { overflow-x: auto; line-height: 1.8; background: #f3f2f1; padding: 12px; border-radius: 4px; }
 dialog { width: min(480px, calc(100% - 32px)); max-height: 90vh; border: 1px solid #d2d0ce; border-radius: 8px; padding: 20px 24px; color: inherit; box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
 dialog::backdrop { background: rgba(0, 0, 0, 0.45); }

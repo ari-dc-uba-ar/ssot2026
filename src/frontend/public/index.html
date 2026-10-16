@@ -104,6 +104,28 @@
         </section>
     </dialog>
 
+    <dialog id="create-user-dialog" aria-labelledby="create-user-title">
+        <div class="dialog-header">
+            <h2 id="create-user-title">Nuevo usuario</h2>
+            <button id="close-create-user" type="button" class="close-btn" aria-label="Cerrar">✕</button>
+        </div>
+        <p id="create-user-status" role="alert"></p>
+        <form id="create-user-form">
+            <div class="field">
+                <label for="new-user-username">Nombre de usuario</label>
+                <input id="new-user-username" name="usuario" type="text" autocomplete="off" required>
+            </div>
+            <div class="field">
+                <label for="new-user-password">Contraseña (mínimo 12 caracteres)</label>
+                <input id="new-user-password" name="contrasena" type="password" autocomplete="new-password" required minlength="12" maxlength="128">
+            </div>
+            <div class="actions">
+                <button type="submit" class="primary">Crear usuario</button>
+                <button id="cancel-create-user" type="button">Cancelar</button>
+            </div>
+        </form>
+    </dialog>
+
     <dialog id="recovery-codes" aria-labelledby="codes-title">
         <h2 id="codes-title">Guardá tus códigos de recuperación</h2>
         <p class="muted">Se muestran una sola vez. Guardalos fuera de la app. Al usar uno se reemplazará todo este conjunto.</p>

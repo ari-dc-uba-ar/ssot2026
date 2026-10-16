@@ -227,7 +227,9 @@ async function show(name: EntityName): Promise<void> {
     filterInput.oninput = () => { filter = filterInput.value.toLowerCase().trim(); page = 1; render(); };
 
     toolbar.append(element('h2', title), count, filterInput);
-    if (entity.name !== 'usuarios') {
+    if (entity.name === 'usuarios') {
+        toolbar.append(button('+ Agregar usuario', openCreateUserModal, 'primary'));
+    } else {
         toolbar.append(button('+ Agregar fila', () => { adding = true; render(); }, 'primary'));
     }
 
@@ -356,6 +358,68 @@ async function show(name: EntityName): Promise<void> {
     }
 }
 
+function openCreateUserModal(): void {
+    const dialog = document.querySelector<HTMLDialogElement>('#create-user-dialog')!;
+    const form = document.querySelector<HTMLFormElement>('#create-user-form')!;
+    const userStatus = document.querySelector<HTMLElement>('#create-user-status')!;
+    form.reset();
+    userStatus.className = '';
+    userStatus.textContent = '';
+    dialog.showModal();
+}
+
+function initializeCreateUserModal(): void {
+    const dialog = document.querySelector<HTMLDialogElement>('#create-user-dialog')!;
+    const form = document.querySelector<HTMLFormElement>('#create-user-form')!;
+    const userStatus = document.querySelector<HTMLElement>('#create-user-status')!;
+    const closeBtn = document.querySelector<HTMLButtonElement>('#close-create-user')!;
+    const cancelBtn = document.querySelector<HTMLButtonElement>('#cancel-create-user')!;
+
+    const close = () => {
+        dialog.close();
+        form.reset();
+        userStatus.className = '';
+        userStatus.textContent = '';
+    };
+
+    closeBtn.onclick = close;
+    cancelBtn.onclick = close;
+
+    form.onsubmit = event => {
+        event.preventDefault();
+        const data = new FormData(form);
+        const usuario = String(data.get('usuario') ?? '').trim();
+        const contrasena = String(data.get('contrasena') ?? '');
+
+        const submitBtn = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+        submitBtn.disabled = true;
+        userStatus.className = '';
+        userStatus.textContent = 'Creando usuario…';
+
+        void run(async () => {
+            try {
+                await createRow('usuarios', {usuario, contrasena});
+                close();
+                delete cache['usuarios'];
+                if (currentEntity === 'usuarios') await show('usuarios');
+                status.className = '';
+                status.textContent = `Usuario "${usuario}" creado correctamente.`;
+                setTimeout(() => { if (status.textContent.includes('creado')) status.textContent = ''; }, 3000);
+            } catch (error) {
+                userStatus.className = 'error';
+                const msg = error instanceof ApiRequestError && error.problems.length
+                    ? error.problems.map(messageOf).join('; ')
+                    : (error instanceof Error ? error.message : 'Error al crear usuario.');
+                userStatus.textContent = msg;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    };
+}
+
+initializeCreateUserModal();
+
 initializeAuthentication(active => {
     workspace.hidden = !active;
     if (!active) {
@@ -377,3 +441,4 @@ initializeAuthentication(active => {
         else content.textContent = 'No hay planillas disponibles.';
     });
 });
+
