@@ -4,6 +4,7 @@ const typeNames: Readonly<Record<string, string>> = {
     text: 'texto',
     integer: 'un número entero',
     boolean: 'verdadero o falso',
+    password: 'una contraseña válida',
 };
 
 const messages: Readonly<Record<string, (details: Problem['details']) => string>> = {

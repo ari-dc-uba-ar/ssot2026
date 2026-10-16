@@ -2,19 +2,20 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
 import {spawnSync} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
 import {Pool} from 'pg';
-import {createPostgresScratch, decodeSqlSsot, generateCreate, projectSsotSchema, quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
+import {assessSchema, createPostgresScratch, decodeSqlSsot, generateCreate, projectSsotSchema, quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
 import {databaseConfig, databaseSettings} from '../dist/backend/database.js';
 import {ssot, sqlMapping} from '../dist/backend/system.js';
 import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
-import {insertUser} from '../dist/backend/users.js';
-import {verifyPassword} from '../dist/backend/credentials.js';
+import {initializeUsers} from '../dist/backend/bootstrap.js';
+import {hashPassword, verifyPassword} from '../dist/backend/credentials.js';
 
 const value = result => { if (!result.ok) throw new Error(JSON.stringify(result.problems)); return result.value; };
 const password = 'initial-auth-test-password';
 
-async function start(t) {
+async function start(t, {initialize = true, legacy = false} = {}) {
     const {schema} = databaseSettings.database;
     const scratch = createPostgresScratch({...databaseSettings.database, ...databaseSettings.initialUser}, [schema]);
     const handle = value(await scratch.create('clean-target'));
@@ -24,7 +25,9 @@ async function start(t) {
         await pool?.end();
         value(await scratch.destroy(handle));
     });
-    const desired = value(projectSsotSchema(value(decodeSqlSsot(ssot, sqlMapping)), schema));
+    const desired = legacy
+        ? JSON.parse(await readFile('migrations/entries/0002_authentication/metadata.json', 'utf8'))['states/to.json'].schema
+        : value(projectSsotSchema(value(decodeSqlSsot(ssot, sqlMapping)), schema));
     for (const sql of value(generateCreate(desired)).statements) await handle.session.query(sql.text, sql.values);
     await handle.session.query(`GRANT USAGE ON SCHEMA ${quote(schema)} TO ${quote(databaseSettings.appUser.user)}`, []);
     await handle.session.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ${quote(schema)} TO ${quote(databaseSettings.appUser.user)}`, []);
@@ -35,7 +38,7 @@ async function start(t) {
         config.connectionString = url.toString();
     }
     pool = new Pool(config);
-    await insertUser(pool, {usuario: 'admin', activo: true, administrador: true}, password);
+    if (initialize) await initializeUsers(pool, {username: 'admin', password});
     const app = express();
     const auth = createAuthentication(pool, 'integration-test-secret-with-at-least-32-bytes');
     registerAuthApi(app, pool, auth);
@@ -51,51 +54,68 @@ async function start(t) {
         assert.equal(response.status, 200);
         return response.json();
     };
-    return {pool, request, login, config};
+    return {pool, request, login, config, handle};
 }
 
-test('PostgreSQL: bootstrap command creates an administrator, shows recovery codes once and refuses to overwrite accounts', async t => {
-    const {pool, config} = await start(t);
+test('PostgreSQL: cold start requires configured credentials and initializes once under concurrent starts', async t => {
+    const {pool} = await start(t, {initialize: false});
+    await assert.rejects(initializeUsers(pool, {username: undefined, password: undefined}), /AUTH_ADMIN_USERNAME/);
+    assert.equal((await pool.query('SELECT count(*)::integer AS total FROM ssot.usuarios')).rows[0].total, 0);
+    const starts = await Promise.all([1, 2].map(() => initializeUsers(pool, {username: 'ADMIN', password})));
+    assert.equal(starts.filter(result => result.created).length, 1);
+    assert.equal(starts.find(result => result.created).codes.length, 8);
+    const before = (await pool.query('SELECT * FROM ssot.usuarios')).rows;
+    assert.equal(before.length, 1);
+    assert.equal(before[0].usuario, 'admin');
+    assert.equal(await verifyPassword(password, before[0].contrasena_hash), true);
+    assert.deepEqual(await initializeUsers(pool, {username: undefined, password: undefined}), {created: false});
+    assert.deepEqual(await initializeUsers(pool, {username: 'another', password: 'another-initial-password'}), {created: false});
+    assert.deepEqual((await pool.query('SELECT * FROM ssot.usuarios')).rows, before);
+});
+
+test('PostgreSQL: bootstrap command prints codes only on creation and is idempotent', async t => {
+    const {pool, config} = await start(t, {initialize: false});
     const env = {...process.env, DATABASE_URL: config.connectionString, PGDATABASE: config.database,
         PGHOST: config.host, PGPORT: String(config.port), PGUSER: config.user, PGPASSWORD: config.password,
         AUTH_ADMIN_USERNAME: 'bootstrap-admin', AUTH_ADMIN_PASSWORD: password};
     const first = spawnSync(process.execPath, ['dist/backend/create-admin.js'], {env, encoding: 'utf8'});
     assert.equal(first.status, 0, first.stderr);
     assert.equal(first.stdout.split(/\r?\n/).filter(line => /^[a-f0-9]{8}(?:-[a-f0-9]{8}){3}$/.test(line)).length, 8);
-    const account = (await pool.query('SELECT administrador, activo, contrasena_hash, recuperacion_hashes FROM ssot.usuarios WHERE usuario = $1', ['bootstrap-admin'])).rows[0];
-    assert.equal(account.administrador, true);
-    assert.equal(account.activo, true);
-    assert.equal(JSON.parse(account.recuperacion_hashes).length, 8);
-    const again = spawnSync(process.execPath, ['dist/backend/create-admin.js'], {env: {...env, AUTH_ADMIN_PASSWORD: 'different-long-password'}, encoding: 'utf8'});
-    assert.equal(again.status, 1);
+    const before = (await pool.query('SELECT * FROM ssot.usuarios')).rows;
+    const again = spawnSync(process.execPath, ['dist/backend/create-admin.js'], {
+        env: {...env, AUTH_ADMIN_USERNAME: 'another', AUTH_ADMIN_PASSWORD: 'different-long-password'}, encoding: 'utf8',
+    });
+    assert.equal(again.status, 0, again.stderr);
     assert.equal(again.stdout, '');
-    assert.equal((await pool.query('SELECT contrasena_hash FROM ssot.usuarios WHERE usuario = $1', ['bootstrap-admin'])).rows[0].contrasena_hash, account.contrasena_hash);
+    assert.deepEqual((await pool.query('SELECT * FROM ssot.usuarios')).rows, before);
 });
 
-test('PostgreSQL: administrators manage users, passwords stay hidden, and account changes revoke JWTs', async t => {
+test('PostgreSQL: all authenticated accounts manage users with generic CRUD and account edits/deletions revoke JWTs', async t => {
     const {pool, request, login} = await start(t);
     const admin = await login('admin');
-    const row = {usuario: 'regular', activo: true, administrador: false};
-    assert.equal((await request('/api/entities/usuarios', 'POST', {...row, contrasena: password}, admin.token)).status, 204);
-    const regular = await login('regular');
-    assert.equal((await request('/api/entities/usuarios', 'GET', undefined, regular.token)).status, 403);
-    assert.equal((await request('/api/entities/usuarios', 'POST', {...row, usuario: 'intruder', administrador: true, contrasena: password}, regular.token)).status, 403);
-    const body = await (await request('/api/entities/usuarios', 'GET', undefined, admin.token)).json();
+    assert.equal((await request('/api/entities/usuarios', 'POST', {usuario: 'second', contrasena: password}, admin.token)).status, 204);
+    const second = await login('second');
+    const body = await (await request('/api/entities/usuarios', 'GET', undefined, second.token)).json();
     assert.equal(body.rows.length, 2);
-    assert.doesNotMatch(JSON.stringify(body), /contrasena|recuperacion|version_sesion/);
-    const stored = (await pool.query('SELECT * FROM ssot.usuarios WHERE usuario = $1', ['regular'])).rows[0];
+    assert.deepEqual(body.columns.map(column => column.name), ['id', 'usuario']);
+    assert.deepEqual(body.inputs.map(column => column.type), ['text', 'password']);
+    assert.doesNotMatch(JSON.stringify(body), /contrasena_hash|recuperacion_hashes|version_sesion|administrador|activo/);
+    assert.equal((await request('/api/entities/usuarios', 'POST', {usuario: 'third', contrasena: password}, second.token)).status, 204);
+    const stored = (await pool.query('SELECT * FROM ssot.usuarios WHERE usuario = $1', ['second'])).rows[0];
     assert.equal(await verifyPassword(password, stored.contrasena_hash), true);
-    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {...row, activo: false}}, admin.token)).status, 204);
-    assert.equal((await request('/api/entities', 'GET', undefined, regular.token)).status, 401);
-    assert.equal((await request('/api/auth/login', 'POST', {usuario: 'regular', contrasena: password})).status, 401);
-    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row}, admin.token)).status, 204);
+    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {usuario: 'renamed'}}, admin.token)).status, 204);
+    assert.equal((await request('/api/entities', 'GET', undefined, second.token)).status, 401);
     assert.equal((await pool.query('SELECT contrasena_hash FROM ssot.usuarios WHERE id = $1', [stored.id])).rows[0].contrasena_hash, stored.contrasena_hash);
-    const resetPassword = 'reset-by-administrator-password';
-    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {...row, contrasena: resetPassword}}, admin.token)).status, 204);
-    const reset = await login('regular', resetPassword);
+    await login('renamed');
+    const resetPassword = 'reset-by-another-account-password';
+    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {usuario: 'renamed', contrasena: resetPassword}}, admin.token)).status, 204);
+    const reset = await login('renamed', resetPassword);
+    assert.equal((await pool.query('SELECT recuperacion_hashes FROM ssot.usuarios WHERE id = $1', [stored.id])).rows[0].recuperacion_hashes, '[]');
     assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: stored.id}, admin.token)).status, 204);
     assert.equal((await request('/api/entities', 'GET', undefined, reset.token)).status, 401);
-    assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: admin.user.id}, admin.token)).status, 409);
+    assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: admin.user.id}, admin.token)).status, 204);
+    const third = await login('third');
+    assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: third.user.id}, third.token)).status, 204);
 });
 
 test('PostgreSQL: recovery is atomic and single-use, codes rotate, and password changes/logout revoke sessions', async t => {
@@ -118,8 +138,7 @@ test('PostgreSQL: recovery is atomic and single-use, codes rotate, and password 
     const recovered = await login('admin', newPassword);
     assert.equal((await request('/api/auth/password', 'POST', {contrasenaActual: password, contrasena: password}, recovered.token)).status, 401);
     assert.equal((await request('/api/entities', 'GET', undefined, recovered.token)).status, 200);
-    const regenerated = await request('/api/auth/recovery-codes', 'POST', {contrasena: newPassword}, recovered.token);
-    assert.equal(regenerated.status, 200);
+    assert.equal((await request('/api/auth/recovery-codes', 'POST', {contrasena: newPassword}, recovered.token)).status, 200);
     assert.equal((await request('/api/auth/recover', 'POST', {usuario: 'admin', codigo: recoveredCodes[0], contrasena: password})).status, 401);
     const changed = await request('/api/auth/password', 'POST', {contrasenaActual: newPassword, contrasena: password}, recovered.token);
     assert.equal(changed.status, 200);
@@ -130,16 +149,18 @@ test('PostgreSQL: recovery is atomic and single-use, codes rotate, and password 
     assert.equal((await request('/api/entities', 'GET', undefined, current.token)).status, 401);
 });
 
-test('PostgreSQL: concurrent administrator cross-demotions preserve an active administrator', async t => {
-    const {pool, request, login} = await start(t);
-    await insertUser(pool, {usuario: 'second-admin', activo: true, administrador: true}, password);
-    const first = await login('admin'), second = await login('second-admin');
-    const responses = await Promise.all([
-        request('/api/entities/usuarios', 'PUT', {key: {id: second.user.id}, row: {usuario: 'second-admin', activo: true, administrador: false}}, first.token),
-        request('/api/entities/usuarios', 'PUT', {key: {id: first.user.id}, row: {usuario: 'admin', activo: true, administrador: false}}, second.token),
-    ]);
-    assert.equal(responses.filter(r => r.status === 204).length, 1);
-    assert.ok(responses.every(r => [204, 401, 403, 409].includes(r.status)));
-    const {rows} = await pool.query('SELECT count(*)::integer AS admins FROM ssot.usuarios WHERE activo AND administrador');
-    assert.equal(rows[0].admins, 1);
+test('PostgreSQL: the incremental migration removes roles/status while preserving accounts and their credentials', async t => {
+    const {pool, handle, login} = await start(t, {initialize: false, legacy: true});
+    const row = {id: 'legacy-account', usuario: 'legacy', contrasena_hash: await hashPassword(password), recuperacion_hashes: '[]', version_sesion: 'legacy-version'};
+    await pool.query('INSERT INTO ssot.usuarios (id, usuario, contrasena_hash, recuperacion_hashes, version_sesion, administrador, activo) VALUES ($1, $2, $3, $4, $5, FALSE, FALSE)', Object.values(row));
+    const metadata = JSON.parse(await readFile('migrations/entries/0003_authenticated_administrators/metadata.json', 'utf8'));
+    const migration = metadata['migration.json'].migration;
+    for (const step of migration.steps) {
+        const resource = metadata['resources.json'].find(resource => resource.ref.name === step.run.name);
+        await handle.session.query(resource.text, []);
+    }
+    assert.deepEqual((await pool.query('SELECT * FROM ssot.usuarios')).rows, [row]);
+    assert.deepEqual(value(await assessSchema(value(decodeSqlSsot(ssot, sqlMapping)), databaseSettings.database.schema, handle.session)), {equal: true, differences: []});
+    assert.deepEqual(await initializeUsers(pool, {username: undefined, password: undefined}), {created: false});
+    await login('legacy');
 });

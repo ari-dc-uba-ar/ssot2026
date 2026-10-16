@@ -1,5 +1,6 @@
 import {createHash, randomBytes, scrypt, timingSafeEqual} from 'node:crypto';
 import {ApiFailure} from './api-errors.js';
+import {appTypeDefs, passwordBehaviour} from './value-types.js';
 
 const options = {N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024};
 const derive = (password: string, salt: string): Promise<Buffer> => new Promise((resolve, reject) => {
@@ -7,8 +8,8 @@ const derive = (password: string, salt: string): Promise<Buffer> => new Promise(
 });
 
 export function readPassword(value: unknown): string {
-    if (typeof value !== 'string' || value.length < 12 || value.length > 128) {
-        throw new ApiFailure(400, 'La contraseña debe tener entre 12 y 128 caracteres.');
+    if (!passwordBehaviour.check(value)) {
+        throw new ApiFailure(400, `La contraseña debe tener entre ${appTypeDefs.password.minLength} y ${appTypeDefs.password.maxLength} caracteres.`);
     }
     return value;
 }

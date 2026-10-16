@@ -1,24 +1,33 @@
-import { commonTypeDefs, defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
+import { defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
     withRecords, defineEntity, defineEntities, captureSystemSnapshot,
     sqlTypes, type SqlTypeMapping,
-    type Problem,
+    type Problem, type HumanProvider,
     withValidators
 } from 'system-definition'
 import { humanBehaviours, typeBehaviours } from "system-definition/examples";
+import {appTypeDefs, inputConstraints, passwordBehaviour} from './value-types.js';
 
-type MyFieldDef = CoreFieldDef<typeof commonTypeDefs> & {
+const myHumanBehaviours: HumanProvider<typeof appTypeDefs> = {...humanBehaviours};
+
+type MyFieldDef = CoreFieldDef<typeof appTypeDefs> & {
     isName?: boolean
     label?: string
     description?: string
     maxLength?: number
     readable?: boolean
     writable?: boolean
+    inputName?: string
+    inputType?: keyof typeof appTypeDefs
+    transform?: 'username' | 'password' | null
+    onCreate?: 'uuid' | 'empty-array' | null
+    onUpdate?: 'uuid' | null
+    onPasswordChange?: 'empty-array' | null
 }
 
 const myTypes = defineTypes({
-    types: commonTypeDefs,
-    behaviours: typeBehaviours,
-    human: humanBehaviours,
+    types: appTypeDefs,
+    behaviours: {...typeBehaviours, password: passwordBehaviour},
+    human: myHumanBehaviours,
     completeField: (fieldDef: MyFieldDef, name: string) => ({
         ...completeCoreField(fieldDef, name),
         isName     : fieldDef.isName ?? false,
@@ -27,6 +36,13 @@ const myTypes = defineTypes({
         maxLength  : fieldDef.maxLength ?? 100,
         readable   : fieldDef.readable ?? true,
         writable   : fieldDef.writable ?? true,
+        inputName  : fieldDef.inputName ?? name,
+        inputType  : fieldDef.inputType ?? fieldDef.type,
+        inputConstraints: inputConstraints[fieldDef.inputType ?? fieldDef.type],
+        transform  : fieldDef.transform ?? null,
+        onCreate   : fieldDef.onCreate ?? null,
+        onUpdate   : fieldDef.onUpdate ?? null,
+        onPasswordChange: fieldDef.onPasswordChange ?? null,
     }),
 })
 
@@ -49,13 +65,14 @@ const pabellon = defineRecord(myTypes,{
 });
 
 const usuario = defineRecord(myTypes, {
-    id: {type: 'text', nullable: false, writable: false as const},
-    usuario: {type: 'text', nullable: false},
-    administrador: {type: 'boolean', nullable: false},
-    activo: {type: 'boolean', nullable: false},
-    contrasena_hash: {type: 'text', nullable: false, readable: false as const, writable: false as const},
-    recuperacion_hashes: {type: 'text', nullable: false, readable: false as const, writable: false as const},
-    version_sesion: {type: 'text', nullable: false, readable: false as const, writable: false as const},
+    id: {type: 'text', nullable: false, writable: false as const, onCreate: 'uuid' as const},
+    usuario: {type: 'text', nullable: false, transform: 'username' as const},
+    contrasena_hash: {type: 'text', nullable: false, label: 'Contraseña', readable: false as const,
+        inputName: 'contrasena' as const, inputType: 'password' as const, transform: 'password' as const},
+    recuperacion_hashes: {type: 'text', nullable: false, readable: false as const, writable: false as const,
+        onCreate: 'empty-array' as const, onPasswordChange: 'empty-array' as const},
+    version_sesion: {type: 'text', nullable: false, readable: false as const, writable: false as const,
+        onCreate: 'uuid' as const, onUpdate: 'uuid' as const},
 });
 
 export const myRecords = withRecords(myTypes, {materia, pabellon, plan, usuario})
@@ -117,4 +134,5 @@ export const sqlMapping = {
     text: sqlTypes.text,
     integer: sqlTypes.integer,
     boolean: sqlTypes.boolean,
+    password: sqlTypes.text,
 } satisfies SqlTypeMapping<typeof ssot>;

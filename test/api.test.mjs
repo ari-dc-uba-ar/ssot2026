@@ -12,7 +12,7 @@ const fetch = (url, options = {}) => globalThis.fetch(url, {...options,
 
 async function startApi(t, query) {
     const app = express();
-    const user = {id: 'admin', usuario: 'admin', administrador: true, activo: true, version_sesion: 'test-version'};
+    const user = {id: 'admin', usuario: 'admin', version_sesion: 'test-version'};
     const auth = createAuthentication({query: async () => ({rows: [user]})}, 'test-only-secret-with-at-least-32-bytes');
     registerEntityApi(app, {query}, auth);
     const server = await new Promise(resolve => {
@@ -53,6 +53,12 @@ test('entity data preserves JSON value types and exposes only display metadata',
             {name: 'materia', label: 'materia', type: 'text', nullable: false, writable: true},
             {name: 'plan', label: 'plan', type: 'integer', nullable: true, writable: true},
             {name: 'obligatoria', label: 'obligatoria', type: 'boolean', nullable: true, writable: true},
+        ],
+        inputs: [
+            {name: 'cod_mat', label: 'cod mat', type: 'text', nullable: true, constraints: {minLength: null, maxLength: null}, optionalOnUpdate: false},
+            {name: 'materia', label: 'materia', type: 'text', nullable: false, constraints: {minLength: null, maxLength: null}, optionalOnUpdate: false},
+            {name: 'plan', label: 'plan', type: 'integer', nullable: true, constraints: {minLength: null, maxLength: null}, optionalOnUpdate: false},
+            {name: 'obligatoria', label: 'obligatoria', type: 'boolean', nullable: true, constraints: {minLength: null, maxLength: null}, optionalOnUpdate: false},
         ],
         rows: [{cod_mat: null, materia: 'Álgebra', plan: 2026, obligatoria: false}],
     });

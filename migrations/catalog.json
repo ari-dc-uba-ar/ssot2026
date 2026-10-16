@@ -15,6 +15,11 @@
       "systemId": "ssot2026",
       "releaseId": "0002_authentication",
       "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a"
+    },
+    {
+      "systemId": "ssot2026",
+      "releaseId": "0003_authenticated_administrators",
+      "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f"
     }
   ],
   "migrations": [
@@ -275,6 +280,51 @@
         "after": []
       },
       "migrationHash": "79ad8130feb00b7aad6514b59fa3c6b779bb6d321512335db4999f7fb9a73292"
+    },
+    {
+      "migration": {
+        "id": "0003_authenticated_administrators",
+        "from": {
+          "systemId": "ssot2026",
+          "releaseId": "0002_authentication",
+          "releaseHash": "d8c5c65bb9b125da52f73fe6c97d15604042138ee7914635a11a1b57a452b07a"
+        },
+        "to": {
+          "systemId": "ssot2026",
+          "releaseId": "0003_authenticated_administrators",
+          "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f"
+        },
+        "description": "",
+        "before": [],
+        "steps": [
+          {
+            "id": "001_remove_column_usuarios_administrador",
+            "run": {
+              "name": "001_remove_column_usuarios_administrador.sql",
+              "kind": "sql",
+              "contentHash": "face824cce73e15a37eb3614b58876a8150c245ee4edb1563ac7c572ef39927a"
+            }
+          },
+          {
+            "id": "002_remove_column_usuarios_activo",
+            "run": {
+              "name": "002_remove_column_usuarios_activo.sql",
+              "kind": "sql",
+              "contentHash": "b09aa0c91972b89dc6846646a2fce9b7f111af15aad1cd41d7e371ab97b331df"
+            }
+          },
+          {
+            "id": "app-permissions",
+            "run": {
+              "name": "app-permissions.sql",
+              "kind": "sql",
+              "contentHash": "ae607c2a03d4bafc7286d4f6114eba3a33f51430281a06e7f96f6e40cfcca63e"
+            }
+          }
+        ],
+        "after": []
+      },
+      "migrationHash": "89d5cd34f9bb25af40a6f441b88d98eccc27f9b083f355bdd2a4bbc18ffa3768"
     }
   ]
 }

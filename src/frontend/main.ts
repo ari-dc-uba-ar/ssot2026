@@ -1,9 +1,9 @@
-import type {EntityColumn, EntityCreate, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
+import type {EntityInputColumn, EntityCreate, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
 import {ApiRequestError, createRow, deleteRow, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
 import {messageOf} from './messages.js';
 import {initializeAuthentication} from './auth-ui.js';
 
-type Column = EntityColumn<EntityName>;
+type Column = EntityInputColumn<EntityName>;
 type Row = EntityRow<EntityName>;
 type Value = {[E in EntityName]: EntityRow<E>[keyof EntityRow<E>]}[EntityName];
 
@@ -15,24 +15,32 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = ''): HTML
 
 // Each supported display type has one editor. Adding a backend type requires a renderer.
 const editors = {
-    text: () => {
+    text: (_constraints) => {
         const input = element('input');
         return {input, read: () => input.value};
     },
-    integer: () => {
+    password: constraints => {
+        const input = element('input');
+        input.type = 'password';
+        input.autocomplete = 'new-password';
+        input.minLength = constraints.minLength ?? 0;
+        input.maxLength = constraints.maxLength ?? 524288;
+        return {input, read: () => input.value};
+    },
+    integer: (_constraints) => {
         const input = element('input');
         input.type = 'number';
         input.step = '1';
         input.required = true;
         return {input, read: () => input.valueAsNumber};
     },
-    boolean: () => {
+    boolean: (_constraints) => {
         const input = element('select');
         input.add(new Option('No', 'false'));
         input.add(new Option('Sí', 'true'));
         return {input, read: () => input.value === 'true'};
     },
-} satisfies Record<Column['type'], () => {input: HTMLInputElement | HTMLSelectElement; read: () => Value}>;
+} satisfies Record<Column['type'], (constraints: Column['constraints']) => {input: HTMLInputElement | HTMLSelectElement; read: () => Value}>;
 
 const workspace = document.querySelector<HTMLFieldSetElement>('#workspace')!;
 const selector = document.querySelector<HTMLSelectElement>('#entity')!;
@@ -73,12 +81,15 @@ function rowKey(entity: EntityResponse, row: Row): EntityKey<EntityName> {
 
 function edit(entity: EntityResponse, row?: Row): void {
     const values: Readonly<Record<string, Value>> = row ?? {};
-    const readers: {field: HTMLDivElement; name: string; error: HTMLSpanElement; read: () => Value}[] = entity.columns.filter(column => column.writable).map(column => {
-        const editor = editors[column.type]();
+    const readers = entity.inputs.map(column => {
+        const editor = editors[column.type](column.constraints);
         editor.input.id = `field-${column.name}`;
         editor.input.name = column.name;
-        editor.input.value = String(values[column.name] ?? (column.type === 'boolean' ? entity.name === 'usuarios' && column.name === 'activo' : ''));
+        editor.input.value = String(values[column.name] ?? (column.type === 'boolean' ? false : ''));
+        const optional = !!row && column.optionalOnUpdate;
+        editor.input.required = !column.nullable && !optional;
         const label = element('label', column.label);
+        if (optional) label.append(document.createTextNode(' (opcional)'));
         label.htmlFor = editor.input.id;
         const field = element('div');
         field.className = 'field';
@@ -97,23 +108,8 @@ function edit(entity: EntityResponse, row?: Row): void {
         const error = element('span');
         error.className = 'field-error';
         field.append(error);
-        return {field, name: column.name, error, read: () => empty.checked ? null : editor.read()};
+        return {field, name: column.name, error, optional, read: () => empty.checked ? null : editor.read()};
     });
-    if (entity.name === 'usuarios') {
-        const field = element('div');
-        field.className = 'field';
-        const input = element('input');
-        input.type = 'password';
-        input.autocomplete = 'new-password';
-        input.minLength = 12;
-        input.maxLength = 128;
-        input.required = !row;
-        input.id = 'field-contrasena';
-        const label = element('label', row ? 'Nueva contraseña (opcional)' : 'Contraseña (12–128 caracteres)');
-        label.htmlFor = input.id;
-        field.append(label, input);
-        readers.push({field, name: 'contrasena', error: element('span'), read: () => input.value});
-    }
     fields.replaceChildren(...readers.map(reader => reader.field));
     const actions = element('div');
     actions.className = 'actions';
@@ -126,8 +122,10 @@ function edit(entity: EntityResponse, row?: Row): void {
     form.onsubmit = event => {
         event.preventDefault();
         // Editors follow the API's type/nullability metadata; the backend validates the row again.
-        const next = Object.fromEntries(readers.map(reader => [reader.name, reader.read()])) as Record<string, Value>;
-        if (row && next['contrasena'] === '') delete next['contrasena'];
+        const next = Object.fromEntries(readers.flatMap(reader => {
+            const value = reader.read();
+            return reader.optional && value === '' ? [] : [[reader.name, value]];
+        })) as Record<string, Value>;
         void run(async () => {
             try {
                 if (row) await updateRow(entity.name, {key: rowKey(entity, row), row: next} as EntityUpdate<EntityName>);

@@ -3,10 +3,12 @@ import {randomUUID} from 'node:crypto';
 import test from 'node:test';
 import express from 'express';
 import {Client} from 'pg';
+import {completeEntity} from 'system-definition';
 import {databaseConfig} from '../dist/backend/database.js';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {createAuthentication} from '../dist/backend/auth.js';
-import {insertUser} from '../dist/backend/users.js';
+import {insertPreparedRow, prepareEntityWrite} from '../dist/backend/entity-write.js';
+import {myContext, myEntities} from '../dist/backend/system.js';
 
 test('CRUD round trip uses the app connection and rolls back its test data', async t => {
     const client = new Client(databaseConfig);
@@ -14,8 +16,9 @@ test('CRUD round trip uses the app connection and rolls back its test data', asy
     t.after(async () => { await client.query('ROLLBACK'); await client.end(); });
     await client.query('BEGIN');
     const username = 'crud-' + randomUUID();
-    await insertUser(client, {usuario: username, administrador: false, activo: true}, 'crud-test-long-password');
-    const user = (await client.query('SELECT id, usuario, administrador, activo, version_sesion FROM ssot.usuarios WHERE usuario = $1', [username])).rows[0];
+    const entity = completeEntity(myContext, myEntities.usuarios);
+    await insertPreparedRow(client, entity, await prepareEntityWrite(entity, {usuario: username, contrasena: 'crud-test-long-password'}, 'create'));
+    const user = (await client.query('SELECT id, usuario, version_sesion FROM ssot.usuarios WHERE usuario = $1', [username])).rows[0];
     const auth = createAuthentication(client, 'crud-test-secret-with-at-least-32-bytes');
     const headers = {Authorization: `Bearer ${(await auth.issueToken(user)).token}`};
     const app = express();

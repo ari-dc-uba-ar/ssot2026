@@ -31,12 +31,16 @@ void deleteRow('planes', {materia: 'Wrong key'});
 // @ts-expect-error A key cannot be null.
 void deleteRow('planes', {plan: null});
 
-export type PublicUserFields = Assert<Equal<keyof EntityRow<'usuarios'>, 'id' | 'usuario' | 'administrador' | 'activo'>>;
+export type PublicUserFields = Assert<Equal<keyof EntityRow<'usuarios'>, 'id' | 'usuario'>>;
 export type PublicUserColumns = Assert<Equal<EntityColumn<'usuarios'>['name'], keyof EntityRow<'usuarios'>>>;
-export type WritableUserFields = Assert<Equal<keyof EntityInput<'usuarios'>, 'usuario' | 'administrador' | 'activo' | 'contrasena'>>;
+export type WritableUserFields = Assert<Equal<keyof EntityInput<'usuarios'>, 'usuario' | 'contrasena'>>;
 // @ts-expect-error Password hashes cannot be read through the public API.
 export type HiddenPassword = EntityRow<'usuarios'>['contrasena_hash'];
 // @ts-expect-error A password is required when creating a user.
-export const missingPassword: EntityCreate<'usuarios'> = {usuario: 'usuario', administrador: false, activo: true};
+export const missingPassword: EntityCreate<'usuarios'> = {usuario: 'usuario'};
 // @ts-expect-error Recovery hashes cannot be assigned through the public API.
-void createRow('usuarios', {usuario: 'usuario', administrador: false, activo: true, contrasena: 'a-long-password', recuperacion_hashes: '[]'});
+void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password', recuperacion_hashes: '[]'});
+void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password'});
+void updateRow('usuarios', {key: {id: 'id'}, row: {usuario: 'usuario'}});
+// @ts-expect-error There are no per-account roles.
+void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password', administrador: true});

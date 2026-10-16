@@ -2,16 +2,15 @@ import express, {type Express, type RequestHandler, type Response} from 'express
 import type {Pool} from 'pg';
 import {jwtVerify, SignJWT} from 'jose';
 import {randomUUID} from 'node:crypto';
-import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
-import {databaseSettings} from './database.js';
+import {entityTable} from './entity-write.js';
 import {authenticationEntity} from './system.js';
 import {ApiFailure, apiErrorHandler, readObject} from './api-errors.js';
 import {createRecoveryCodes, hashPassword, hashRecoveryCode, readPassword, readUsername, verifyPassword} from './credentials.js';
 import type {AuthenticatedUser, LoginResponse, RecoveryCodesResponse} from './api-contract.js';
 
-export const usersTable = `${quote(databaseSettings.database.schema)}.${quote(authenticationEntity)}`;
-type UserSession = AuthenticatedUser & {activo: boolean; version_sesion: string};
-const publicUser = ({id, usuario, administrador}: AuthenticatedUser): AuthenticatedUser => ({id, usuario, administrador});
+export const usersTable = entityTable(authenticationEntity);
+type UserSession = AuthenticatedUser & {version_sesion: string};
+const publicUser = ({id, usuario}: AuthenticatedUser): AuthenticatedUser => ({id, usuario});
 export function principal(res: Response): AuthenticatedUser {
     const user = res.locals['user'] as AuthenticatedUser | undefined;
     if (!user) throw new ApiFailure(401, 'Iniciá sesión para continuar.');
@@ -42,9 +41,9 @@ export function createAuthentication(pool: Pick<Pool, 'query'>, secret = process
         } catch {
             throw new ApiFailure(401, 'La sesión venció o no es válida.');
         }
-        const {rows} = await pool.query<UserSession>(`SELECT id, usuario, administrador, activo, version_sesion FROM ${usersTable} WHERE id = $1`, [identity.id]);
+        const {rows} = await pool.query<UserSession>(`SELECT id, usuario, version_sesion FROM ${usersTable} WHERE id = $1`, [identity.id]);
         const user = rows[0];
-        if (!user?.activo || user.version_sesion !== identity.version) throw new ApiFailure(401, 'La sesión venció o no es válida.');
+        if (!user || user.version_sesion !== identity.version) throw new ApiFailure(401, 'La sesión venció o no es válida.');
         res.locals['user'] = publicUser(user);
         res.setHeader('Cache-Control', 'no-store');
         next();
@@ -52,11 +51,6 @@ export function createAuthentication(pool: Pick<Pool, 'query'>, secret = process
     return {issueToken, requireUser};
 }
 export type Authentication = ReturnType<typeof createAuthentication>;
-
-export const requireAdministrator: RequestHandler = (_req, res, next) => {
-    if (!principal(res).administrador) throw new ApiFailure(403, 'Se requieren permisos de administrador.');
-    next();
-};
 
 // Per-process limit; Express uses the socket IP unless a trusted proxy is explicitly configured.
 function authenticationLimit(): RequestHandler {
@@ -86,10 +80,10 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const usuario = readUsername(body['usuario']);
         const password = readPassword(body['contrasena']);
         const {rows} = await pool.query<UserSession & {contrasena_hash: string}>(
-            `SELECT id, usuario, administrador, activo, version_sesion, contrasena_hash FROM ${usersTable} WHERE usuario = $1`, [usuario]);
+            `SELECT id, usuario, version_sesion, contrasena_hash FROM ${usersTable} WHERE usuario = $1`, [usuario]);
         const user = rows[0];
         const verified = await verifyPassword(password, user?.contrasena_hash);
-        if (!verified || !user?.activo) throw new ApiFailure(401, 'Usuario o contraseña incorrectos.');
+        if (!verified || !user) throw new ApiFailure(401, 'Usuario o contraseña incorrectos.');
         res.json(await auth.issueToken(user));
     });
     router.post('/recover', limit, async (req, res) => {
@@ -102,7 +96,7 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const recovery = createRecoveryCodes();
         // One atomic update consumes the previous set and revokes every existing JWT.
         const result = await pool.query(`UPDATE ${usersTable} SET contrasena_hash = $1, recuperacion_hashes = $2, version_sesion = $3
-            WHERE usuario = $4 AND activo = TRUE AND recuperacion_hashes::jsonb ? $5 RETURNING id`,
+            WHERE usuario = $4 AND recuperacion_hashes::jsonb ? $5 RETURNING id`,
         [password, recovery.hashes, randomUUID(), usuario, hashRecoveryCode(body['codigo'])]);
         if (!result.rowCount) throw new ApiFailure(401, 'Usuario o código de recuperación incorrectos.');
         res.json({codes: recovery.codes} satisfies RecoveryCodesResponse);
@@ -117,12 +111,12 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const currentPassword = readPassword(body['contrasenaActual']);
         const password = readPassword(body['contrasena']);
         const id = principal(res).id;
-        const {rows} = await pool.query<{contrasena_hash: string}>(`SELECT contrasena_hash FROM ${usersTable} WHERE id = $1 AND activo = TRUE`, [id]);
+        const {rows} = await pool.query<{contrasena_hash: string}>(`SELECT contrasena_hash FROM ${usersTable} WHERE id = $1`, [id]);
         const previous = rows[0]?.contrasena_hash;
         if (!await verifyPassword(currentPassword, previous) || !previous) throw new ApiFailure(401, 'Contraseña actual incorrecta.');
         const recovery = createRecoveryCodes();
         const result = await pool.query(`UPDATE ${usersTable} SET contrasena_hash = $1, recuperacion_hashes = $2, version_sesion = $3
-            WHERE id = $4 AND activo = TRUE AND contrasena_hash = $5`, [await hashPassword(password), recovery.hashes, randomUUID(), id, previous]);
+            WHERE id = $4 AND contrasena_hash = $5`, [await hashPassword(password), recovery.hashes, randomUUID(), id, previous]);
         if (!result.rowCount) throw new ApiFailure(409, 'La cuenta cambió. Volvé a iniciar sesión.');
         res.json({codes: recovery.codes} satisfies RecoveryCodesResponse);
     });
@@ -130,11 +124,11 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const body = readObject(req.body, ['contrasena']);
         const password = readPassword(body['contrasena']);
         const id = principal(res).id;
-        const {rows} = await pool.query<{contrasena_hash: string}>(`SELECT contrasena_hash FROM ${usersTable} WHERE id = $1 AND activo = TRUE`, [id]);
+        const {rows} = await pool.query<{contrasena_hash: string}>(`SELECT contrasena_hash FROM ${usersTable} WHERE id = $1`, [id]);
         const previous = rows[0]?.contrasena_hash;
         if (!await verifyPassword(password, previous) || !previous) throw new ApiFailure(401, 'Contraseña actual incorrecta.');
         const recovery = createRecoveryCodes();
-        const result = await pool.query(`UPDATE ${usersTable} SET recuperacion_hashes = $1 WHERE id = $2 AND activo = TRUE AND contrasena_hash = $3`, [recovery.hashes, id, previous]);
+        const result = await pool.query(`UPDATE ${usersTable} SET recuperacion_hashes = $1 WHERE id = $2 AND contrasena_hash = $3`, [recovery.hashes, id, previous]);
         if (!result.rowCount) throw new ApiFailure(409, 'La cuenta cambió. Volvé a iniciar sesión.');
         res.json({codes: recovery.codes} satisfies RecoveryCodesResponse);
     });

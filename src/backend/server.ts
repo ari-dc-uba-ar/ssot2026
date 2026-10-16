@@ -4,6 +4,7 @@ import {Pool} from 'pg';
 import {databaseConfig} from './database.js';
 import {registerEntityApi} from './api.js';
 import {createAuthentication, registerAuthApi} from './auth.js';
+import {initializeUsers, reportInitialization} from './bootstrap.js';
 
 const pool = new Pool(databaseConfig);
 const app = express();
@@ -20,4 +21,11 @@ app.use('/assets', express.static(fileURLToPath(new URL('../frontend', import.me
 app.use(express.static(fileURLToPath(new URL('../../src/frontend/public', import.meta.url))));
 
 const port = 3000;
-app.listen(port, () => console.log(`SSOT2026 escuchando en http://localhost:${port}`));
+try {
+    reportInitialization(await initializeUsers(pool));
+    app.listen(port, () => console.log(`SSOT2026 escuchando en http://localhost:${port}`));
+} catch {
+    console.error('No se pudo inicializar la app. Verificá las migraciones y AUTH_ADMIN_USERNAME/AUTH_ADMIN_PASSWORD para el primer arranque.');
+    process.exitCode = 1;
+    await pool.end();
+}
