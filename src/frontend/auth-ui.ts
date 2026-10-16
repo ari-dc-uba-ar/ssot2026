@@ -1,4 +1,5 @@
 import {changePassword, clearSession, generateRecoveryCodes, login, logout, recover} from './api.js';
+import {confirmAction} from './confirm.js';
 
 export function initializeAuthentication(onSession: (active: boolean) => void): void {
     const panel = document.querySelector<HTMLElement>('#authentication')!;
@@ -116,10 +117,16 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         });
     };
 
-    document.querySelector<HTMLButtonElement>('#logout')!.onclick = () => {
+    document.querySelector<HTMLButtonElement>('#logout')!.onclick = async () => {
+        const ok = await confirmAction({
+            title: 'Cerrar sesión',
+            message: '¿Estás seguro de que deseas cerrar tu sesión actual?',
+            confirmText: 'Cerrar sesión',
+            danger: true,
+        });
+        if (!ok) return;
         void logout().catch(() => {}).finally(() => {
             signedOut();
-            openLoginModal();
         });
     };
 
@@ -147,7 +154,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
                 await savedCodes(result.codes);
                 if (next) {
                     signedOut();
-                    openLoginModal();
                 }
             } catch (failure) {
                 document.querySelector('#account-status')!.textContent = failure instanceof Error ? failure.message : 'No se pudo completar la operación.';
@@ -157,7 +163,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
 
     window.addEventListener('sessionexpired', () => {
         signedOut();
-        openLoginModal();
     });
 
     signedOut();
