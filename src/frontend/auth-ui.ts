@@ -11,7 +11,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
     const accountForm = document.querySelector<HTMLFormElement>('#account-form')!;
     const accountManagement = document.querySelector<HTMLElement>('#account-management');
     const accountTitle = document.querySelector<HTMLElement>('#account-dialog-title');
-    const openAuth = document.querySelector<HTMLButtonElement>('#open-auth');
     const loginPromptBtn = document.querySelector<HTMLButtonElement>('#login-prompt-btn');
     const closeAccountDialog = document.querySelector<HTMLButtonElement>('#close-account-dialog');
     const unauthNotice = document.querySelector<HTMLElement>('#unauthenticated-notice');
@@ -29,7 +28,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         clearSession();
         panel.hidden = false;
         if (accountManagement) accountManagement.hidden = true;
-        if (openAuth) openAuth.hidden = false;
         if (unauthNotice) unauthNotice.hidden = false;
         session.hidden = true;
         if (accountTitle) accountTitle.textContent = 'Iniciar sesión';
@@ -74,7 +72,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         });
     }
 
-    if (openAuth) openAuth.onclick = openLoginModal;
     if (loginPromptBtn) loginPromptBtn.onclick = openLoginModal;
     if (closeAccountDialog) closeAccountDialog.onclick = () => account.close();
 
@@ -85,7 +82,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             const result = await login(String(data.get('usuario')), String(data.get('contrasena')));
             loginForm.reset();
             panel.hidden = true;
-            if (openAuth) openAuth.hidden = true;
             if (unauthNotice) unauthNotice.hidden = true;
             session.hidden = false;
             document.querySelector('#session-user')!.textContent = result.user.usuario;
@@ -165,5 +161,4 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
     });
 
     signedOut();
-    openLoginModal();
 }
