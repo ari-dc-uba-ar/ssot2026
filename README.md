@@ -321,9 +321,25 @@ Open `http://localhost:3000/` after starting the backend (`/menu` redirects ther
 The small TypeScript page discovers entities from the API and provides a table,
 create/edit form and delete confirmation for each one. Entity and field names
 are not hardcoded. Foreign keys use dropdowns populated from the referenced entity.
-Option labels combine the referenced key and readable fields marked `isName` in
+Option labels combine the field's code and readable fields marked `isName` in
 the SSOT; plans display their number and description. Nullable references include
 `Ninguna`, which stores `null`. Required references require an explicit selection.
+FK relationships separate inherited keys into related dropdowns. Columns that
+always occur together in those relationships form one selection, such as the
+month/year portion of a Course key. An Enrolment can therefore select Department,
+Subject, Period and Student while submitting all underlying columns separately.
+Each dropdown has one option per distinct code and `isName` combination.
+The same code/name under several parent keys appears
+once; different names for the same code remain distinct options. Parent key
+prefixes are omitted from individual labels. Related selections filter options
+in both directions, including through shared columns on overlapping FKs.
+Changing a selection preserves compatible values and clears incompatible ones.
+Clearing a selection removes its filter; required fields still need a value
+before saving. The frontend also reads parent FKs from referenced entities,
+without requiring redundant relationships on the edited entity. Narrower FK
+relationships identify the key described by an entity's `isName`. Independent relationships,
+including those on a join table, keep independent selections within their shared
+context.
 Text, password, integer and boolean editors preserve null separately
 from empty text, zero and false. New types require an editor at compile time.
 
@@ -343,7 +359,8 @@ and whether omission on update preserves the stored value. A write-only password
 input is available to the editor without exposing the stored hash as a column.
 `foreignKeys` supplies each editable relationship's name, target entity, mapping
 from input names to referenced columns, and readable display fields. The editor
-loads the referenced entity through the authenticated API when opening a form.
+loads the referenced entities and their parent relationships through the
+authenticated API when opening a form.
 The `materias.plan` relationship references `planes.plan`; deleting or renumbering
 a referenced plan is rejected. Migration `0004_materias_plan_fk` adds only that
 constraint and requires existing non-null plan values to have matching rows.

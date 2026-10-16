@@ -2,7 +2,8 @@ import type {EntityInputColumn, EntityCreate, EntityKey, EntityName, EntityRespo
 import {ApiRequestError, createRow, deleteRow, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
 import {messageOf} from './messages.js';
 import {initializeAuthentication} from './auth-ui.js';
-import {referenceOptions} from './foreign-keys.js';
+import {createReferenceFields} from './foreign-keys.js';
+import {loadReferenceSources} from './reference-sources.js';
 
 type Column = EntityInputColumn<EntityName>;
 type Row = EntityRow<EntityName>;
@@ -83,47 +84,55 @@ function rowKey(entity: EntityResponse, row: Row): EntityKey<EntityName> {
 
 async function edit(entity: EntityResponse, row?: Row): Promise<void> {
     const values: Readonly<Record<string, Value>> = row ?? {};
-    const targets = new Map(await Promise.all([...new Set(entity.foreignKeys.map(fk => fk.entity))]
-        .map(async name => [name, await loadEntity(name)] as const)));
+    const sources = await loadReferenceSources(entity.foreignKeys);
     if (!isAuthenticated()) return;
-    const used = new Set<string>();
-    const readers = entity.inputs.flatMap<FieldReader>(column => {
-        if (used.has(column.name)) return [];
-        const reference = entity.foreignKeys.find(fk => Object.hasOwn(fk.fields, column.name));
-        if (reference) {
-            const names = Object.keys(reference.fields);
-            names.forEach(name => used.add(name));
-            const columns = entity.inputs.filter(input => names.includes(input.name));
-            const nullable = columns.every(input => input.nullable);
-            const options = referenceOptions(reference, targets.get(reference.entity)!.rows);
-            const input = element('select');
-            input.id = `field-${column.name}`;
-            input.name = column.name;
-            input.required = !nullable;
-            const empty = new Option(nullable ? 'Ninguna' : 'Seleccionar…', '');
-            empty.disabled = !nullable;
-            input.add(empty);
+    const references = createReferenceFields(sources, values);
+    const controls = new Map<string, {input: HTMLSelectElement; columns: Column[]}>();
+    const refreshReferences = () => {
+        for (const [name, {input, columns}] of controls) {
+            const options = references.options(name);
+            const empty = new Option(columns.every(column => column.nullable) ? 'Ninguna' : 'Seleccionar…', '');
+            input.replaceChildren(empty);
+            input.title = options.length ? '' : 'No hay opciones compatibles con la selección actual.';
             options.forEach((option, index) => input.add(new Option(option.label, String(index + 1))));
-            const selected = options.findIndex(option => names.every(name => option.values[name] === values[name]));
+            const selectedKey = references.selection(name);
+            const selected = options.findIndex(option => option.key === selectedKey);
             input.value = selected < 0 ? '' : String(selected + 1);
-            if (selected < 0 && names.some(name => values[name] != null)) {
-                const unavailable = new Option('Referencia no disponible', 'unavailable');
-                unavailable.disabled = true;
-                input.add(unavailable);
-                input.value = unavailable.value;
-                input.setCustomValidity('Seleccioná una referencia disponible o Ninguna.');
-                input.onchange = () => input.setCustomValidity('');
+            const unavailable = selected < 0 && references.group(name)!.fields.some(field => references.value(field) !== null);
+            input.setCustomValidity(unavailable ? 'Seleccioná una referencia disponible.' : '');
+            if (unavailable) {
+                const option = new Option('Referencia no disponible', 'unavailable');
+                option.disabled = true;
+                input.add(option);
+                input.value = option.value;
             }
-            const label = element('label', columns.map(input => input.label).join(' / '));
+        }
+    };
+    const rendered = new Set<string>();
+    const readers = entity.inputs.flatMap<FieldReader>(column => {
+        const group = references.group(column.name);
+        if (group) {
+            if (rendered.has(group.name)) return [];
+            rendered.add(group.name);
+            const columns = group.fields.map(name => entity.inputs.find(input => input.name === name)!);
+            const input = element('select');
+            input.id = `field-${group.name}`;
+            input.name = group.name;
+            input.required = !columns.every(column => column.nullable);
+            controls.set(group.name, {input, columns});
+            input.onchange = () => {
+                const option = input.value === '' ? null : references.options(group.name)[Number(input.value) - 1]!;
+                references.change(group.name, option?.value ?? null, option?.key);
+                refreshReferences();
+            };
+            const label = element('label', columns.map(column => column.label).join(' / '));
             label.htmlFor = input.id;
             const field = element('div');
             field.className = 'field';
             const error = element('span');
             error.className = 'field-error';
             field.append(label, input, error);
-            return [{field, names, error, read: () => input.value === ''
-                ? names.map(name => [name, null] as const)
-                : Object.entries(options[Number(input.value) - 1]!.values)}];
+            return [{field, names: group.fields, error, read: () => group.fields.map(name => [name, references.value(name)] as const)}];
         }
         const editor = editors[column.type](column.constraints);
         editor.input.id = `field-${column.name}`;
@@ -156,6 +165,7 @@ async function edit(entity: EntityResponse, row?: Row): Promise<void> {
             return optional && value === '' ? [] : [[column.name, value] as const];
         }}];
     });
+    refreshReferences();
     fields.replaceChildren(...readers.map(reader => reader.field));
     const actions = element('div');
     actions.className = 'actions';
