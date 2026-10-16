@@ -164,11 +164,12 @@ async function onDeleteRow(entity: EntityResponse, row: Row): Promise<void> {
 }
 
 async function onSaveNewRow(entity: EntityResponse, fields: {col: Column; ed: ReturnType<typeof editorFor>; td: HTMLTableCellElement}[]): Promise<void> {
+    if (entity.name === 'usuarios') return;
     fields.forEach(f => f.td.classList.remove('has-error'));
     const next = Object.fromEntries(fields.map(f => [f.col.name, f.ed.read()])) as Row;
     await run(async () => {
         try {
-            await createRow(entity.name, next as EntityCreate<EntityName>);
+            await createRow(entity.name, next as EntityCreate<typeof entity.name>);
             delete cache[entity.name];
             await show(entity.name);
             status.textContent = 'Fila agregada correctamente.';
@@ -225,12 +226,10 @@ async function show(name: EntityName): Promise<void> {
     filterInput.placeholder = `Filtrar ${unit}…`;
     filterInput.oninput = () => { filter = filterInput.value.toLowerCase().trim(); page = 1; render(); };
 
-    toolbar.append(
-        element('h2', title),
-        count,
-        filterInput,
-        button('+ Agregar fila', () => { adding = true; render(); }, 'primary')
-    );
+    toolbar.append(element('h2', title), count, filterInput);
+    if (entity.name !== 'usuarios') {
+        toolbar.append(button('+ Agregar fila', () => { adding = true; render(); }, 'primary'));
+    }
 
     const table = element('table');
     const headerRow = table.createTHead().insertRow();
@@ -350,7 +349,10 @@ async function show(name: EntityName): Promise<void> {
     render();
     content.replaceChildren(toolbar, scroll, pagination);
     if (!entity.rows.length && !adding) {
-        content.append(element('p', `No hay ${unit} registradas. Agregá la primera para comenzar.`));
+        const emptyMsg = entity.name === 'usuarios'
+            ? 'No hay usuarios registrados.'
+            : `No hay ${unit} registradas. Agregá la primera para comenzar.`;
+        content.append(element('p', emptyMsg));
     }
 }
 
