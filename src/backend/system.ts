@@ -48,7 +48,7 @@ const myTypes = defineTypes({
 
 const plan = defineRecord(myTypes,{
     plan        :{ type:'integer'},
-    descripcion :{ type:'text'   },
+    descripcion :{ type:'text', isName: true },
 })
 
 const materia = defineRecord(myTypes,{
@@ -96,6 +96,7 @@ const materias = defineEntity(myContext, {
     name: 'materias',
     record: 'materia',
     pk: ['materia'],
+    fks: {plan: {entity: 'planes', fields: ['plan']}},
     validators: ['validarPlan1993SinObligatorias']
 })
 

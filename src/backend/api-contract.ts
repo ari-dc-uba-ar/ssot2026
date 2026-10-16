@@ -33,11 +33,21 @@ export type EntityInputColumn<E extends EntityName> = E extends EntityName ? {
     [K in AllowedNames<E, 'writable'>]: InputColumn<Fields<E>[K & keyof Fields<E>], InputName<E, K>, Definitions<E>[K]>
 }[AllowedNames<E, 'writable'>] : never;
 
+export type EntityForeignKey = {
+    [E in EntityName]: {
+        name: string;
+        entity: E;
+        fields: Readonly<Record<string, keyof EntityRow<E> & string>>;
+        displayFields: readonly (keyof EntityRow<E> & string)[];
+    }
+}[EntityName];
+
 export type EntityResponse<E extends EntityName = EntityName> = E extends EntityName ? {
     name: E;
     pk: (typeof myEntities)[E]['pk'];
     columns: EntityColumn<E>[];
     inputs: EntityInputColumn<E>[];
+    foreignKeys: EntityForeignKey[];
     rows: EntityRow<E>[];
 } : never;
 export type EntityKey<E extends EntityName> = E extends EntityName

@@ -13,6 +13,7 @@ test('migration artifacts retain valid hashes and grant CRUD only when their tab
         '0001_initial': ['materias', 'pabellones', 'planes'],
         '0002_authentication': ['usuarios'],
         '0003_authenticated_administrators': [],
+        '0004_materias_plan_fk': [],
     };
     for (let index = 0; index < catalog.releases.length; index++) value(await readCatalogState(root, catalog, index));
     for (const published of catalog.migrations) {
@@ -25,4 +26,10 @@ test('migration artifacts retain valid hashes and grant CRUD only when their tab
         assert.equal(published.migration.steps.some(step => step.id === 'app-permissions'), tables.length > 0);
         if (published.migration.id === '0001_initial') assert.match(text, /ALTER DEFAULT PRIVILEGES[^;]+\bREVOKE\b/);
     }
+});
+
+test('the plan FK migration only changes the constraint and leaves existing data untouched', async () => {
+    const text = await readFile('migrations/entries/0004_materias_plan_fk/0004_materias_plan_fk.sql', 'utf8');
+    assert.match(text, /FOREIGN KEY \("plan"\) REFERENCES "ssot"\."planes" \("plan"\)/);
+    assert.doesNotMatch(text, /\b(?:INSERT|UPDATE|DELETE|TRUNCATE|CASCADE|NOT VALID)\b/i);
 });

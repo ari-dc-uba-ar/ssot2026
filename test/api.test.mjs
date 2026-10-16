@@ -60,6 +60,7 @@ test('entity data preserves JSON value types and exposes only display metadata',
             {name: 'plan', label: 'plan', type: 'integer', nullable: true, constraints: {minLength: null, maxLength: null}, optionalOnUpdate: false},
             {name: 'obligatoria', label: 'obligatoria', type: 'boolean', nullable: true, constraints: {minLength: null, maxLength: null}, optionalOnUpdate: false},
         ],
+        foreignKeys: [{name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']}],
         rows: [{cod_mat: null, materia: 'Álgebra', plan: 2026, obligatoria: false}],
     });
     assert.match(sql, /SELECT "cod_mat", "materia", "plan", "obligatoria"/);

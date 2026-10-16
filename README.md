@@ -320,7 +320,11 @@ share a limit of 20 requests per IP per 15 minutes in each backend process.
 Open `http://localhost:3000/` after starting the backend (`/menu` redirects there).
 The small TypeScript page discovers entities from the API and provides a table,
 create/edit form and delete confirmation for each one. Entity and field names
-are not hardcoded. Text, password, integer and boolean editors preserve null separately
+are not hardcoded. Foreign keys use dropdowns populated from the referenced entity.
+Option labels combine the referenced key and readable fields marked `isName` in
+the SSOT; plans display their number and description. Nullable references include
+`Ninguna`, which stores `null`. Required references require an explicit selection.
+Text, password, integer and boolean editors preserve null separately
 from empty text, zero and false. New types require an editor at compile time.
 
 `npm run build` compiles the backend and browser separately, using a TypeScript
@@ -331,12 +335,18 @@ or additional dependency.
 
 `GET /health` checks the database connection. All `/api/entities` requests require
 `Authorization: Bearer <JWT>`. `GET /api/entities` returns the
-available entity names. `GET /api/entities/:name` returns `{name, pk, columns, inputs, rows}`,
+available entity names. `GET /api/entities/:name` returns `{name, pk, columns, inputs, foreignKeys, rows}`,
 with only `{name, label, type, nullable, writable}` for each readable column. Keys identify rows for
-editing/deletion; nullability controls the form's explicit "Sin valor" option.
+editing/deletion; nullability controls the form's explicit "Ninguna" option.
 `inputs` describes writable input names, labels, types, nullability, type constraints
 and whether omission on update preserves the stored value. A write-only password
 input is available to the editor without exposing the stored hash as a column.
+`foreignKeys` supplies each editable relationship's name, target entity, mapping
+from input names to referenced columns, and readable display fields. The editor
+loads the referenced entity through the authenticated API when opening a form.
+The `materias.plan` relationship references `planes.plan`; deleting or renumbering
+a referenced plan is rejected. Migration `0004_materias_plan_fk` adds only that
+constraint and requires existing non-null plan values to have matching rows.
 
 All mutations use JSON at `/api/entities/:name`:
 

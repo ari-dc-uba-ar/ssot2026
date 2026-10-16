@@ -2,10 +2,12 @@ import type {EntityInputColumn, EntityCreate, EntityKey, EntityName, EntityRespo
 import {ApiRequestError, createRow, deleteRow, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
 import {messageOf} from './messages.js';
 import {initializeAuthentication} from './auth-ui.js';
+import {referenceOptions} from './foreign-keys.js';
 
 type Column = EntityInputColumn<EntityName>;
 type Row = EntityRow<EntityName>;
 type Value = {[E in EntityName]: EntityRow<E>[keyof EntityRow<E>]}[EntityName];
+type FieldReader = {field: HTMLElement; names: string[]; error: HTMLElement; read: () => (readonly [string, Value])[]};
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = ''): HTMLElementTagNameMap[K] {
     const node = document.createElement(tag);
@@ -79,9 +81,50 @@ function rowKey(entity: EntityResponse, row: Row): EntityKey<EntityName> {
     return Object.fromEntries(entity.pk.map(name => [name, values[name]])) as EntityKey<EntityName>;
 }
 
-function edit(entity: EntityResponse, row?: Row): void {
+async function edit(entity: EntityResponse, row?: Row): Promise<void> {
     const values: Readonly<Record<string, Value>> = row ?? {};
-    const readers = entity.inputs.map(column => {
+    const targets = new Map(await Promise.all([...new Set(entity.foreignKeys.map(fk => fk.entity))]
+        .map(async name => [name, await loadEntity(name)] as const)));
+    if (!isAuthenticated()) return;
+    const used = new Set<string>();
+    const readers = entity.inputs.flatMap<FieldReader>(column => {
+        if (used.has(column.name)) return [];
+        const reference = entity.foreignKeys.find(fk => Object.hasOwn(fk.fields, column.name));
+        if (reference) {
+            const names = Object.keys(reference.fields);
+            names.forEach(name => used.add(name));
+            const columns = entity.inputs.filter(input => names.includes(input.name));
+            const nullable = columns.every(input => input.nullable);
+            const options = referenceOptions(reference, targets.get(reference.entity)!.rows);
+            const input = element('select');
+            input.id = `field-${column.name}`;
+            input.name = column.name;
+            input.required = !nullable;
+            const empty = new Option(nullable ? 'Ninguna' : 'Seleccionar…', '');
+            empty.disabled = !nullable;
+            input.add(empty);
+            options.forEach((option, index) => input.add(new Option(option.label, String(index + 1))));
+            const selected = options.findIndex(option => names.every(name => option.values[name] === values[name]));
+            input.value = selected < 0 ? '' : String(selected + 1);
+            if (selected < 0 && names.some(name => values[name] != null)) {
+                const unavailable = new Option('Referencia no disponible', 'unavailable');
+                unavailable.disabled = true;
+                input.add(unavailable);
+                input.value = unavailable.value;
+                input.setCustomValidity('Seleccioná una referencia disponible o Ninguna.');
+                input.onchange = () => input.setCustomValidity('');
+            }
+            const label = element('label', columns.map(input => input.label).join(' / '));
+            label.htmlFor = input.id;
+            const field = element('div');
+            field.className = 'field';
+            const error = element('span');
+            error.className = 'field-error';
+            field.append(label, input, error);
+            return [{field, names, error, read: () => input.value === ''
+                ? names.map(name => [name, null] as const)
+                : Object.entries(options[Number(input.value) - 1]!.values)}];
+        }
         const editor = editors[column.type](column.constraints);
         editor.input.id = `field-${column.name}`;
         editor.input.name = column.name;
@@ -100,7 +143,7 @@ function edit(entity: EntityResponse, row?: Row): void {
         if (column.nullable) {
             const nullLabel = element('label');
             nullLabel.className = 'null-option';
-            nullLabel.append(empty, document.createTextNode(' Sin valor'));
+            nullLabel.append(empty, document.createTextNode(' Ninguna'));
             field.append(nullLabel);
             empty.onchange = () => { editor.input.disabled = empty.checked; };
         }
@@ -108,7 +151,10 @@ function edit(entity: EntityResponse, row?: Row): void {
         const error = element('span');
         error.className = 'field-error';
         field.append(error);
-        return {field, name: column.name, error, optional, read: () => empty.checked ? null : editor.read()};
+        return [{field, names: [column.name], error, read: () => {
+            const value = empty.checked ? null : editor.read();
+            return optional && value === '' ? [] : [[column.name, value] as const];
+        }}];
     });
     fields.replaceChildren(...readers.map(reader => reader.field));
     const actions = element('div');
@@ -122,10 +168,7 @@ function edit(entity: EntityResponse, row?: Row): void {
     form.onsubmit = event => {
         event.preventDefault();
         // Editors follow the API's type/nullability metadata; the backend validates the row again.
-        const next = Object.fromEntries(readers.flatMap(reader => {
-            const value = reader.read();
-            return reader.optional && value === '' ? [] : [[reader.name, value]];
-        })) as Record<string, Value>;
+        const next = Object.fromEntries(readers.flatMap(reader => reader.read())) as Record<string, Value>;
         void run(async () => {
             try {
                 if (row) await updateRow(entity.name, {key: rowKey(entity, row), row: next} as EntityUpdate<EntityName>);
@@ -135,7 +178,7 @@ function edit(entity: EntityResponse, row?: Row): void {
                 if (!(error instanceof ApiRequestError) || !error.problems.length) throw error;
                 for (const reader of readers) reader.error.textContent = '';
                 for (const problem of error.problems) {
-                    const reader = readers.find(candidate => candidate.name === problem.field);
+                    const reader = readers.find(candidate => problem.field !== null && candidate.names.includes(problem.field));
                     if (reader) reader.error.textContent = messageOf(problem);
                     else editorStatus.textContent = [editorStatus.textContent, messageOf(problem)].filter(Boolean).join('; ');
                 }
@@ -156,7 +199,7 @@ async function show(name: EntityName): Promise<void> {
     toolbar.className = 'toolbar';
     toolbar.append(element('h2', entity.name), element('span', `${entity.rows.length} registros`),
         button('Actualizar', () => { void run(() => show(name)); }),
-        button('Crear registro', () => edit(entity)));
+        button('Crear registro', () => { void run(() => edit(entity)); }));
     const table = element('table');
     const header = table.createTHead().insertRow();
     for (const column of entity.columns) header.append(element('th', column.label));
@@ -168,12 +211,12 @@ async function show(name: EntityName): Promise<void> {
         for (const column of entity.columns) {
             const value = values[column.name];
             const cell = tr.insertCell();
-            cell.textContent = value == null ? 'Sin valor' : typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value);
+            cell.textContent = value == null ? 'Ninguna' : typeof value === 'boolean' ? (value ? 'Sí' : 'No') : String(value);
             if (value == null) cell.className = 'muted';
         }
         const actions = tr.insertCell();
         actions.className = 'actions';
-        actions.append(button('Editar', () => edit(entity, row)), button('Eliminar', () => {
+        actions.append(button('Editar', () => { void run(() => edit(entity, row)); }), button('Eliminar', () => {
             const key = rowKey(entity, row);
             if (confirm(`¿Eliminar ${entity.name}: ${Object.values(key).join(' · ')}?`)) {
                 void run(async () => {

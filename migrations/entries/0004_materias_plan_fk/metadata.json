@@ -1,0 +1,2455 @@
+{
+  "states/from.json": {
+    "namespace": "ssot",
+    "persistence": {
+      "entities": [
+        "materias",
+        "pabellones",
+        "planes",
+        "usuarios"
+      ],
+      "representations": {
+        "postgres": {
+          "boolean": "boolean",
+          "integer": "integer",
+          "password": "text",
+          "text": "text"
+        }
+      }
+    },
+    "releaseId": "0003_authenticated_administrators",
+    "schema": {
+      "engineVersion": "18.6",
+      "formatVersion": 1,
+      "objects": [
+        {
+          "identity": {
+            "kind": "table",
+            "name": "materias",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "cod_mat",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "materia",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "obligatoria",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "materia"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"materia\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "materias_pkey",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "pabellones",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pab",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pabellon",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pisos",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "pab"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"pab\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "pabellones_pkey",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "planes",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "descripcion",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "plan"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"plan\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "planes_pkey",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "usuarios",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "contrasena_hash",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "id",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "recuperacion_hashes",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "usuario",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "version_sesion",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "id"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"id\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "usuarios_pkey",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "columns": [
+            "usuario"
+          ],
+          "constraintKind": "unique",
+          "deferrable": false,
+          "definition": "UNIQUE (\"usuario\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "usuarios_usuario_unico_key",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        }
+      ],
+      "schemas": [
+        "ssot"
+      ]
+    },
+    "ssot": {
+      "entities": {
+        "materias": {
+          "fields": {
+            "cod_mat": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "cod_mat",
+              "inputType": "text",
+              "isName": false,
+              "label": "cod mat",
+              "maxLength": 100,
+              "name": "cod_mat",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "materia": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "materia",
+              "inputType": "text",
+              "isName": false,
+              "label": "materia",
+              "maxLength": 100,
+              "name": "materia",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "obligatoria": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "obligatoria",
+              "inputType": "boolean",
+              "isName": false,
+              "label": "obligatoria",
+              "maxLength": 100,
+              "name": "obligatoria",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "boolean",
+              "writable": true
+            },
+            "plan": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "plan",
+              "inputType": "integer",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "materias",
+          "pk": [
+            "materia"
+          ],
+          "record": "materia",
+          "uks": {},
+          "validators": [
+            "validarPlan1993SinObligatorias"
+          ]
+        },
+        "pabellones": {
+          "fields": {
+            "pab": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "pab",
+              "inputType": "text",
+              "isName": false,
+              "label": "pab",
+              "maxLength": 100,
+              "name": "pab",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "pabellon": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "pabellon",
+              "inputType": "text",
+              "isName": false,
+              "label": "pabellon",
+              "maxLength": 100,
+              "name": "pabellon",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "pisos": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "pisos",
+              "inputType": "integer",
+              "isName": false,
+              "label": "pisos",
+              "maxLength": 100,
+              "name": "pisos",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "pabellones",
+          "pk": [
+            "pab"
+          ],
+          "record": "pabellon",
+          "uks": {},
+          "validators": []
+        },
+        "planes": {
+          "fields": {
+            "descripcion": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "descripcion",
+              "inputType": "text",
+              "isName": false,
+              "label": "descripcion",
+              "maxLength": 100,
+              "name": "descripcion",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "plan": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "plan",
+              "inputType": "integer",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "planes",
+          "pk": [
+            "plan"
+          ],
+          "record": "plan",
+          "uks": {},
+          "validators": []
+        },
+        "usuarios": {
+          "fields": {
+            "contrasena_hash": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": 128,
+                "minLength": 12
+              },
+              "inputName": "contrasena",
+              "inputType": "password",
+              "isName": false,
+              "label": "Contraseña",
+              "maxLength": 100,
+              "name": "contrasena_hash",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": false,
+              "transform": "password",
+              "type": "text",
+              "writable": true
+            },
+            "id": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "id",
+              "inputType": "text",
+              "isName": false,
+              "label": "id",
+              "maxLength": 100,
+              "name": "id",
+              "nullable": false,
+              "onCreate": "uuid",
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": false
+            },
+            "recuperacion_hashes": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "recuperacion_hashes",
+              "inputType": "text",
+              "isName": false,
+              "label": "recuperacion hashes",
+              "maxLength": 100,
+              "name": "recuperacion_hashes",
+              "nullable": false,
+              "onCreate": "empty-array",
+              "onPasswordChange": "empty-array",
+              "onUpdate": null,
+              "readable": false,
+              "transform": null,
+              "type": "text",
+              "writable": false
+            },
+            "usuario": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "usuario",
+              "inputType": "text",
+              "isName": false,
+              "label": "usuario",
+              "maxLength": 100,
+              "name": "usuario",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": "username",
+              "type": "text",
+              "writable": true
+            },
+            "version_sesion": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "version_sesion",
+              "inputType": "text",
+              "isName": false,
+              "label": "version sesion",
+              "maxLength": 100,
+              "name": "version_sesion",
+              "nullable": false,
+              "onCreate": "uuid",
+              "onPasswordChange": null,
+              "onUpdate": "uuid",
+              "readable": false,
+              "transform": null,
+              "type": "text",
+              "writable": false
+            }
+          },
+          "fks": {},
+          "name": "usuarios",
+          "pk": [
+            "id"
+          ],
+          "record": "usuario",
+          "uks": {
+            "usuario_unico": [
+              "usuario"
+            ]
+          },
+          "validators": []
+        }
+      },
+      "formatVersion": 1,
+      "records": {
+        "materia": {
+          "cod_mat": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "cod_mat",
+            "inputType": "text",
+            "isName": false,
+            "label": "cod mat",
+            "maxLength": 100,
+            "name": "cod_mat",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "materia": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "materia",
+            "inputType": "text",
+            "isName": false,
+            "label": "materia",
+            "maxLength": 100,
+            "name": "materia",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "obligatoria": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "obligatoria",
+            "inputType": "boolean",
+            "isName": false,
+            "label": "obligatoria",
+            "maxLength": 100,
+            "name": "obligatoria",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "boolean",
+            "writable": true
+          },
+          "plan": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "plan",
+            "inputType": "integer",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "pabellon": {
+          "pab": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "pab",
+            "inputType": "text",
+            "isName": false,
+            "label": "pab",
+            "maxLength": 100,
+            "name": "pab",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "pabellon": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "pabellon",
+            "inputType": "text",
+            "isName": false,
+            "label": "pabellon",
+            "maxLength": 100,
+            "name": "pabellon",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "pisos": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "pisos",
+            "inputType": "integer",
+            "isName": false,
+            "label": "pisos",
+            "maxLength": 100,
+            "name": "pisos",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "plan": {
+          "descripcion": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "descripcion",
+            "inputType": "text",
+            "isName": false,
+            "label": "descripcion",
+            "maxLength": 100,
+            "name": "descripcion",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "plan": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "plan",
+            "inputType": "integer",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "usuario": {
+          "contrasena_hash": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": 128,
+              "minLength": 12
+            },
+            "inputName": "contrasena",
+            "inputType": "password",
+            "isName": false,
+            "label": "Contraseña",
+            "maxLength": 100,
+            "name": "contrasena_hash",
+            "nullable": false,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": false,
+            "transform": "password",
+            "type": "text",
+            "writable": true
+          },
+          "id": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "id",
+            "inputType": "text",
+            "isName": false,
+            "label": "id",
+            "maxLength": 100,
+            "name": "id",
+            "nullable": false,
+            "onCreate": "uuid",
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": false
+          },
+          "recuperacion_hashes": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "recuperacion_hashes",
+            "inputType": "text",
+            "isName": false,
+            "label": "recuperacion hashes",
+            "maxLength": 100,
+            "name": "recuperacion_hashes",
+            "nullable": false,
+            "onCreate": "empty-array",
+            "onPasswordChange": "empty-array",
+            "onUpdate": null,
+            "readable": false,
+            "transform": null,
+            "type": "text",
+            "writable": false
+          },
+          "usuario": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "usuario",
+            "inputType": "text",
+            "isName": false,
+            "label": "usuario",
+            "maxLength": 100,
+            "name": "usuario",
+            "nullable": false,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": "username",
+            "type": "text",
+            "writable": true
+          },
+          "version_sesion": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "version_sesion",
+            "inputType": "text",
+            "isName": false,
+            "label": "version sesion",
+            "maxLength": 100,
+            "name": "version_sesion",
+            "nullable": false,
+            "onCreate": "uuid",
+            "onPasswordChange": null,
+            "onUpdate": "uuid",
+            "readable": false,
+            "transform": null,
+            "type": "text",
+            "writable": false
+          }
+        }
+      },
+      "systemId": "ssot2026",
+      "typeNames": [
+        "text",
+        "integer",
+        "boolean",
+        "password"
+      ]
+    }
+  },
+  "states/to.json": {
+    "namespace": "ssot",
+    "persistence": {
+      "entities": [
+        "materias",
+        "pabellones",
+        "planes",
+        "usuarios"
+      ],
+      "representations": {
+        "postgres": {
+          "boolean": "boolean",
+          "integer": "integer",
+          "password": "text",
+          "text": "text"
+        }
+      }
+    },
+    "releaseId": "0004_materias_plan_fk",
+    "schema": {
+      "engineVersion": "18.6",
+      "formatVersion": 1,
+      "objects": [
+        {
+          "identity": {
+            "kind": "table",
+            "name": "materias",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "cod_mat",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "materia",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "obligatoria",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "bool",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "materia"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"materia\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "materias_pkey",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "columns": [
+            "plan"
+          ],
+          "constraintKind": "foreignKey",
+          "deferrable": false,
+          "definition": "FOREIGN KEY (\"plan\") REFERENCES \"ssot\".\"planes\" (\"plan\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "materias_plan_fkey",
+            "parentName": "materias",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [
+            {
+              "source": "plan",
+              "target": "plan"
+            }
+          ],
+          "target": {
+            "kind": "table",
+            "name": "planes",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "pabellones",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pab",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pabellon",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "pisos",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "pab"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"pab\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "pabellones_pkey",
+            "parentName": "pabellones",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "planes",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "descripcion",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": true,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "plan",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "int4",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "plan"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"plan\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "planes_pkey",
+            "parentName": "planes",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "identity": {
+            "kind": "table",
+            "name": "usuarios",
+            "parentName": null,
+            "schema": "ssot",
+            "signature": []
+          },
+          "kind": "table",
+          "persistence": "permanent",
+          "relationKind": "r"
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "contrasena_hash",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "id",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "recuperacion_hashes",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "usuario",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "defaultExpression": null,
+          "generatedDefinition": null,
+          "identity": {
+            "kind": "column",
+            "name": "version_sesion",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "identityDefinition": null,
+          "kind": "column",
+          "nullable": false,
+          "type": {
+            "arrayDimensions": 0,
+            "collation": null,
+            "modifiers": [],
+            "name": "text",
+            "schema": "pg_catalog"
+          }
+        },
+        {
+          "columns": [
+            "id"
+          ],
+          "constraintKind": "primaryKey",
+          "deferrable": false,
+          "definition": "PRIMARY KEY (\"id\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "usuarios_pkey",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        },
+        {
+          "columns": [
+            "usuario"
+          ],
+          "constraintKind": "unique",
+          "deferrable": false,
+          "definition": "UNIQUE (\"usuario\")",
+          "enforced": true,
+          "identity": {
+            "kind": "constraint",
+            "name": "usuarios_usuario_unico_key",
+            "parentName": "usuarios",
+            "schema": "ssot",
+            "signature": []
+          },
+          "initiallyDeferred": false,
+          "kind": "constraint",
+          "pairs": [],
+          "target": null,
+          "validated": true
+        }
+      ],
+      "schemas": [
+        "ssot"
+      ]
+    },
+    "ssot": {
+      "entities": {
+        "materias": {
+          "fields": {
+            "cod_mat": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "cod_mat",
+              "inputType": "text",
+              "isName": false,
+              "label": "cod mat",
+              "maxLength": 100,
+              "name": "cod_mat",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "materia": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "materia",
+              "inputType": "text",
+              "isName": false,
+              "label": "materia",
+              "maxLength": 100,
+              "name": "materia",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "obligatoria": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "obligatoria",
+              "inputType": "boolean",
+              "isName": false,
+              "label": "obligatoria",
+              "maxLength": 100,
+              "name": "obligatoria",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "boolean",
+              "writable": true
+            },
+            "plan": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "plan",
+              "inputType": "integer",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {
+            "plan": {
+              "entity": "planes",
+              "fields": {
+                "plan": "plan"
+              }
+            }
+          },
+          "name": "materias",
+          "pk": [
+            "materia"
+          ],
+          "record": "materia",
+          "uks": {},
+          "validators": [
+            "validarPlan1993SinObligatorias"
+          ]
+        },
+        "pabellones": {
+          "fields": {
+            "pab": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "pab",
+              "inputType": "text",
+              "isName": false,
+              "label": "pab",
+              "maxLength": 100,
+              "name": "pab",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "pabellon": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "pabellon",
+              "inputType": "text",
+              "isName": false,
+              "label": "pabellon",
+              "maxLength": 100,
+              "name": "pabellon",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "pisos": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "pisos",
+              "inputType": "integer",
+              "isName": false,
+              "label": "pisos",
+              "maxLength": 100,
+              "name": "pisos",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "pabellones",
+          "pk": [
+            "pab"
+          ],
+          "record": "pabellon",
+          "uks": {},
+          "validators": []
+        },
+        "planes": {
+          "fields": {
+            "descripcion": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "descripcion",
+              "inputType": "text",
+              "isName": true,
+              "label": "descripcion",
+              "maxLength": 100,
+              "name": "descripcion",
+              "nullable": true,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": true
+            },
+            "plan": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "plan",
+              "inputType": "integer",
+              "isName": false,
+              "label": "plan",
+              "maxLength": 100,
+              "name": "plan",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "integer",
+              "writable": true
+            }
+          },
+          "fks": {},
+          "name": "planes",
+          "pk": [
+            "plan"
+          ],
+          "record": "plan",
+          "uks": {},
+          "validators": []
+        },
+        "usuarios": {
+          "fields": {
+            "contrasena_hash": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": 128,
+                "minLength": 12
+              },
+              "inputName": "contrasena",
+              "inputType": "password",
+              "isName": false,
+              "label": "Contraseña",
+              "maxLength": 100,
+              "name": "contrasena_hash",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": false,
+              "transform": "password",
+              "type": "text",
+              "writable": true
+            },
+            "id": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "id",
+              "inputType": "text",
+              "isName": false,
+              "label": "id",
+              "maxLength": 100,
+              "name": "id",
+              "nullable": false,
+              "onCreate": "uuid",
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": null,
+              "type": "text",
+              "writable": false
+            },
+            "recuperacion_hashes": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "recuperacion_hashes",
+              "inputType": "text",
+              "isName": false,
+              "label": "recuperacion hashes",
+              "maxLength": 100,
+              "name": "recuperacion_hashes",
+              "nullable": false,
+              "onCreate": "empty-array",
+              "onPasswordChange": "empty-array",
+              "onUpdate": null,
+              "readable": false,
+              "transform": null,
+              "type": "text",
+              "writable": false
+            },
+            "usuario": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "usuario",
+              "inputType": "text",
+              "isName": false,
+              "label": "usuario",
+              "maxLength": 100,
+              "name": "usuario",
+              "nullable": false,
+              "onCreate": null,
+              "onPasswordChange": null,
+              "onUpdate": null,
+              "readable": true,
+              "transform": "username",
+              "type": "text",
+              "writable": true
+            },
+            "version_sesion": {
+              "description": "",
+              "inputConstraints": {
+                "maxLength": null,
+                "minLength": null
+              },
+              "inputName": "version_sesion",
+              "inputType": "text",
+              "isName": false,
+              "label": "version sesion",
+              "maxLength": 100,
+              "name": "version_sesion",
+              "nullable": false,
+              "onCreate": "uuid",
+              "onPasswordChange": null,
+              "onUpdate": "uuid",
+              "readable": false,
+              "transform": null,
+              "type": "text",
+              "writable": false
+            }
+          },
+          "fks": {},
+          "name": "usuarios",
+          "pk": [
+            "id"
+          ],
+          "record": "usuario",
+          "uks": {
+            "usuario_unico": [
+              "usuario"
+            ]
+          },
+          "validators": []
+        }
+      },
+      "formatVersion": 1,
+      "records": {
+        "materia": {
+          "cod_mat": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "cod_mat",
+            "inputType": "text",
+            "isName": false,
+            "label": "cod mat",
+            "maxLength": 100,
+            "name": "cod_mat",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "materia": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "materia",
+            "inputType": "text",
+            "isName": false,
+            "label": "materia",
+            "maxLength": 100,
+            "name": "materia",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "obligatoria": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "obligatoria",
+            "inputType": "boolean",
+            "isName": false,
+            "label": "obligatoria",
+            "maxLength": 100,
+            "name": "obligatoria",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "boolean",
+            "writable": true
+          },
+          "plan": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "plan",
+            "inputType": "integer",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "pabellon": {
+          "pab": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "pab",
+            "inputType": "text",
+            "isName": false,
+            "label": "pab",
+            "maxLength": 100,
+            "name": "pab",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "pabellon": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "pabellon",
+            "inputType": "text",
+            "isName": false,
+            "label": "pabellon",
+            "maxLength": 100,
+            "name": "pabellon",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "pisos": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "pisos",
+            "inputType": "integer",
+            "isName": false,
+            "label": "pisos",
+            "maxLength": 100,
+            "name": "pisos",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "plan": {
+          "descripcion": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "descripcion",
+            "inputType": "text",
+            "isName": true,
+            "label": "descripcion",
+            "maxLength": 100,
+            "name": "descripcion",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": true
+          },
+          "plan": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "plan",
+            "inputType": "integer",
+            "isName": false,
+            "label": "plan",
+            "maxLength": 100,
+            "name": "plan",
+            "nullable": true,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "integer",
+            "writable": true
+          }
+        },
+        "usuario": {
+          "contrasena_hash": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": 128,
+              "minLength": 12
+            },
+            "inputName": "contrasena",
+            "inputType": "password",
+            "isName": false,
+            "label": "Contraseña",
+            "maxLength": 100,
+            "name": "contrasena_hash",
+            "nullable": false,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": false,
+            "transform": "password",
+            "type": "text",
+            "writable": true
+          },
+          "id": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "id",
+            "inputType": "text",
+            "isName": false,
+            "label": "id",
+            "maxLength": 100,
+            "name": "id",
+            "nullable": false,
+            "onCreate": "uuid",
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": null,
+            "type": "text",
+            "writable": false
+          },
+          "recuperacion_hashes": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "recuperacion_hashes",
+            "inputType": "text",
+            "isName": false,
+            "label": "recuperacion hashes",
+            "maxLength": 100,
+            "name": "recuperacion_hashes",
+            "nullable": false,
+            "onCreate": "empty-array",
+            "onPasswordChange": "empty-array",
+            "onUpdate": null,
+            "readable": false,
+            "transform": null,
+            "type": "text",
+            "writable": false
+          },
+          "usuario": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "usuario",
+            "inputType": "text",
+            "isName": false,
+            "label": "usuario",
+            "maxLength": 100,
+            "name": "usuario",
+            "nullable": false,
+            "onCreate": null,
+            "onPasswordChange": null,
+            "onUpdate": null,
+            "readable": true,
+            "transform": "username",
+            "type": "text",
+            "writable": true
+          },
+          "version_sesion": {
+            "description": "",
+            "inputConstraints": {
+              "maxLength": null,
+              "minLength": null
+            },
+            "inputName": "version_sesion",
+            "inputType": "text",
+            "isName": false,
+            "label": "version sesion",
+            "maxLength": 100,
+            "name": "version_sesion",
+            "nullable": false,
+            "onCreate": "uuid",
+            "onPasswordChange": null,
+            "onUpdate": "uuid",
+            "readable": false,
+            "transform": null,
+            "type": "text",
+            "writable": false
+          }
+        }
+      },
+      "systemId": "ssot2026",
+      "typeNames": [
+        "text",
+        "integer",
+        "boolean",
+        "password"
+      ]
+    }
+  },
+  "authoring.json": {
+    "base": {
+      "from": {
+        "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f",
+        "releaseId": "0003_authenticated_administrators",
+        "systemId": "ssot2026"
+      },
+      "fromPersistenceHash": "c5ce3b0c5950e9d55e9d6c09530089bf36918b086867919c8ccd6b941cf0bc12",
+      "fromSnapshotHash": "3621ca710330cf3c5f0196b79711cd55aba7ee0fd6b9c5709681ee5431018993",
+      "to": {
+        "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5",
+        "releaseId": "0004_materias_plan_fk",
+        "systemId": "ssot2026"
+      },
+      "toPersistenceHash": "c5ce3b0c5950e9d55e9d6c09530089bf36918b086867919c8ccd6b941cf0bc12",
+      "toSnapshotHash": "fa7472f3af177034cf58947bae4680511c2e7c24eb2ae189e8a7c4bdd32f6bc6"
+    },
+    "checkpoints": [],
+    "decisions": [],
+    "draftHash": "20bc98a6a610bfa9d0a910f079ead0d79c8f8553393babfc4c59f10d73093805",
+    "formatVersion": 1,
+    "migration": {
+      "after": [],
+      "before": [],
+      "description": "",
+      "from": {
+        "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f",
+        "releaseId": "0003_authenticated_administrators",
+        "systemId": "ssot2026"
+      },
+      "id": "0004_materias_plan_fk",
+      "steps": [
+        {
+          "id": "materias_plan_fk",
+          "run": {
+            "contentHash": "f8e29d4c2cd58c57d4797c25cb5a610ff4b61873d09dc60c02aaef46a6aa4136",
+            "kind": "sql",
+            "name": "materias-plan-fk.sql"
+          }
+        }
+      ],
+      "to": {
+        "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5",
+        "releaseId": "0004_materias_plan_fk",
+        "systemId": "ssot2026"
+      }
+    },
+    "operations": [
+      {
+        "changeIds": [
+          "58d73d7a89ba7633bc8107f2739f8e7b4aa72aa61f5d16cced2e474f7d9ffcd3"
+        ],
+        "dataMigrationIds": [],
+        "id": "manual:materias_plan_fk",
+        "stepIds": [
+          "materias_plan_fk"
+        ]
+      }
+    ],
+    "queryResources": {},
+    "states": {
+      "from": {
+        "byteLength": 17025,
+        "contentHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f",
+        "path": "states/from.json"
+      },
+      "to": {
+        "byteLength": 17542,
+        "contentHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5",
+        "path": "states/to.json"
+      }
+    },
+    "validationArtifacts": []
+  },
+  "resources.json": [
+    {
+      "ref": {
+        "contentHash": "f8e29d4c2cd58c57d4797c25cb5a610ff4b61873d09dc60c02aaef46a6aa4136",
+        "kind": "sql",
+        "name": "materias-plan-fk.sql"
+      },
+      "text": "ALTER TABLE \"ssot\".\"materias\" ADD CONSTRAINT \"materias_plan_fkey\" FOREIGN KEY (\"plan\") REFERENCES \"ssot\".\"planes\" (\"plan\");\n"
+    }
+  ],
+  "migration.json": {
+    "authoring": {
+      "byteLength": 1852,
+      "contentHash": "c58fcbda3ad7f33ab1faaac4939da5afa12ab66f77c1acb981dde7d47e21e170",
+      "path": "authoring.json"
+    },
+    "formatVersion": 1,
+    "migration": {
+      "after": [],
+      "before": [],
+      "description": "",
+      "from": {
+        "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f",
+        "releaseId": "0003_authenticated_administrators",
+        "systemId": "ssot2026"
+      },
+      "id": "0004_materias_plan_fk",
+      "steps": [
+        {
+          "id": "materias_plan_fk",
+          "run": {
+            "contentHash": "f8e29d4c2cd58c57d4797c25cb5a610ff4b61873d09dc60c02aaef46a6aa4136",
+            "kind": "sql",
+            "name": "materias-plan-fk.sql"
+          }
+        }
+      ],
+      "to": {
+        "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5",
+        "releaseId": "0004_materias_plan_fk",
+        "systemId": "ssot2026"
+      }
+    },
+    "migrationHash": "fe1e35217cceed01514a72503c8657137bdb961e34df75fc3e0e77614b0e13bb",
+    "resources": {
+      "byteLength": 284,
+      "contentHash": "83e92bd389769cc74da16d45f7cf3fbc63368bd53d8cb9b49a83b9a5acf47615",
+      "path": "resources.json"
+    },
+    "script": {
+      "byteLength": 141,
+      "contentHash": "4235e871a40c9bdd7135e80e3b581be833e1936139ba7fe39e10f343f7311883",
+      "path": "0004_materias_plan_fk.sql"
+    }
+  },
+  "script.json": {
+    "path": "0004_materias_plan_fk.sql",
+    "contentHash": "4235e871a40c9bdd7135e80e3b581be833e1936139ba7fe39e10f343f7311883",
+    "byteLength": 141
+  }
+}

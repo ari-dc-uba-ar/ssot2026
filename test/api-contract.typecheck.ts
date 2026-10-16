@@ -1,4 +1,4 @@
-import type {EntityColumn, EntityCreate, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
+import type {EntityColumn, EntityCreate, EntityForeignKey, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
 import {createRow, deleteRow, updateRow} from '../src/frontend/api.js';
 
 type Assert<T extends true> = T;
@@ -11,6 +11,9 @@ export type ColumnLiteral = Assert<Equal<Extract<EntityColumn<'materias'>, {name
 export type MinimumMetadata = Assert<Equal<keyof EntityColumn<'materias'>, 'name' | 'label' | 'type' | 'nullable' | 'writable'>>;
 export type PrimaryKey = Assert<Equal<keyof EntityKey<'materias'>, 'materia'>>;
 export type EntityAndRowsStayTogether = Assert<Equal<Extract<EntityResponse, {name: 'pabellones'}>['rows'][number], EntityRow<'pabellones'>>>;
+export const planReference: EntityForeignKey = {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']};
+// @ts-expect-error Reference labels cannot expose private password hashes.
+export const secretReference: EntityForeignKey = {name: 'user', entity: 'usuarios', fields: {user: 'id'}, displayFields: ['contrasena_hash']};
 // @ts-expect-error Entity names come from the SSOT.
 export type UnknownEntity = EntityRow<'users'>;
 // @ts-expect-error Fields cannot be taken from another entity.

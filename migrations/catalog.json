@@ -20,6 +20,11 @@
       "systemId": "ssot2026",
       "releaseId": "0003_authenticated_administrators",
       "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f"
+    },
+    {
+      "systemId": "ssot2026",
+      "releaseId": "0004_materias_plan_fk",
+      "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5"
     }
   ],
   "migrations": [
@@ -317,6 +322,35 @@
         "after": []
       },
       "migrationHash": "cf28ff98a3910c91fad3a3e3a0956d65369cf565afd1d8369741081a3928e83b"
+    },
+    {
+      "migration": {
+        "id": "0004_materias_plan_fk",
+        "from": {
+          "systemId": "ssot2026",
+          "releaseId": "0003_authenticated_administrators",
+          "releaseHash": "24a44e5f1f720965d5501e6a9e7e5a6e8fe2b0b751ccd343eae2a8011917e75f"
+        },
+        "to": {
+          "systemId": "ssot2026",
+          "releaseId": "0004_materias_plan_fk",
+          "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5"
+        },
+        "description": "",
+        "before": [],
+        "steps": [
+          {
+            "id": "materias_plan_fk",
+            "run": {
+              "name": "materias-plan-fk.sql",
+              "kind": "sql",
+              "contentHash": "f8e29d4c2cd58c57d4797c25cb5a610ff4b61873d09dc60c02aaef46a6aa4136"
+            }
+          }
+        ],
+        "after": []
+      },
+      "migrationHash": "fe1e35217cceed01514a72503c8657137bdb961e34df75fc3e0e77614b0e13bb"
     }
   ]
 }

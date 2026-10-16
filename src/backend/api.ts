@@ -3,7 +3,7 @@ import type {Pool} from 'pg';
 import {completeEntity, instanceProblems, type EntityInfo} from 'system-definition';
 import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
 import {myContext, myEntities} from './system.js';
-import type {ApiError, EntityNamesResponse, EntityResponse} from './api-contract.js';
+import type {ApiError, EntityForeignKey, EntityNamesResponse, EntityResponse} from './api-contract.js';
 import {ApiFailure, apiErrorHandler, readObject} from './api-errors.js';
 import type {Authentication} from './auth.js';
 import {allowedFields} from './column-security.js';
@@ -35,6 +35,17 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query'>, auth:
         const inputs = Object.values(writable).map(({inputName: name, inputType: type, inputConstraints: constraints, label, nullable, transform}) => ({
             name, label, type, nullable, constraints, optionalOnUpdate: transform === 'password',
         }));
+        const foreignKeys = Object.entries(entity.fks).flatMap(([name, fk]) => {
+            const target = completeEntity(myContext, myEntities[fk.entity as keyof typeof myEntities]);
+            const targetReadable = allowedFields(target, 'read');
+            const pairs = Object.entries(fk.fields);
+            if (!pairs.every(([source, destination]) => writable[source] && targetReadable[destination])) return [];
+            return [{name, entity: target.name,
+                fields: Object.fromEntries(pairs.map(([source, destination]) => [writable[source]!.inputName, destination])),
+                displayFields: [...new Set([...pairs.map(([, destination]) => destination),
+                    ...Object.values(targetReadable).filter(field => field.isName).map(field => field.name)])],
+            } as EntityForeignKey];
+        });
         const keyValues = (key: unknown) => {
             const row = readRow(keys, key);
             return entity.pk.map(name => row[name]);
@@ -50,7 +61,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query'>, auth:
                     }
                     return projected;
                 });
-                res.json({name: entity.name, pk: entity.pk, columns, inputs, rows} as EntityResponse);
+                res.json({name: entity.name, pk: entity.pk, columns, inputs, foreignKeys, rows} as EntityResponse);
             })
             .post(async (req, res) => {
                 const row = await prepareEntityWrite(entity, req.body, 'create');

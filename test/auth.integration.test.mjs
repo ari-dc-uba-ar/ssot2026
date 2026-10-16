@@ -57,6 +57,42 @@ async function start(t, {initialize = true, legacy = false} = {}) {
     return {pool, request, login, config, handle};
 }
 
+test('PostgreSQL: materia FKs accept existing plans and null, and reject missing plans and referenced key changes', async t => {
+    const {request, login} = await start(t);
+    const {token} = await login('admin');
+    const send = (entity, method, body) => request(`/api/entities/${entity}`, method, body, token);
+    assert.equal((await send('planes', 'POST', {plan: 0, descripcion: 'Inicial'})).status, 204);
+    const row = {cod_mat: null, materia: 'Con plan', plan: 0, obligatoria: false};
+    assert.equal((await send('materias', 'POST', row)).status, 204);
+    const metadata = await (await send('materias', 'GET')).json();
+    assert.deepEqual(metadata.foreignKeys, [{name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']}]);
+    for (const response of [
+        await send('materias', 'POST', {...row, materia: 'Plan inexistente', plan: 2000}),
+        await send('materias', 'PUT', {key: {materia: row.materia}, row: {...row, plan: 2000}}),
+        await send('planes', 'DELETE', {plan: 0}),
+        await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 1, descripcion: 'Nuevo número'}}),
+    ]) assert.equal(response.status, 409, await response.text());
+    assert.equal((await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 0, descripcion: 'Descripción actualizada'}})).status, 204);
+    assert.equal((await send('materias', 'PUT', {key: {materia: row.materia}, row: {...row, plan: null}})).status, 204);
+    assert.equal((await send('materias', 'POST', {...row, materia: 'Sin plan', plan: null})).status, 204);
+    assert.equal((await send('planes', 'DELETE', {plan: 0})).status, 204);
+});
+
+test('PostgreSQL: the FK migration preserves data and rolls back when an existing plan is missing', async t => {
+    const {handle} = await start(t, {initialize: false, legacy: true});
+    await handle.session.query(await readFile('migrations/entries/0003_authenticated_administrators/0003_authenticated_administrators.sql', 'utf8'), []);
+    await handle.session.query("INSERT INTO ssot.materias (materia, plan) VALUES ('Existing orphan', 2000)", []);
+    const before = (await handle.session.query('SELECT * FROM ssot.materias', [])).rows;
+    const sql = await readFile('migrations/entries/0004_materias_plan_fk/0004_materias_plan_fk.sql', 'utf8');
+    await assert.rejects(handle.session.query(sql, []), error => error.code === '23503');
+    await handle.session.query('ROLLBACK', []);
+    assert.deepEqual((await handle.session.query('SELECT * FROM ssot.materias', [])).rows, before);
+    assert.deepEqual((await handle.session.query('SELECT * FROM ssot.planes', [])).rows, []);
+    await handle.session.query('UPDATE ssot.materias SET plan = NULL', []);
+    await handle.session.query(sql, []);
+    assert.deepEqual(value(await assessSchema(value(decodeSqlSsot(ssot, sqlMapping)), databaseSettings.database.schema, handle.session)), {equal: true, differences: []});
+});
+
 test('PostgreSQL: cold start requires configured credentials and initializes once under concurrent starts', async t => {
     const {pool} = await start(t, {initialize: false});
     await assert.rejects(initializeUsers(pool, {username: undefined, password: undefined}), /AUTH_ADMIN_USERNAME/);
@@ -160,7 +196,8 @@ test('PostgreSQL: the incremental migration removes roles/status while preservin
         await handle.session.query(resource.text, []);
     }
     assert.deepEqual((await pool.query('SELECT * FROM ssot.usuarios')).rows, [row]);
-    assert.deepEqual(value(await assessSchema(value(decodeSqlSsot(ssot, sqlMapping)), databaseSettings.database.schema, handle.session)), {equal: true, differences: []});
+    const target = metadata['states/to.json'];
+    assert.deepEqual(value(await assessSchema(value(decodeSqlSsot(target.ssot, target.persistence.representations.postgres)), databaseSettings.database.schema, handle.session)), {equal: true, differences: []});
     assert.deepEqual(await initializeUsers(pool, {username: undefined, password: undefined}), {created: false});
     await login('legacy');
 });

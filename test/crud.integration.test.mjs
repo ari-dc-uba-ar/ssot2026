@@ -15,6 +15,7 @@ test('CRUD round trip uses the app connection and rolls back its test data', asy
     await client.connect();
     t.after(async () => { await client.query('ROLLBACK'); await client.end(); });
     await client.query('BEGIN');
+    await client.query('INSERT INTO ssot.planes (plan, descripcion) VALUES (2026, NULL) ON CONFLICT (plan) DO NOTHING');
     const username = 'crud-' + randomUUID();
     const entity = completeEntity(myContext, myEntities.usuarios);
     await insertPreparedRow(client, entity, await prepareEntityWrite(entity, {usuario: username, contrasena: 'crud-test-long-password'}, 'create'));
