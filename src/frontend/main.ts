@@ -9,11 +9,27 @@ type Column = EntityInputColumn<EntityName>;
 type Row = EntityRow<EntityName>;
 type Value = {[E in EntityName]: EntityRow<E>[keyof EntityRow<E>]}[EntityName];
 type FieldReader = {field: HTMLElement; names: string[]; error: HTMLElement; read: () => (readonly [string, Value])[]};
+type Editor = {input: HTMLInputElement | HTMLSelectElement; read: () => Value; requiredWhenEnabled?: boolean};
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = ''): HTMLElementTagNameMap[K] {
     const node = document.createElement(tag);
     node.textContent = text;
     return node;
+}
+
+function integerEditor(constraints: Column['constraints']): Editor {
+    const input = element('input');
+    input.type = 'number';
+    input.step = '1';
+    if (constraints.minimum !== undefined) input.min = String(constraints.minimum);
+    return {input, read: () => input.valueAsNumber};
+}
+
+function enumEditor(constraints: Column['constraints']): Editor {
+    const input = element('select');
+    input.add(new Option('Seleccionar…', ''));
+    for (const value of constraints.options ?? []) input.add(new Option(value, value));
+    return {input, read: () => input.value, requiredWhenEnabled: true};
 }
 
 // Each supported display type has one editor. Adding a backend type requires a renderer.
@@ -30,20 +46,17 @@ const editors = {
         input.maxLength = constraints.maxLength ?? 524288;
         return {input, read: () => input.value};
     },
-    integer: (_constraints) => {
-        const input = element('input');
-        input.type = 'number';
-        input.step = '1';
-        input.required = true;
-        return {input, read: () => input.valueAsNumber};
-    },
+    integer: integerEditor,
+    posInteger: integerEditor,
+    regularidad: enumEditor,
+    cuatrimestre: enumEditor,
     boolean: (_constraints) => {
         const input = element('select');
         input.add(new Option('No', 'false'));
         input.add(new Option('Sí', 'true'));
         return {input, read: () => input.value === 'true'};
     },
-} satisfies Record<Column['type'], (constraints: Column['constraints']) => {input: HTMLInputElement | HTMLSelectElement; read: () => Value}>;
+} satisfies Record<Column['type'], (constraints: Column['constraints']) => Editor>;
 
 const workspace = document.querySelector<HTMLFieldSetElement>('#workspace')!;
 const selector = document.querySelector<HTMLSelectElement>('#entity')!;
@@ -134,12 +147,12 @@ async function edit(entity: EntityResponse, row?: Row): Promise<void> {
             field.append(label, input, error);
             return [{field, names: group.fields, error, read: () => group.fields.map(name => [name, references.value(name)] as const)}];
         }
-        const editor = editors[column.type](column.constraints);
+        const editor: Editor = editors[column.type](column.constraints);
         editor.input.id = `field-${column.name}`;
         editor.input.name = column.name;
         editor.input.value = String(values[column.name] ?? (column.type === 'boolean' ? false : ''));
         const optional = !!row && column.optionalOnUpdate;
-        editor.input.required = !column.nullable && !optional;
+        editor.input.required = (!column.nullable || !!editor.requiredWhenEnabled) && !optional;
         const label = element('label', column.label);
         if (optional) label.append(document.createTextNode(' (opcional)'));
         label.htmlFor = editor.input.id;

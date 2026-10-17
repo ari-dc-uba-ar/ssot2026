@@ -4,8 +4,8 @@ import { defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
     type Problem, type HumanProvider,
     withValidators
 } from 'system-definition'
-import { humanBehaviours, typeBehaviours } from "system-definition/examples";
-import {appTypeDefs, inputConstraints, passwordBehaviour} from './value-types.js';
+import { humanBehaviours } from "system-definition/examples";
+import {appTypeDefs, appTypeBehaviours, inputConstraints} from './value-types.js';
 
 const myHumanBehaviours: HumanProvider<typeof appTypeDefs> = {...humanBehaviours};
 
@@ -26,7 +26,7 @@ type MyFieldDef = CoreFieldDef<typeof appTypeDefs> & {
 
 const myTypes = defineTypes({
     types: appTypeDefs,
-    behaviours: {...typeBehaviours, password: passwordBehaviour},
+    behaviours: appTypeBehaviours,
     human: myHumanBehaviours,
     completeField: (fieldDef: MyFieldDef, name: string) => ({
         ...completeCoreField(fieldDef, name),
@@ -53,15 +53,42 @@ const plan = defineRecord(myTypes,{
 
 const materia = defineRecord(myTypes,{
     cod_mat     :{ type:'text'   },
-    materia     :{ type:'text'   },
+    cod_dep     :{ type:'text'   },
+    materia     :{ type:'text', isName: true },
     plan        :{ type:'integer'},
     obligatoria :{ type:'boolean'},
 })
 
+const departamento = defineRecord(myTypes,{
+    cod_dep     :{ type:'text'   },
+    departamento:{ type:'text', isName: true },
+    pabellon    :{ type:'text'   },
+})
+
+const estudiante = defineRecord(myTypes,{
+    legajo       :{ type:'text'   },
+    nombre       :{ type:'text', isName: true },
+})
+
+const enrolamiento = defineRecord(myTypes,{
+    legajo       :{ type:'text'   },
+    cod_mat      :{ type:'text'   },
+    cod_dep      :{ type:'text'   },
+    año          :{ type:'posInteger'},
+    cuatrimestre :{ type:'cuatrimestre'},
+    nota         :{ type:'integer'},
+    regularidad  :{ type:'regularidad'},
+})
+
+const regularidad = defineRecord(myTypes,{
+    regularidad  :{ type:'regularidad'},
+    descripcion  :{ type:'text'   },
+})
+
 const pabellon = defineRecord(myTypes,{
-    pab         : {type:'text'   },
-    pabellon    : {type:'text'   },
-    pisos       : {type:'integer'},
+    pab          :{ type:'text'   },
+    pabellon     :{ type:'text'   },
+    pisos        :{ type:'integer'},
 });
 
 const usuario = defineRecord(myTypes, {
@@ -75,7 +102,7 @@ const usuario = defineRecord(myTypes, {
         onCreate: 'uuid' as const, onUpdate: 'uuid' as const},
 });
 
-export const myRecords = withRecords(myTypes, {materia, pabellon, plan, usuario})
+export const myRecords = withRecords(myTypes, {materia, pabellon, plan, usuario, departamento, estudiante, enrolamiento, regularidad})
 
 function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatoria?:boolean | null}){
     var problemas: Problem[] = []
@@ -92,18 +119,38 @@ function validarPlan1993SinObligatorias(materia:{plan?:number | null, obligatori
 
 export const myContext = withValidators(myRecords, {validarPlan1993SinObligatorias})
 
-const materias = defineEntity(myContext, {
-    name: 'materias',
-    record: 'materia',
-    pk: ['materia'],
-    fks: {plan: {entity: 'planes', fields: ['plan']}},
-    validators: ['validarPlan1993SinObligatorias']
-})
-
 const pabellones = defineEntity(myContext, {
     name: 'pabellones',
     record: 'pabellon',
     pk: ['pab']
+})
+
+const departamentos = defineEntity(myContext, {
+    name: 'departamentos',
+    record: 'departamento',
+    pk: ['cod_dep'],
+    fks: {pabellon: {entity: 'pabellones', fields: {pabellon: 'pab'}}}
+})
+
+const materias = defineEntity(myContext, {
+    name: 'materias',
+    record: 'materia',
+    pk: ['cod_mat', 'cod_dep'],
+    fks: {plan: {entity: 'planes', fields: ['plan']}, departamento: {entity: 'departamentos', fields: ['cod_dep']}},
+    validators: ['validarPlan1993SinObligatorias']
+})
+
+const estudiantes = defineEntity(myContext, {
+    name: 'estudiantes',
+    record: 'estudiante',
+    pk: ['legajo']
+})
+
+const enrolamientos = defineEntity(myContext, {
+    name: 'enrolamientos',
+    record: 'enrolamiento',
+    pk: ['legajo', 'cod_mat', 'cod_dep', 'año', 'cuatrimestre'],
+    fks: {estudiante: {entity: 'estudiantes', fields: ['legajo']}, materia: {entity: 'materias', fields: ['cod_mat', 'cod_dep']}}
 })
 
 const planes = defineEntity(myContext, {
@@ -121,7 +168,7 @@ const usuarios = defineEntity(myContext, {
     uks: {usuario_unico: ['usuario']},
 });
 
-export const myEntities = defineEntities({materias, pabellones, planes, usuarios})
+export const myEntities = defineEntities({materias, pabellones, planes, usuarios, departamentos, estudiantes, enrolamientos})
 
 const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',
@@ -134,6 +181,9 @@ export const ssot = snapshot.value;
 export const sqlMapping = {
     text: sqlTypes.text,
     integer: sqlTypes.integer,
+    posInteger: sqlTypes.integer,
+    regularidad: sqlTypes.text,
+    cuatrimestre: sqlTypes.text,
     boolean: sqlTypes.boolean,
     password: sqlTypes.text,
 } satisfies SqlTypeMapping<typeof ssot>;

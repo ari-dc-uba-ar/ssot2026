@@ -3,13 +3,22 @@ import {createRow, deleteRow, updateRow} from '../src/frontend/api.js';
 
 type Assert<T extends true> = T;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
-export type RequiredPrimaryKey = Assert<Equal<EntityRow<'materias'>['materia'], string>>;
-export type NullableText = Assert<Equal<EntityRow<'materias'>['cod_mat'], string | null>>;
+export type RequiredPrimaryKey = Assert<Equal<EntityRow<'materias'>['cod_mat'], string>>;
+export type RequiredDepartmentKey = Assert<Equal<EntityRow<'materias'>['cod_dep'], string>>;
+export type NullableText = Assert<Equal<EntityRow<'materias'>['materia'], string | null>>;
 export type NullableBoolean = Assert<Equal<EntityRow<'materias'>['obligatoria'], boolean | null>>;
 export type NullableInteger = Assert<Equal<EntityRow<'pabellones'>['pisos'], number | null>>;
 export type ColumnLiteral = Assert<Equal<Extract<EntityColumn<'materias'>, {name: 'obligatoria'}>['type'], 'boolean'>>;
 export type MinimumMetadata = Assert<Equal<keyof EntityColumn<'materias'>, 'name' | 'label' | 'type' | 'nullable' | 'writable'>>;
-export type PrimaryKey = Assert<Equal<keyof EntityKey<'materias'>, 'materia'>>;
+export type PrimaryKey = Assert<Equal<keyof EntityKey<'materias'>, 'cod_mat' | 'cod_dep'>>;
+export type EnrollmentPrimaryKey = Assert<Equal<keyof EntityKey<'enrolamientos'>, 'legajo' | 'cod_mat' | 'cod_dep' | 'año' | 'cuatrimestre'>>;
+export type EnrollmentYear = Assert<Equal<EntityRow<'enrolamientos'>['año'], number>>;
+export type EnrollmentRegularidad = Assert<Equal<EntityRow<'enrolamientos'>['regularidad'], 'Libre' | 'Regular' | null>>;
+export type EnrollmentCuatrimestre = Assert<Equal<EntityRow<'enrolamientos'>['cuatrimestre'], '1C' | '2C'>>;
+// @ts-expect-error Enum values preserve the SSOT's exact spelling.
+export const invalidRegularidad: EntityRow<'enrolamientos'>['regularidad'] = 'libre';
+// @ts-expect-error Cuatrimestre is a literal enum, not a numeric index.
+export const invalidCuatrimestre: EntityRow<'enrolamientos'>['cuatrimestre'] = 1;
 export type EntityAndRowsStayTogether = Assert<Equal<Extract<EntityResponse, {name: 'pabellones'}>['rows'][number], EntityRow<'pabellones'>>>;
 export const planReference: EntityForeignKey = {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']};
 // @ts-expect-error Reference labels cannot expose private password hashes.
@@ -21,7 +30,7 @@ export type WrongField = EntityRow<'materias'>['pisos'];
 // @ts-expect-error Storage and validation metadata are not in the browser contract.
 export type HiddenMetadata = EntityColumn<'materias'>['validators'];
 // @ts-expect-error The entity primary key is required.
-export const nullKey: EntityRow<'materias'>['materia'] = null;
+export const nullKey: EntityRow<'materias'>['cod_mat'] = null;
 // @ts-expect-error Boolean values cannot be strings.
 export const stringBoolean: EntityRow<'materias'>['obligatoria'] = 'true';
 

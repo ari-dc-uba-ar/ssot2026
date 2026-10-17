@@ -295,6 +295,15 @@ across fields. The frontend selects an editor by input type and receives its
 constraints from the API. Neither CRUD nor the editor branches on the entity name.
 Other entity fields keep their existing read/write behavior after authentication.
 
+`año` uses `posInteger` (an integer greater than zero). `regularidad` accepts only
+`Libre` or `Regular`, and `cuatrimestre` only `1C` or `2C`. Their type definitions
+in `src/backend/value-types.ts` supply validation behaviours and editor constraints;
+the enum types also produce TypeScript literal unions. Nullability remains a
+separate field property, so `regularidad` still permits `null`.
+The API enforces these rules on writes and keys. PostgreSQL mappings store
+`posInteger` as integer and enums as text; type behaviours do not generate SQL
+`CHECK` constraints.
+
 From **Contraseña y códigos de recuperación**, each user can generate and download
 eight random 128-bit recovery codes after confirming their password. Newly created
 users should do this after their first login. Only SHA-256 hashes are stored. The
@@ -340,7 +349,8 @@ without requiring redundant relationships on the edited entity. Narrower FK
 relationships identify the key described by an entity's `isName`. Independent relationships,
 including those on a join table, keep independent selections within their shared
 context.
-Text, password, integer and boolean editors preserve null separately
+Positive integer inputs use the type's minimum; enum inputs show its allowed values
+without selecting one automatically. Text, password, integer, enum and boolean editors preserve null separately
 from empty text, zero and false. New types require an editor at compile time.
 
 `npm run build` compiles the backend and browser separately, using a TypeScript

@@ -3,6 +3,9 @@ import type {Problem} from 'system-definition';
 const typeNames: Readonly<Record<string, string>> = {
     text: 'texto',
     integer: 'un número entero',
+    posInteger: 'un número entero mayor que 0',
+    regularidad: 'Libre o Regular',
+    cuatrimestre: '1C o 2C',
     boolean: 'verdadero o falso',
     password: 'una contraseña válida',
 };

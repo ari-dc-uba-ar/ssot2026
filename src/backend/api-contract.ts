@@ -1,6 +1,7 @@
 // Browser consumers import these types only; domain definitions stay in the backend.
 import type {EntityInfoOf, EntityInstanceType, Problem} from 'system-definition';
 import type {myRecords, myEntities} from './system.js';
+import type {InputConstraints} from './value-types.js';
 
 export type EntityName = keyof typeof myEntities;
 export type EntityNamesResponse = EntityName[];
@@ -28,7 +29,7 @@ export type EntityColumn<E extends EntityName> = E extends EntityName
     ? DisplayColumn<Fields<E>[AllowedNames<E, 'readable'> & keyof Fields<E>]> : never;
 type InputColumn<T, N, D> = T extends {label: string; type: string; nullable: boolean}
     ? Pick<T, 'label' | 'nullable'> & {name: N; type: D extends {inputType: infer I} ? I : T['type'];
-        constraints: {minLength: number | null; maxLength: number | null}; optionalOnUpdate: boolean} : never;
+        constraints: InputConstraints; optionalOnUpdate: boolean} : never;
 export type EntityInputColumn<E extends EntityName> = E extends EntityName ? {
     [K in AllowedNames<E, 'writable'>]: InputColumn<Fields<E>[K & keyof Fields<E>], InputName<E, K>, Definitions<E>[K]>
 }[AllowedNames<E, 'writable'>] : never;
