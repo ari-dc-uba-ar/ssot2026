@@ -62,6 +62,11 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .field > input, .field > select { width: 100%; margin-top: 4px; }
 .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; font-size: .85rem; color: #605e5c; }
 .confirm-dialog { width: min(420px, calc(100% - 32px)); padding: 20px 24px; }
+.dependency-dialog { width: min(600px, calc(100% - 32px)); }
+.dependency-list { padding-left: 20px; }
+.dependency-list > li { margin: 10px 0; }
+.dependency-list ul { margin: 6px 0; padding-left: 20px; color: #605e5c; }
+.dependency-list p { margin: 6px 0; }
 .confirm-content { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
 .confirm-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
 .confirm-dialog h2 { font-size: 1.15rem; margin: 0 0 6px; color: #201f1e; }

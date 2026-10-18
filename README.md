@@ -402,5 +402,8 @@ and column-security tests. `test:crud` requires the configured migrated database
 it exercises domain CRUD in a rolled-back transaction and authentication with the
 app role in owned scratch databases, including concurrent cold starts, configured
 bootstrap credentials, migration of existing accounts, concurrent recovery-code
-reuse, generic user CRUD and session revocation. This initial page loads all rows; pagination and
-specialized field widgets are separate future steps.
+reuse, generic user CRUD and session revocation. The page loads all rows and uses
+client-side pagination. Users can select rows for bulk deletion; the API checks
+SSOT-declared foreign-key dependencies and rejects the entire batch when any
+selected row is referenced. The dependency dialog identifies the referencing
+entity and relationship, and shows up to ten dependent row keys.

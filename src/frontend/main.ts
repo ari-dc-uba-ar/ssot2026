@@ -1,10 +1,10 @@
-import type {EntityColumn, EntityCreate, EntityInputColumn, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
-import {ApiRequestError, createRow, deleteRow, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
+import type {DeleteDependencyCheck, EntityColumn, EntityCreate, EntityInputColumn, EntityKey, EntityName, EntityResponse, EntityRow, EntityUpdate} from '../backend/api-contract.js';
+import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
 import {messageOf} from './messages.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {createReferenceFields} from './foreign-keys.js';
 import {loadReferenceSources} from './reference-sources.js';
-import {confirmAction} from './confirm.js';
+import {confirmAction, showDeleteDependencies} from './confirm.js';
 
 type Column = EntityColumn<EntityName>;
 type InputColumn = EntityInputColumn<EntityName>;
@@ -264,6 +264,8 @@ async function show(name: EntityName): Promise<void> {
     let sortAsc = true;
     let page = 1;
     let adding = false;
+    const selectedRows = new Set<Row>();
+    let selectionCheck = 0;
     const pageSize = 10;
 
     const toolbar = element('div');
@@ -274,7 +276,12 @@ async function show(name: EntityName): Promise<void> {
     filterInput.placeholder = `Filtrar ${unit}…`;
     filterInput.oninput = () => { filter = filterInput.value.toLowerCase().trim(); page = 1; render(); };
 
-    toolbar.append(element('h2', title), count, filterInput);
+    const selectionStatus = element('span');
+    selectionStatus.setAttribute('role', 'status');
+    selectionStatus.setAttribute('aria-live', 'polite');
+    const deleteSelectedButton = button('Borrar todos los seleccionados', () => void onDeleteSelected(), 'danger');
+    deleteSelectedButton.disabled = true;
+    toolbar.append(element('h2', title), count, filterInput, deleteSelectedButton, selectionStatus);
     if (entity.name === 'usuarios') {
         toolbar.append(button('+ Agregar usuario', openCreateUserModal, 'primary'));
     } else {
@@ -285,6 +292,13 @@ async function show(name: EntityName): Promise<void> {
     const headerRow = table.createTHead().insertRow();
     const idxTh = element('th', '#');
     idxTh.className = 'row-idx';
+    const selectVisible = element('input');
+    selectVisible.type = 'checkbox';
+    selectVisible.setAttribute('aria-label', 'Seleccionar todas las filas visibles');
+    const selectTh = element('th');
+    selectTh.className = 'selection-col';
+    selectTh.append(selectVisible);
+    headerRow.append(selectTh);
     headerRow.append(idxTh);
 
     for (const col of entity.columns) {
@@ -297,6 +311,86 @@ async function show(name: EntityName): Promise<void> {
         headerRow.append(th);
     }
     headerRow.append(element('th', 'Acciones'));
+    selectVisible.onchange = () => {
+        const rows = filterAndSort(entity.rows, filter, sortCol, sortAsc);
+        const start = (page - 1) * pageSize;
+        for (const row of rows.slice(start, start + pageSize)) {
+            if (selectVisible.checked) selectedRows.add(row);
+            else selectedRows.delete(row);
+        }
+        render();
+        void refreshDeleteSelection();
+    };
+
+    async function refreshDeleteSelection(): Promise<void> {
+        const check = ++selectionCheck;
+        const rows = [...selectedRows];
+        deleteSelectedButton.disabled = true;
+        deleteSelectedButton.textContent = `Borrar todos los seleccionados (${rows.length})`;
+        if (!rows.length) {
+            selectionStatus.textContent = '';
+            return;
+        }
+        if (rows.length > 500) {  //La idea es que si a futuro meten muchas filas no explote el back
+            selectionStatus.textContent = 'El máximo por operación es 500 filas.';
+            return;
+        }
+        selectionStatus.textContent = 'Comprobando dependencias…';
+        try {
+            const result: DeleteDependencyCheck = await checkDeleteDependencies(entity.name, rows.map(row => rowKey(entity, row)));
+            if (check !== selectionCheck) return;
+            if (result.blockers.length) {
+                selectionStatus.textContent = `Bloqueado: ${result.blockers.map(({entity: dependent, relationship, count: dependentCount}) =>
+                    `${labels[dependent] ?? dependent} (${relationship}): ${dependentCount}`).join('; ')}.`;
+                deleteSelectedButton.disabled = false;
+                return;
+            }
+            selectionStatus.textContent = `${rows.length} fila${rows.length === 1 ? '' : 's'} lista${rows.length === 1 ? '' : 's'} para borrar.`;
+            deleteSelectedButton.disabled = false;
+        } catch (error) {
+            if (check !== selectionCheck) return;
+            selectionStatus.textContent = error instanceof Error ? error.message : 'No se pudieron comprobar las dependencias.';
+        }
+    }
+
+    async function onDeleteSelected(): Promise<void> {
+        const rows = [...selectedRows];
+        if (!rows.length || deleteSelectedButton.disabled) return;
+        deleteSelectedButton.disabled = true;
+        let reloaded = false;
+        try {
+            const {blockers} = await checkDeleteDependencies(entity.name, rows.map(row => rowKey(entity, row)));
+            if (blockers.length) {
+                await showDeleteDependencies(blockers, labels);
+                deleteSelectedButton.disabled = false;
+                return;
+            }
+        } catch (error) {
+            selectionStatus.textContent = error instanceof Error ? error.message : 'No se pudieron comprobar las dependencias.';
+            deleteSelectedButton.disabled = false;
+            return;
+        }
+        const confirmed = await confirmAction({
+            title: `Eliminar de ${title}`,
+            message: `¿Eliminar permanentemente las ${rows.length} filas seleccionadas? Esta acción no se puede deshacer.`,
+            confirmText: `Eliminar ${rows.length} filas`,
+            danger: true,
+        });
+        if (!confirmed) {
+            deleteSelectedButton.disabled = false;
+            return;
+        }
+        await run(async () => {
+            await deleteRows(entity.name, rows.map(row => rowKey(entity, row)));
+            selectedRows.clear();
+            delete cache[entity.name];
+            await show(entity.name);
+            status.textContent = `Se eliminaron ${rows.length} filas.`;
+            reloaded = true;
+        });
+        if (!reloaded) deleteSelectedButton.disabled = false;
+    }
+
     const tbody = table.createTBody();
     const pagination = element('div');
     pagination.className = 'pagination';
@@ -311,7 +405,7 @@ async function show(name: EntityName): Promise<void> {
 
     function render(): void {
         entity.columns.forEach((col, idx) => {
-            headerRow.cells[idx + 1]!.textContent = col.label + (sortCol === col.name ? (sortAsc ? ' ▲' : ' ▼') : '');
+            headerRow.cells[idx + 2]!.textContent = col.label + (sortCol === col.name ? (sortAsc ? ' ▲' : ' ▼') : '');
         });
 
         const rows = filterAndSort(entity.rows, filter, sortCol, sortAsc);
@@ -324,12 +418,18 @@ async function show(name: EntityName): Promise<void> {
         pageSpan.textContent = `Página ${page} de ${totalPages}`;
         prevBtn.disabled = page <= 1;
         nextBtn.disabled = page >= totalPages;
+        selectVisible.disabled = paged.length === 0;
+        selectVisible.checked = paged.length > 0 && paged.every(row => selectedRows.has(row));
+        selectVisible.indeterminate = paged.some(row => selectedRows.has(row)) && !selectVisible.checked;
+        deleteSelectedButton.textContent = `Borrar todos los seleccionados (${selectedRows.size})`;
 
         tbody.replaceChildren();
 
         if (adding) {
             const tr = tbody.insertRow();
             tr.className = 'new-row';
+            const selection = tr.insertCell();
+            selection.className = 'selection-col';
             const num = tr.insertCell();
             num.className = 'row-idx';
             num.textContent = '+';
@@ -370,6 +470,20 @@ async function show(name: EntityName): Promise<void> {
 
         paged.forEach((row, i) => {
             const tr = tbody.insertRow();
+            const selected = tr.insertCell();
+            selected.className = 'selection-col';
+            const checkbox = element('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = selectedRows.has(row);
+            checkbox.setAttribute('aria-label', `Seleccionar fila ${Object.values(rowKey(entity, row)).join(' · ')}`);
+            checkbox.onchange = () => {
+                if (checkbox.checked) selectedRows.add(row);
+                else selectedRows.delete(row);
+                render();
+                void refreshDeleteSelection();
+            };
+            selected.append(checkbox);
+
             const num = tr.insertCell();
             num.className = 'row-idx';
             num.textContent = String(start + i + 1);

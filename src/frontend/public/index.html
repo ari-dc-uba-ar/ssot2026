@@ -149,5 +149,14 @@
             <button id="confirm-ok" type="button" class="danger primary">Confirmar</button>
         </div>
     </dialog>
+
+    <dialog id="delete-dependencies-dialog" class="dependency-dialog" aria-labelledby="delete-dependencies-title">
+        <div class="dialog-header">
+            <h2 id="delete-dependencies-title">No se pueden borrar estas filas</h2>
+            <button id="close-delete-dependencies" type="button" class="close-btn" aria-label="Cerrar">✕</button>
+        </div>
+        <p>Estos registros seleccionados están siendo utilizados por otras filas:</p>
+        <ul id="delete-dependencies-list" class="dependency-list"></ul>
+    </dialog>
 </body>
 </html>
