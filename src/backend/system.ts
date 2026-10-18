@@ -150,7 +150,7 @@ const enrolamientos = defineEntity(myContext, {
     name: 'enrolamientos',
     record: 'enrolamiento',
     pk: ['legajo', 'cod_mat', 'cod_dep', 'año', 'cuatrimestre'],
-    fks: {estudiante: {entity: 'estudiantes', fields: ['legajo']}, materia: {entity: 'materias', fields: ['cod_mat', 'cod_dep']}}
+    fks: {estudiante: {entity: 'estudiantes', fields: ['legajo']}, materia: {entity: 'materias', fields: ['cod_dep', 'cod_mat']}}
 })
 
 const planes = defineEntity(myContext, {
