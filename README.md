@@ -238,8 +238,12 @@ docker compose run --rm migrations npm run migration:decide -- --draft migration
 
 Authored SQL/check resources live in `migrations/resources/`. The SSOT module's
 `migrationAuthoring` export loads their exact bytes and verifies the hash referenced
-by each answer. The current `0005_update_schema` answers require `materias` to be
-empty before its four data-sensitive changes can run; existing rows block migration.
+by each answer. After successful publication and catalog update, generation removes
+consumed answers and unchanged resources that no other draft references, then removes
+empty resource directories. Changed, unrelated and external inputs are retained;
+failed generation keeps its inputs for retry. Published SQL and metadata retain the
+check bytes. Migration `0005_update_schema` requires `materias` to be empty before
+its four data-sensitive changes can run; existing rows block migration.
 
 For a host process, configure `.env` (including `JWT_SECRET`), start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.

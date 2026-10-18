@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict';
-import {readFile} from 'node:fs/promises';
+import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import test from 'node:test';
 import {captureMigrationState, decodeSqlSsot, jsonBytes, migrationDirectory, readCatalogState, readStateBytes, readStoredCatalog, sha256Hex, verifyMigrationFiles} from '@system-definition/postgres-migrations';
-import {ssot, sqlMapping, migrationAuthoring} from '../dist/backend/system.js';
+import {ssot, sqlMapping} from '../dist/backend/system.js';
+import {createMigrationAuthoring} from '../dist/backend/migration-authoring.js';
 
 const value = result => { if (!result.ok) throw new Error(JSON.stringify(result.problems)); return result.value; };
 
-test('authored migration checks load exact bytes and reject changed, missing or escaping resources', async () => {
-    const name = '0005_materias_empty.sql';
-    const bytes = await readFile(join('migrations/resources', name));
+test('authored migration checks load exact bytes and reject changed, missing or escaping resources', async t => {
+    const prefix = join(tmpdir(), 'ssot-authored-resources-');
+    const directory = await mkdtemp(prefix);
+    t.after(async () => {assert.ok(directory.startsWith(prefix)); await rm(directory, {recursive: true, force: true});});
+    const migrationAuthoring = createMigrationAuthoring(directory);
+    const name = 'empty.sql';
+    const bytes = Buffer.from('SELECT true AS ok;\n');
+    await writeFile(join(directory, name), bytes);
     const ref = {kind: 'check', name, contentHash: sha256Hex(bytes)};
     assert.equal(value(await migrationAuthoring.readSql(ref)), bytes.toString('utf8'));
     const changed = await migrationAuthoring.readSql({...ref, contentHash: '0'.repeat(64)});
@@ -34,6 +41,7 @@ test('migration artifacts retain valid hashes and grant CRUD only when their tab
         '0002_authentication': ['usuarios'],
         '0003_authenticated_administrators': [],
         '0004_materias_plan_fk': [],
+        '0005_update_schema': ['departamentos', 'enrolamientos', 'estudiantes'],
     };
     for (let index = 0; index < catalog.releases.length; index++) value(await readCatalogState(root, catalog, index));
     for (const published of catalog.migrations) {
