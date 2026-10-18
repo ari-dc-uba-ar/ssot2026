@@ -3643,21 +3643,6 @@
           "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
           "kind": "check",
           "name": "0005_materias_empty.sql"
-        },
-        {
-          "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
-          "kind": "check",
-          "name": "0005_materias_empty.sql"
-        },
-        {
-          "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
-          "kind": "check",
-          "name": "0005_materias_empty.sql"
-        },
-        {
-          "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
-          "kind": "check",
-          "name": "0005_materias_empty.sql"
         }
       ],
       "description": "",
@@ -4430,29 +4415,14 @@
   ],
   "migration.json": {
     "authoring": {
-      "byteLength": 14570,
-      "contentHash": "fe681ddda0b0e7bdc32d23e37f078aa9d75e5bd7706a93615126a305c42c8786",
+      "byteLength": 14177,
+      "contentHash": "3005f9048e83e1b3fa56c8f4b3f0fc4d397b23eee85f1b0c07cecad01e2e5658",
       "path": "authoring.json"
     },
     "formatVersion": 1,
     "migration": {
       "after": [],
       "before": [
-        {
-          "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
-          "kind": "check",
-          "name": "0005_materias_empty.sql"
-        },
-        {
-          "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
-          "kind": "check",
-          "name": "0005_materias_empty.sql"
-        },
-        {
-          "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
-          "kind": "check",
-          "name": "0005_materias_empty.sql"
-        },
         {
           "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1",
           "kind": "check",
@@ -4698,21 +4668,21 @@
         "systemId": "ssot2026"
       }
     },
-    "migrationHash": "130b0c16755a0abcd8a9757adb904323cec71f8429a592e68d22013a9e006b1d",
+    "migrationHash": "f3f931d43c52f56c441de98ddb3c03484a307851aa31a27f56c2f0d6d1af8c03",
     "resources": {
       "byteLength": 7888,
       "contentHash": "91fb21480e0974cc947ace1a6f4463ada73a5370e21f9883a04d4f154012ae93",
       "path": "resources.json"
     },
     "script": {
-      "byteLength": 2968,
-      "contentHash": "c3cac7234393c2531d8054cee0736ec7d4e2dd34ec7bae0f4d1cee0b0c890271",
+      "byteLength": 2788,
+      "contentHash": "382a618853d1f42c8acacd35fdf8cf696e6170b53111c7b721ff2b28bf3ddc99",
       "path": "0005_update_schema.sql"
     }
   },
   "script.json": {
     "path": "0005_update_schema.sql",
-    "contentHash": "c3cac7234393c2531d8054cee0736ec7d4e2dd34ec7bae0f4d1cee0b0c890271",
-    "byteLength": 2968
+    "contentHash": "382a618853d1f42c8acacd35fdf8cf696e6170b53111c7b721ff2b28bf3ddc99",
+    "byteLength": 2788
   }
 }

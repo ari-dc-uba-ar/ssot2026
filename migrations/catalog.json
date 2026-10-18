@@ -376,21 +376,6 @@
             "name": "0005_materias_empty.sql",
             "kind": "check",
             "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
-          },
-          {
-            "name": "0005_materias_empty.sql",
-            "kind": "check",
-            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
-          },
-          {
-            "name": "0005_materias_empty.sql",
-            "kind": "check",
-            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
-          },
-          {
-            "name": "0005_materias_empty.sql",
-            "kind": "check",
-            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
           }
         ],
         "steps": [
@@ -621,7 +606,7 @@
         ],
         "after": []
       },
-      "migrationHash": "130b0c16755a0abcd8a9757adb904323cec71f8429a592e68d22013a9e006b1d"
+      "migrationHash": "f3f931d43c52f56c441de98ddb3c03484a307851aa31a27f56c2f0d6d1af8c03"
     }
   ]
 }

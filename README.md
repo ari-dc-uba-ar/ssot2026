@@ -244,6 +244,8 @@ empty resource directories. Changed, unrelated and external inputs are retained;
 failed generation keeps its inputs for retry. Published SQL and metadata retain the
 check bytes. Migration `0005_update_schema` requires `materias` to be empty before
 its four data-sensitive changes can run; existing rows block migration.
+Identical check references (kind, name and content hash) execute once per migration
+boundary. A check referenced at a later boundary runs again after the intervening steps.
 
 For a host process, configure `.env` (including `JWT_SECRET`), start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.

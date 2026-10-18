@@ -2,12 +2,6 @@ BEGIN;
 
 SELECT NOT EXISTS (SELECT 1 FROM "ssot"."materias") AS ok;
 
-SELECT NOT EXISTS (SELECT 1 FROM "ssot"."materias") AS ok;
-
-SELECT NOT EXISTS (SELECT 1 FROM "ssot"."materias") AS ok;
-
-SELECT NOT EXISTS (SELECT 1 FROM "ssot"."materias") AS ok;
-
 ALTER TABLE "ssot"."materias" DROP CONSTRAINT "materias_pkey";
 
 CREATE TABLE "ssot"."enrolamientos" ();

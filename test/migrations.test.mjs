@@ -61,3 +61,21 @@ test('the plan FK migration only changes the constraint and leaves existing data
     assert.match(text, /FOREIGN KEY \("plan"\) REFERENCES "ssot"\."planes" \("plan"\)/);
     assert.doesNotMatch(text, /\b(?:INSERT|UPDATE|DELETE|TRUNCATE|CASCADE|NOT VALID)\b/i);
 });
+
+test('the schema update keeps four decision bindings and executes their shared guard once', async () => {
+    const catalog = value(await readStoredCatalog('migrations'));
+    const published = catalog.migrations.find(entry => entry.migration.id === '0005_update_schema');
+    assert.ok(published);
+    const directory = migrationDirectory('migrations', published);
+    const {authoring, manifest} = value(await verifyMigrationFiles(directory, published));
+    assert.equal(authoring.decisions.length, 4);
+    assert.equal(authoring.migration.before.length, 1);
+    const check = authoring.migration.before[0];
+    assert.equal(check.name, '0005_materias_empty.sql');
+    for (const decision of authoring.decisions) {
+        assert.equal(decision.resolution.kind, 'check');
+        assert.deepEqual(decision.resolution.run, check);
+    }
+    const sql = await readFile(join(directory, manifest.script.path), 'utf8');
+    assert.equal([...sql.matchAll(/SELECT NOT EXISTS \(SELECT 1 FROM "ssot"\."materias"\) AS ok;/g)].length, 1);
+});
