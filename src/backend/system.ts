@@ -187,3 +187,11 @@ export const sqlMapping = {
     boolean: sqlTypes.boolean,
     password: sqlTypes.text,
 } satisfies SqlTypeMapping<typeof ssot>;
+
+// 0005 cambia la PK de materias y agrega columnas obligatorias: sólo es seguro con la tabla vacía.
+const migrationChecks: Record<string, string> = {
+    materias_vacia: 'SELECT NOT EXISTS (SELECT 1 FROM "ssot"."materias") AS ok',
+};
+export const migrationAuthoring = {
+    readSql: async ({name}: {name: string}) => ({ok: true as const, value: migrationChecks[name]!}),
+};
