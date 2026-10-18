@@ -6,6 +6,7 @@ import { defineTypes, type CoreFieldDef, completeCoreField, defineRecord,
 } from 'system-definition'
 import { humanBehaviours } from "system-definition/examples";
 import {appTypeDefs, appTypeBehaviours, inputConstraints} from './value-types.js';
+export {migrationAuthoring} from './migration-authoring.js';
 
 const myHumanBehaviours: HumanProvider<typeof appTypeDefs> = {...humanBehaviours};
 

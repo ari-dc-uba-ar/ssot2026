@@ -236,6 +236,11 @@ put its answers in `migrations/answers.json` and run:
 docker compose run --rm migrations npm run migration:decide -- --draft migrations/draft.json --answers migrations/answers.json
 ```
 
+Authored SQL/check resources live in `migrations/resources/`. The SSOT module's
+`migrationAuthoring` export loads their exact bytes and verifies the hash referenced
+by each answer. The current `0005_update_schema` answers require `materias` to be
+empty before its four data-sensitive changes can run; existing rows block migration.
+
 For a host process, configure `.env` (including `JWT_SECRET`), start PostgreSQL, build, and run `npm start`.
 PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.
 

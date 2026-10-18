@@ -2,9 +2,29 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import test from 'node:test';
-import {migrationDirectory, readCatalogState, readStoredCatalog, verifyMigrationFiles} from '@system-definition/postgres-migrations';
+import {captureMigrationState, decodeSqlSsot, jsonBytes, migrationDirectory, readCatalogState, readStateBytes, readStoredCatalog, sha256Hex, verifyMigrationFiles} from '@system-definition/postgres-migrations';
+import {ssot, sqlMapping, migrationAuthoring} from '../dist/backend/system.js';
 
 const value = result => { if (!result.ok) throw new Error(JSON.stringify(result.problems)); return result.value; };
+
+test('authored migration checks load exact bytes and reject changed, missing or escaping resources', async () => {
+    const name = '0005_materias_empty.sql';
+    const bytes = await readFile(join('migrations/resources', name));
+    const ref = {kind: 'check', name, contentHash: sha256Hex(bytes)};
+    assert.equal(value(await migrationAuthoring.readSql(ref)), bytes.toString('utf8'));
+    const changed = await migrationAuthoring.readSql({...ref, contentHash: '0'.repeat(64)});
+    assert.equal(changed.ok, false);
+    assert.equal(changed.problems[0].messageKey, 'migration.checksumMismatch');
+    for (const name of ['missing.sql', '../baseline.json']) {
+        assert.equal((await migrationAuthoring.readSql({...ref, name})).ok, false);
+    }
+});
+
+test('the current SSOT migration state survives canonical JSON serialization, including composite FKs', async () => {
+    const system = value(decodeSqlSsot(ssot, sqlMapping));
+    const state = value(await captureMigrationState(system, 'ssot', 'roundtrip'));
+    assert.deepEqual(value(await readStateBytes(jsonBytes(state))), state);
+});
 
 test('migration artifacts retain valid hashes and grant CRUD only when their tables are created', async () => {
     const root = 'migrations';

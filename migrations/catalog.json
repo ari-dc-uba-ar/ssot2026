@@ -25,6 +25,11 @@
       "systemId": "ssot2026",
       "releaseId": "0004_materias_plan_fk",
       "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5"
+    },
+    {
+      "systemId": "ssot2026",
+      "releaseId": "0005_update_schema",
+      "releaseHash": "ff2483df30c982a27f7b7eece88d2f3a5a81f045f197f3580f5c0e4052847f34"
     }
   ],
   "migrations": [
@@ -351,6 +356,272 @@
         "after": []
       },
       "migrationHash": "fe1e35217cceed01514a72503c8657137bdb961e34df75fc3e0e77614b0e13bb"
+    },
+    {
+      "migration": {
+        "id": "0005_update_schema",
+        "from": {
+          "systemId": "ssot2026",
+          "releaseId": "0004_materias_plan_fk",
+          "releaseHash": "003dd525b090c77534a3b9c0935e1776bcdc853254cbb93eb63602b48d4945f5"
+        },
+        "to": {
+          "systemId": "ssot2026",
+          "releaseId": "0005_update_schema",
+          "releaseHash": "ff2483df30c982a27f7b7eece88d2f3a5a81f045f197f3580f5c0e4052847f34"
+        },
+        "description": "",
+        "before": [
+          {
+            "name": "0005_materias_empty.sql",
+            "kind": "check",
+            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
+          },
+          {
+            "name": "0005_materias_empty.sql",
+            "kind": "check",
+            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
+          },
+          {
+            "name": "0005_materias_empty.sql",
+            "kind": "check",
+            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
+          },
+          {
+            "name": "0005_materias_empty.sql",
+            "kind": "check",
+            "contentHash": "36a2f4082aa493ccd0208f071b81bb5e088fb13332d28c45c36701dcf0bbfba1"
+          }
+        ],
+        "steps": [
+          {
+            "id": "001_alter_constraint_materias_materias_pkey",
+            "run": {
+              "name": "001_alter_constraint_materias_materias_pkey.sql",
+              "kind": "sql",
+              "contentHash": "5bf16699e82628d3953a008402999686372a72da9ba535bf0ed8bfad8fc2c35a"
+            }
+          },
+          {
+            "id": "002_add_table_enrolamientos",
+            "run": {
+              "name": "002_add_table_enrolamientos.sql",
+              "kind": "sql",
+              "contentHash": "8aa1270b2210b96756cc50425e362df331de07843437e4b6546ebd9ca40128f9"
+            }
+          },
+          {
+            "id": "003_add_table_estudiantes",
+            "run": {
+              "name": "003_add_table_estudiantes.sql",
+              "kind": "sql",
+              "contentHash": "316308f342022125ba9a1b12605bd0c29bf4ac3f186df5e6c11aa27b3f24425a"
+            }
+          },
+          {
+            "id": "004_add_table_departamentos",
+            "run": {
+              "name": "004_add_table_departamentos.sql",
+              "kind": "sql",
+              "contentHash": "6a068d9235a3d49972f0aed5557b67c3924edb9bc8d537689af7045b8b3ba7e1"
+            }
+          },
+          {
+            "id": "005_add_column_enrolamientos_regularidad",
+            "run": {
+              "name": "005_add_column_enrolamientos_regularidad.sql",
+              "kind": "sql",
+              "contentHash": "f189561859d09dc00ac051bcd16554f762ac5ab7a58cfb62656c0d4dbebd43e6"
+            }
+          },
+          {
+            "id": "006_add_column_enrolamientos_legajo",
+            "run": {
+              "name": "006_add_column_enrolamientos_legajo.sql",
+              "kind": "sql",
+              "contentHash": "1a4f926e08e2d323ef8f71ad479c61bc3877ea38d091d8ade1cc28ab5f817d74"
+            }
+          },
+          {
+            "id": "007_add_column_estudiantes_legajo",
+            "run": {
+              "name": "007_add_column_estudiantes_legajo.sql",
+              "kind": "sql",
+              "contentHash": "ea4105a6b59a00498ec0ae9310fa0c2f6f388cb4eae9f2b1d79bdb60e94e5554"
+            }
+          },
+          {
+            "id": "008_add_column_enrolamientos_cod_dep",
+            "run": {
+              "name": "008_add_column_enrolamientos_cod_dep.sql",
+              "kind": "sql",
+              "contentHash": "cd4993cd4e8031226b6d1aeec06ecd58984d89d7db8270685cd611a96397098d"
+            }
+          },
+          {
+            "id": "009_add_column_enrolamientos_cuatrimestre",
+            "run": {
+              "name": "009_add_column_enrolamientos_cuatrimestre.sql",
+              "kind": "sql",
+              "contentHash": "1725521a889454dcf6d4b1a1b47a6bdb420010c8d4493d611af889f7e8efe81f"
+            }
+          },
+          {
+            "id": "010_add_column_materias_cod_dep",
+            "run": {
+              "name": "010_add_column_materias_cod_dep.sql",
+              "kind": "sql",
+              "contentHash": "871c598a3e76f9ab8a298afee539f3fda97faa9b0585a597f983ad6f9d1df595"
+            }
+          },
+          {
+            "id": "011_add_column_departamentos_departamento",
+            "run": {
+              "name": "011_add_column_departamentos_departamento.sql",
+              "kind": "sql",
+              "contentHash": "d31cf9e034940da41576b5f719651abd4963d0ffeb803f4ff3ffeaf9c7a25ca5"
+            }
+          },
+          {
+            "id": "012_add_column_enrolamientos_cod_mat",
+            "run": {
+              "name": "012_add_column_enrolamientos_cod_mat.sql",
+              "kind": "sql",
+              "contentHash": "458eb2598dbfce6ed2984db1266229d95c016925423839e10f0f8068d29317b9"
+            }
+          },
+          {
+            "id": "013_add_column_estudiantes_nombre",
+            "run": {
+              "name": "013_add_column_estudiantes_nombre.sql",
+              "kind": "sql",
+              "contentHash": "b795b47c10f4060884f10e2f2efa4c46064f6dcc3a49d075dd14b2dc06aa1890"
+            }
+          },
+          {
+            "id": "014_add_column_enrolamientos_a_o",
+            "run": {
+              "name": "014_add_column_enrolamientos_a_o.sql",
+              "kind": "sql",
+              "contentHash": "99fefaa469897d6f9089ad75661dbfe0ea60d2dd2e7f0e8a10bcc8e3186920c7"
+            }
+          },
+          {
+            "id": "015_add_column_departamentos_pabellon",
+            "run": {
+              "name": "015_add_column_departamentos_pabellon.sql",
+              "kind": "sql",
+              "contentHash": "10e8aef0ac631513b0fbdb354b9c629618d207fd66d909efc2ad02b72aa0ba75"
+            }
+          },
+          {
+            "id": "016_add_column_enrolamientos_nota",
+            "run": {
+              "name": "016_add_column_enrolamientos_nota.sql",
+              "kind": "sql",
+              "contentHash": "2f4d88e7bb73c9e202c546df2c2c5adf28e9deea38a9c5e8aa2b1c3a7a822c8b"
+            }
+          },
+          {
+            "id": "017_add_column_departamentos_cod_dep",
+            "run": {
+              "name": "017_add_column_departamentos_cod_dep.sql",
+              "kind": "sql",
+              "contentHash": "77c7b5d941ea3d4dcca542f06c070c8616a498222481411a6b672da2cf060cfc"
+            }
+          },
+          {
+            "id": "018_alter_column_materias_materia",
+            "run": {
+              "name": "018_alter_column_materias_materia.sql",
+              "kind": "sql",
+              "contentHash": "c320cb1df5b0bf51084d638bc61a965098a0e3855787fd8e211bb8d3c3dc9124"
+            }
+          },
+          {
+            "id": "019_alter_column_materias_cod_mat",
+            "run": {
+              "name": "019_alter_column_materias_cod_mat.sql",
+              "kind": "sql",
+              "contentHash": "1c4e18d3a01b4bc09308d6b389a29276545971f241546dabdcf83b8a3323a790"
+            }
+          },
+          {
+            "id": "020_add_constraint_enrolamientos_enrolamientos_pkey",
+            "run": {
+              "name": "020_add_constraint_enrolamientos_enrolamientos_pkey.sql",
+              "kind": "sql",
+              "contentHash": "1f9130bbe042a680f49d734521889747793998096b44793514025c54458c765c"
+            }
+          },
+          {
+            "id": "021_alter_constraint_materias_materias_pkey",
+            "run": {
+              "name": "021_alter_constraint_materias_materias_pkey.sql",
+              "kind": "sql",
+              "contentHash": "cee718b139bbc5e1f68c510438d573da4fcf6b06979423afb4bfbefd51a36160"
+            }
+          },
+          {
+            "id": "022_add_constraint_departamentos_departamentos_pkey",
+            "run": {
+              "name": "022_add_constraint_departamentos_departamentos_pkey.sql",
+              "kind": "sql",
+              "contentHash": "f68a7af82548adb329d355567df8a43b93074e9ffccb5d8de1f478315b371afb"
+            }
+          },
+          {
+            "id": "023_add_constraint_estudiantes_estudiantes_pkey",
+            "run": {
+              "name": "023_add_constraint_estudiantes_estudiantes_pkey.sql",
+              "kind": "sql",
+              "contentHash": "31e4fdb1b9e36fa2cab6ae9ed2e4e78b69d10bb362707cf66ee76cb35ccfa816"
+            }
+          },
+          {
+            "id": "024_add_constraint_materias_materias_departamento_fkey",
+            "run": {
+              "name": "024_add_constraint_materias_materias_departamento_fkey.sql",
+              "kind": "sql",
+              "contentHash": "6c352b267887f80239e0c604d19236bacbedd66199e88299c4ddcb7fcabcd5e0"
+            }
+          },
+          {
+            "id": "025_add_constraint_departamentos_departamentos_pabellon_fkey",
+            "run": {
+              "name": "025_add_constraint_departamentos_departamentos_pabellon_fkey.sql",
+              "kind": "sql",
+              "contentHash": "170dcc99ff59b61087323a6831bd146330b1a4e40f1ba3f7151a03b9b342d46d"
+            }
+          },
+          {
+            "id": "026_add_constraint_enrolamientos_enrolamientos_estudiante_fkey",
+            "run": {
+              "name": "026_add_constraint_enrolamientos_enrolamientos_estudiante_fkey.sql",
+              "kind": "sql",
+              "contentHash": "6da131d0773ae15198858a539df065a5afa64bf60bcf3ec1203b86e4a7d1e823"
+            }
+          },
+          {
+            "id": "027_add_constraint_enrolamientos_enrolamientos_materia_fkey",
+            "run": {
+              "name": "027_add_constraint_enrolamientos_enrolamientos_materia_fkey.sql",
+              "kind": "sql",
+              "contentHash": "846f81e3e688dd1a8c2f8395d4594ad29bb1f6a0cd11560f1d7d7776dbf7bf61"
+            }
+          },
+          {
+            "id": "app-permissions",
+            "run": {
+              "name": "app-permissions.sql",
+              "kind": "sql",
+              "contentHash": "fa1ecbc6ba3d0475a28ceb771144e798d0b12f038b5476bfc57f9b4c380ca802"
+            }
+          }
+        ],
+        "after": []
+      },
+      "migrationHash": "130b0c16755a0abcd8a9757adb904323cec71f8429a592e68d22013a9e006b1d"
     }
   ]
 }
