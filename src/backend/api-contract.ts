@@ -53,6 +53,13 @@ export type EntityResponse<E extends EntityName = EntityName> = E extends Entity
 } : never;
 export type EntityKey<E extends EntityName> = E extends EntityName
     ? Pick<EntityRow<E>, (typeof myEntities)[E]['pk'][number] & keyof EntityRow<E>> : never;
+export type DeleteDependencyBlocker = {
+    entity: EntityName;
+    relationship: string;
+    count: number;
+    keys: EntityKey<EntityName>[];
+};
+export type DeleteDependencyCheck = {blockers: DeleteDependencyBlocker[]};
 export type EntityUpdate<E extends EntityName> = E extends EntityName ? {
     key: EntityKey<E>;
     row: EntityInput<E>;

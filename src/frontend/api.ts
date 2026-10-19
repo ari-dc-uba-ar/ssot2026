@@ -1,4 +1,4 @@
-import type {ApiError, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/api-contract.js';
+import type {ApiError, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/api-contract.js';
 import type {Problem} from 'system-definition';
 
 export class ApiRequestError extends Error {
@@ -46,6 +46,12 @@ export async function updateRow<E extends EntityName>(name: E, update: EntityUpd
 }
 export async function deleteRow<E extends EntityName>(name: E, key: EntityKey<NoInfer<E>>): Promise<void> {
     await request(path(name), 'DELETE', key);
+}
+export async function checkDeleteDependencies<E extends EntityName>(name: E, keys: EntityKey<NoInfer<E>>[]): Promise<DeleteDependencyCheck> {
+    return (await request(`${path(name)}/delete-check`, 'POST', {keys})).json() as Promise<DeleteDependencyCheck>;
+}
+export async function deleteRows<E extends EntityName>(name: E, keys: EntityKey<NoInfer<E>>[]): Promise<void> {
+    await request(`${path(name)}/bulk-delete`, 'POST', {keys});
 }
 
 export async function login(usuario: string, contrasena: string): Promise<LoginResponse> {
