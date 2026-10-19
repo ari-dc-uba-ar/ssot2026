@@ -1,6 +1,9 @@
 import type {EntityInputColumn, EntityName, EntityResponse, EntityRow} from '../backend/api-contract.js';
 import type {Problem} from 'system-definition';
-import {createReferenceFields, type ReferenceSource} from './foreign-keys.js';
+import {createReferenceFields} from './foreign-keys.js';
+import type {LoadedReferenceSource} from './reference-sources.js';
+import {createReferenceEditors} from './reference-editor.js';
+import {element} from './dom.js';
 import {messageOf} from './messages.js';
 
 type Column = EntityInputColumn<EntityName>;
@@ -8,12 +11,6 @@ export type Row = EntityRow<EntityName>;
 export type Value = {[E in EntityName]: EntityRow<E>[keyof EntityRow<E>]}[EntityName];
 type FieldReader = {label: string; field: HTMLElement; names: string[]; error: HTMLElement; read: () => (readonly [string, Value])[]};
 type Editor = {input: HTMLInputElement | HTMLSelectElement; read: () => Value; requiredWhenEnabled?: boolean};
-
-function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = ''): HTMLElementTagNameMap[K] {
-    const node = document.createElement(tag);
-    node.textContent = text;
-    return node;
-}
 
 function integerEditor(constraints: Column['constraints']): Editor {
     const input = element('input');
@@ -57,10 +54,12 @@ const editors = {
 } satisfies Record<Column['type'], (constraints: Column['constraints']) => Editor>;
 
 // The existing metadata-driven editor, shared by spreadsheet insertion and editing.
-export function createRowEditor(entity: EntityResponse, sources: readonly ReferenceSource[], row?: Row) {
+export function createRowEditor(entity: EntityResponse, sources: readonly LoadedReferenceSource[], row?: Row, active = true) {
     const id = crypto.randomUUID();
     const values: Readonly<Record<string, Value>> = row ?? {};
-    const references = createReferenceFields(sources, values);
+    const remote = sources.some(source => source.target.window.kind === 'page');
+    const remoteReaders = remote ? createReferenceEditors(entity, sources, values, active) : [];
+    const references = createReferenceFields(remote ? [] : sources, values);
     const controls = new Map<string, {input: HTMLSelectElement; columns: Column[]}>();
     const refreshReferences = () => {
         for (const [name, {input, columns}] of controls) {
@@ -83,7 +82,14 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Refere
         }
     };
     const rendered = new Set<string>();
+    const renderedRemote = new Set<FieldReader>();
     const readers = entity.inputs.flatMap<FieldReader>(column => {
+        const remoteReader = remoteReaders.find(reader => reader.names.includes(column.name));
+        if (remoteReader) {
+            const related = remoteReaders.filter(reader => reader.names.includes(column.name) && !renderedRemote.has(reader));
+            related.forEach(reader => renderedRemote.add(reader));
+            return related;
+        }
         const group = references.group(column.name);
         if (group) {
             if (rendered.has(group.name)) return [];
@@ -155,7 +161,14 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Refere
     for (const reader of readers) {
         if (!seen.has(reader)) cells.push({name: reader.names[0]!, label: reader.label, field: reader.field});
     }
+    let dirty = false;
+    for (const reader of readers) {
+        reader.field.addEventListener('input', () => { dirty = true; });
+        reader.field.addEventListener('change', () => { dirty = true; });
+    }
     return {
+        dirty: () => dirty,
+        saved: () => { dirty = false; },
         cells,
         read: () => Object.fromEntries(readers.flatMap(reader => reader.read())),
         valid: () => readers.every(reader => [...reader.field.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select')]

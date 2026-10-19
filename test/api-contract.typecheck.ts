@@ -1,5 +1,5 @@
 import type {DeleteDependencyBlocker, EntityColumn, EntityCreate, EntityForeignKey, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
-import {checkDeleteDependencies, createRow, deleteRow, deleteRows, updateRow} from '../src/frontend/api.js';
+import {checkDeleteDependencies, createRow, deleteRow, deleteRows, updateRow, loadEntity} from '../src/frontend/api.js';
 
 type Assert<T extends true> = T;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
@@ -36,7 +36,16 @@ export const nullKey: EntityRow<'materias'>['cod_mat'] = null;
 export const stringBoolean: EntityRow<'materias'>['obligatoria'] = 'true';
 
 void createRow('planes', {plan: 1, descripcion: null});
-void updateRow('planes', {key: {plan: 1}, row: {plan: 2, descripcion: 'Changed key'}});
+void loadEntity('planes', {sort: 'plan', where: {plan: 1}});
+// @ts-expect-error Query columns belong to the selected entity.
+void loadEntity('planes', {sort: 'usuario'});
+// @ts-expect-error Equality filters preserve SSOT value types.
+void loadEntity('planes', {where: {plan: '1'}});
+// @ts-expect-error Queries cannot access private fields.
+void loadEntity('usuarios', {sort: 'contrasena_hash'});
+void updateRow('planes', {key: {plan: 1}, version: '1', row: {plan: 2, descripcion: 'Changed key'}});
+// @ts-expect-error Updating requires the version originally read.
+void updateRow('planes', {key: {plan: 1}, row: {plan: 2, descripcion: 'Stale'}});
 void deleteRows('materias', [{cod_mat: 'ALG', cod_dep: 'DC'}]);
 void checkDeleteDependencies('planes', [{plan: 1}]);
 // @ts-expect-error Bulk deletion needs every component of the selected entity's key.
@@ -60,6 +69,6 @@ export const missingPassword: EntityCreate<'usuarios'> = {usuario: 'usuario'};
 // @ts-expect-error Recovery hashes cannot be assigned through the public API.
 void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password', recuperacion_hashes: '[]'});
 void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password'});
-void updateRow('usuarios', {key: {id: 'id'}, row: {usuario: 'usuario'}});
+void updateRow('usuarios', {key: {id: 'id'}, version: '1', row: {usuario: 'usuario'}});
 // @ts-expect-error There are no per-account roles.
 void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password', administrador: true});

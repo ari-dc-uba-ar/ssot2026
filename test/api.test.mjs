@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
 import {registerEntityApi} from '../dist/backend/api.js';
-import {myEntities} from '../dist/backend/system.js';
+import {myEntities, entityLabels} from '../dist/backend/system.js';
+import {browsing} from '../dist/backend/browsing.js';
+import {entityResult} from './helpers/entity-result.mjs';
 import {createAuthentication} from '../dist/backend/auth.js';
 import {appTypeBehaviours} from '../dist/backend/value-types.js';
 
@@ -30,7 +32,7 @@ test('entity discovery comes from the SSOT and needs no database query', async t
     const base = await startApi(t, () => { throw new Error('Unexpected database query'); });
     const response = await fetch(`${base}/api/entities`);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), Object.keys(myEntities));
+    assert.deepEqual(await response.json(), Object.keys(myEntities).map(name => ({name, label: entityLabels[name]})));
     for (const name of ['unknown', 'constructor', 'materias;DROP TABLE ssot.materias']) {
         const invalid = await fetch(`${base}/api/entities/${encodeURIComponent(name)}`);
         assert.equal(invalid.status, 404);
@@ -42,12 +44,13 @@ test('entity data preserves JSON value types and exposes only display metadata',
     let sql;
     const base = await startApi(t, async text => {
         sql = text;
-        return {rows: [{cod_mat: 'ALG', cod_dep: 'DM', materia: 'Álgebra', plan: 2026, obligatoria: false, private_extra: 'omit'}]};
+        return entityResult([{cod_mat: 'ALG', cod_dep: 'DM', materia: 'Álgebra', plan: 2026, obligatoria: false, private_extra: 'omit'}]);
     });
     const response = await fetch(`${base}/api/entities/materias`);
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
         name: 'materias',
+        label: 'Materias', browsing, window: {kind: 'complete'}, versions: ['1'],
         pk: ['cod_mat', 'cod_dep'],
         columns: [
             {name: 'cod_mat', label: 'cod mat', type: 'text', nullable: false, writable: true},
@@ -71,11 +74,11 @@ test('entity data preserves JSON value types and exposes only display metadata',
     });
     assert.match(sql, /SELECT "cod_mat", "cod_dep", "materia", "plan", "obligatoria"/);
     assert.match(sql, /FROM "ssot"\."materias"/);
-    assert.match(sql, /ORDER BY "cod_mat", "cod_dep"/);
+    assert.match(sql, /ORDER BY "cod_mat" COLLATE "C" asc NULLS LAST, "cod_dep" COLLATE "C" asc NULLS LAST/);
 });
 
 test('empty entities still return their columns', async t => {
-    const base = await startApi(t, async () => ({rows: []}));
+    const base = await startApi(t, async () => entityResult([]));
     const response = await fetch(`${base}/api/entities/pabellones`);
     assert.equal(response.status, 200);
     const body = await response.json();
@@ -92,7 +95,7 @@ test('database errors and rows inconsistent with the SSOT return a JSON error', 
         {materia: 'Missing nullable field', obligatoria: null},
     ];
     const base = await startApi(t, async () => {
-        if (rows.length) return {rows: [rows.shift()]};
+        if (rows.length) return entityResult([rows.shift()]);
         throw new Error('Internal database details');
     });
     for (let index = 0; index < 4; index++) {
@@ -132,7 +135,7 @@ test('positive integers and enums validate parsed values without coercion', () =
 });
 
 test('enrollment metadata supplies the positive minimum and enum choices to editors', async t => {
-    const base = await startApi(t, async () => ({rows: []}));
+    const base = await startApi(t, async () => entityResult([]));
     const response = await fetch(`${base}/api/entities/enrolamientos`);
     assert.equal(response.status, 200);
     const {inputs} = await response.json();
@@ -162,7 +165,7 @@ test('invalid enrollment values and keys are rejected before querying on create,
     ]) {
         for (const value of values) {
             const row = {...enrollment, [field]: value};
-            for (const [method, body] of [['POST', row], ['PUT', {key, row}]]) {
+            for (const [method, body] of [['POST', row], ['PUT', {key, row, version: '1'}]]) {
                 const response = await send(base, 'enrolamientos', method, body);
                 assert.equal(response.status, 400, `${method} ${field}=${value}`);
                 assert.ok((await response.json()).problems.some(problem => problem.field === field));
@@ -170,7 +173,7 @@ test('invalid enrollment values and keys are rejected before querying on create,
             if (field !== 'regularidad') {
                 const invalidKey = {...key, [field]: value};
                 assert.equal((await send(base, 'enrolamientos', 'DELETE', invalidKey)).status, 400);
-                assert.equal((await send(base, 'enrolamientos', 'PUT', {key: invalidKey, row: enrollment})).status, 400);
+                assert.equal((await send(base, 'enrolamientos', 'PUT', {key: invalidKey, row: enrollment, version: '1'})).status, 400);
             }
         }
     }
@@ -185,8 +188,8 @@ test('valid enrollment enums, positive year boundary and nullable regularidad re
         assert.equal((await send(base, 'enrolamientos', 'POST', row)).status, 204);
         assert.deepEqual(queries.at(-1).values, Object.values(row));
         const updated = {...row, cuatrimestre: '2C'};
-        assert.equal((await send(base, 'enrolamientos', 'PUT', {key: enrollmentKey(row), row: updated})).status, 204);
-        assert.deepEqual(queries.at(-1).values, [...Object.values(updated), ...Object.values(enrollmentKey(row))]);
+        assert.equal((await send(base, 'enrolamientos', 'PUT', {key: enrollmentKey(row), row: updated, version: '1'})).status, 204);
+        assert.deepEqual(queries.at(-1).values, [...Object.values(updated), ...Object.values(enrollmentKey(row)), '1']);
     }
 });
 
@@ -198,9 +201,9 @@ test('CRUD uses parameters and targets the original key when the key is edited',
     assert.match(queries[0].sql, /^INSERT INTO "ssot"\."materias"/);
     assert.deepEqual(queries[0].values, ['', 'DC', row.materia, 0, false]);
     assert.ok(!queries[0].sql.includes(row.materia));
-    assert.equal((await send(base, 'materias', 'PUT', {key: {cod_mat: '', cod_dep: 'DC'}, row: {...row, cod_mat: 'RENAMED', materia: 'Renamed', plan: null}})).status, 204);
-    assert.match(queries[1].sql, /WHERE "cod_mat" = \$6 AND "cod_dep" = \$7$/);
-    assert.deepEqual(queries[1].values, ['RENAMED', 'DC', 'Renamed', null, false, '', 'DC']);
+    assert.equal((await send(base, 'materias', 'PUT', {key: {cod_mat: '', cod_dep: 'DC'}, version: '1', row: {...row, cod_mat: 'RENAMED', materia: 'Renamed', plan: null}})).status, 204);
+    assert.match(queries[1].sql, /WHERE "cod_mat" = \$6 AND "cod_dep" = \$7 AND xmin::text = \$8$/);
+    assert.deepEqual(queries[1].values, ['RENAMED', 'DC', 'Renamed', null, false, '', 'DC', '1']);
     assert.equal((await send(base, 'materias', 'DELETE', {cod_mat: 'RENAMED', cod_dep: 'DC'})).status, 204);
     assert.match(queries[2].sql, /^DELETE FROM "ssot"\."materias" WHERE "cod_mat" = \$1 AND "cod_dep" = \$2$/);
     assert.deepEqual(queries[2].values, ['RENAMED', 'DC']);
@@ -219,7 +222,7 @@ test('invalid shapes, types, keys and SSOT business rules fail before querying',
     }
     for (const key of [{}, {cod_mat: null, cod_dep: 'DC'}, {cod_mat: 'TEST'}, {cod_mat: 'TEST', cod_dep: 'DC', extra: true}]) {
         assert.equal((await send(base, 'materias', 'DELETE', key)).status, 400);
-        assert.equal((await send(base, 'materias', 'PUT', {key, row})).status, 400);
+        assert.equal((await send(base, 'materias', 'PUT', {key, row, version: '1'})).status, 400);
     }
     assert.equal((await send(base, 'materias', 'PUT', row)).status, 400);
     assert.equal((await fetch(`${base}/api/entities/materias`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{'})).status, 400);
@@ -231,7 +234,7 @@ test('missing rows and constraint conflicts have useful, non-sensitive errors', 
         if (sql.startsWith('INSERT')) throw Object.assign(new Error('Internal query and credentials'), {code: '23505'});
         return {rowCount: 0};
     });
-    assert.equal((await send(base, 'planes', 'PUT', {key: {plan: 1}, row: {plan: 2, descripcion: null}})).status, 404);
+    assert.equal((await send(base, 'planes', 'PUT', {key: {plan: 1}, version: '1', row: {plan: 2, descripcion: null}})).status, 409);
     assert.equal((await send(base, 'planes', 'DELETE', {plan: 1})).status, 404);
     const conflict = await send(base, 'planes', 'POST', {plan: 1, descripcion: null});
     assert.equal(conflict.status, 409);

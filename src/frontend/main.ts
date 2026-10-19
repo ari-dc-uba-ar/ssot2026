@@ -1,32 +1,28 @@
-import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck} from '../backend/api-contract.js';
-import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, loadEntity, updateRow} from './api.js';
+import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck, EntityQuery} from '../backend/api-contract.js';
+import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
+import {createEntityCache} from './entity-cache.js';
+import {entityPage} from './entity-query.js';
+import {element} from './dom.js';
+import {reviewRow} from './review-row.js';
 import {initializeAuthentication} from './auth-ui.js';
-import {loadReferenceSources} from './reference-sources.js';
+import {loadReferenceSources, type LoadedReferenceSource} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
 import {createRowEditor, type RowEditor, type Row, type Value} from './row-editor.js';
 
-const labels: Readonly<Record<string, string>> = {
-    materias: 'Materias',
-    pabellones: 'Pabellones',
-    planes: 'Planes de Estudio',
-    usuarios: 'Usuarios',
-    departamentos: 'Departamentos',
-    estudiantes: 'Estudiantes',
-    enrolamientos: 'Inscripciones',
-};
-
-function element<K extends keyof HTMLElementTagNameMap>(tag: K, text = ''): HTMLElementTagNameMap[K] {
-    const node = document.createElement(tag);
-    node.textContent = text;
-    return node;
-}
+let labels: Readonly<Record<string, string>> = {};
 
 const workspace = document.querySelector<HTMLFieldSetElement>('#workspace')!;
 const tabs = document.querySelector<HTMLElement>('#tabs')!;
 const content = document.querySelector<HTMLElement>('#content')!;
 const status = document.querySelector<HTMLElement>('#status')!;
 
-const cache: Record<string, EntityResponse> = {};
+const cache = createEntityCache();
+const load = cache.load;
+let stopWatching = () => {};
+let invalidateView: (name: EntityName | null) => void = () => {};
+let resumeLive = () => {};
+let canLeaveView = async () => true;
+let viewGeneration = 0;
 let allEntities: EntityName[] = [];
 let currentEntity: EntityName | null = null;
 
@@ -38,10 +34,12 @@ async function run(work: () => Promise<void>): Promise<void> {
         await work();
         if (status.textContent === 'Cargando…') status.textContent = '';
     } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         status.className = 'error';
         status.textContent = error instanceof Error ? error.message : 'No se pudo completar la operación.';
     } finally {
         workspace.disabled = !isAuthenticated();
+        resumeLive();
     }
 }
 
@@ -58,46 +56,28 @@ function rowKey(entity: EntityResponse, row: Row): EntityKey<EntityName> {
     return Object.fromEntries(entity.pk.map(name => [name, values[name]])) as EntityKey<EntityName>;
 }
 
-async function load(name: EntityName): Promise<EntityResponse> {
-    if (!cache[name]) cache[name] = await loadEntity(name);
-    return cache[name]!;
-}
-
-function filterAndSort(rows: Row[], filter: string, sortCol: string, sortAsc: boolean): Row[] {
-    const result = filter
-        ? rows.filter(r => Object.values(r).some(v => v != null && String(v).toLowerCase().includes(filter)))
-        : [...rows];
-
-    if (sortCol) {
-        result.sort((a, b) => {
-            const va = a[sortCol as keyof Row], vb = b[sortCol as keyof Row];
-            if (va == null) return vb == null ? 0 : 1;
-            if (vb == null) return -1;
-            const cmp = typeof va === 'number' && typeof vb === 'number' ? va - vb : String(va).localeCompare(String(vb));
-            return sortAsc ? cmp : -cmp;
-        });
-    }
-    return result;
-}
-
-async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () => Promise<void>, row?: Row): Promise<void> {
+async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () => Promise<void>, previous?: {row: Row; version: string}): Promise<void> {
     editor.problems([]);
     if (!editor.valid()) return;
     await run(async () => {
         try {
             const input = editor.read();
-            if (row) await updateRow(entity.name, {key: rowKey(entity, row), row: input} as EntityUpdate<EntityName>);
+            if (previous) await updateRow(entity.name, {key: rowKey(entity, previous.row), row: input,
+                version: previous.version} as EntityUpdate<EntityName>);
             else await createRow(entity.name, input as EntityCreate<EntityName>);
         } catch (error) {
             if (error instanceof ApiRequestError) editor.problems(error.problems);
             throw error;
         }
+        editor.saved();
+        cache.invalidate(entity.name);
         await refresh();
-        status.textContent = row ? 'Guardado' : 'Fila agregada correctamente.';
+        status.textContent = previous ? 'Guardado' : 'Fila agregada correctamente.';
     });
 }
 
 async function onDeleteRow(entity: EntityResponse, row: Row): Promise<void> {
+    if (!await canLeaveView()) return;
     const desc = Object.values(rowKey(entity, row)).join(' · ');
     const name = labels[entity.name] ?? entity.name;
     const confirmed = await confirmAction({
@@ -109,12 +89,13 @@ async function onDeleteRow(entity: EntityResponse, row: Row): Promise<void> {
     if (!confirmed) return;
     await run(async () => {
         await deleteRow(entity.name, rowKey(entity, row));
-        delete cache[entity.name];
+        cache.invalidate(entity.name);
         await show(entity.name);
     });
 }
 
 async function selectTab(name: EntityName): Promise<void> {
+    if (!await canLeaveView()) return;
     currentEntity = name;
     allEntities.forEach((ent, i) => {
         const tab = tabs.children[i] as HTMLButtonElement | undefined;
@@ -127,13 +108,26 @@ async function selectTab(name: EntityName): Promise<void> {
 }
 
 async function show(name: EntityName): Promise<void> {
-    let entity = await load(name);
-    const title = labels[entity.name] ?? entity.name;
+    const generation = ++viewGeneration;
+    invalidateView = () => {};
+    resumeLive = () => {};
+    let entity: EntityResponse;
+    let sources: LoadedReferenceSource[];
+    for (;;) {
+        try {
+            entity = await load(name);
+            sources = await loadReferenceSources(entity.foreignKeys, load);
+            break;
+        } catch (error) {
+            // A live change can invalidate a request while a tab is opening.
+            if (!(error instanceof DOMException && error.name === 'AbortError') || !isAuthenticated() || generation !== viewGeneration) throw error;
+        }
+    }
+    const title = entity.label;
     const unit = title.toLowerCase();
 
-    let sources = await loadReferenceSources(entity.foreignKeys);
-    if (!isAuthenticated()) return;
-    const columns = createRowEditor(entity, sources).cells;
+    if (!isAuthenticated() || generation !== viewGeneration) return;
+    let columns = createRowEditor(entity, sources, undefined, false).cells;
 
     let filter = '';
     let sortCol = '';
@@ -141,9 +135,34 @@ async function show(name: EntityName): Promise<void> {
     let page = 1;
     let adding: RowEditor | undefined;
     const editors = new Map<Row, RowEditor>();
-    const selectedRows = new Set<Row>();
+    const selectedRows = new Map<string, Row>();
+    const selectionKey = (row: Row) => JSON.stringify(rowKey(entity, row));
     let selectionCheck = 0;
-    const pageSize = 10;
+    const pageSize = entity.browsing.pageSize;
+    const query = (): EntityQuery => ({filter, ...(sortCol ? {sort: sortCol} : {}), direction: sortAsc ? 'asc' : 'desc', page}) as EntityQuery;
+    const dirty = () => !!adding || [...editors.values()].some(editor => editor.dirty());
+    canLeaveView = async () => !dirty() || confirmAction({title: 'Descartar borrador',
+        message: 'Cambiar de vista descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar', danger: true});
+    let queryRevision = 0;
+    const changeQuery = async (nextQuery: EntityQuery) => {
+        if (!await canLeaveView()) { filterInput.value = filter; return; }
+        filter = nextQuery.filter ?? '';
+        sortCol = nextQuery.sort ?? '';
+        sortAsc = nextQuery.direction !== 'desc';
+        page = nextQuery.page ?? 1;
+        adding = undefined;
+        editors.clear();
+        const revision = ++queryRevision;
+        table.inert = true;
+        try {
+            const next = await load(name, query());
+            if (revision !== queryRevision || generation !== viewGeneration) return;
+            entity = next;
+            render();
+        } catch (error) {
+            if (!(error instanceof DOMException && error.name === 'AbortError')) status.textContent = error instanceof Error ? error.message : 'No se pudo cargar la página.';
+        } finally { if (revision === queryRevision) table.inert = false; }
+    };
 
     const toolbar = element('div');
     toolbar.className = 'toolbar';
@@ -152,7 +171,7 @@ async function show(name: EntityName): Promise<void> {
     filterInput.className = 'filter-input';
     filterInput.placeholder = `Filtrar ${unit}…`;
     filterInput.setAttribute('aria-label', filterInput.placeholder);
-    filterInput.oninput = () => { filter = filterInput.value.toLowerCase().trim(); page = 1; render(); };
+    filterInput.oninput = () => { void changeQuery({...query(), filter: filterInput.value.trim(), page: 1}); };
 
     const selectionStatus = element('span');
     selectionStatus.setAttribute('role', 'status');
@@ -160,20 +179,50 @@ async function show(name: EntityName): Promise<void> {
     const deleteSelectedButton = button('Borrar todos los seleccionados', () => void onDeleteSelected(), 'danger');
     deleteSelectedButton.disabled = true;
     toolbar.append(element('h2', title), count, filterInput, deleteSelectedButton, selectionStatus);
-    toolbar.append(button('Actualizar', () => { void run(refresh); }));
+    toolbar.append(button('Actualizar', () => { void run(async () => {
+        if (dirty() && !await confirmAction({title: 'Descartar borrador', message: 'Actualizar descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar y actualizar', danger: true})) return;
+        await refresh();
+    }); }));
     toolbar.append(button('+ Agregar fila', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary'));
 
     async function refresh(): Promise<void> {
-        delete cache[name];
-        entity = await load(name);
-        sources = await loadReferenceSources(entity.foreignKeys);
-        if (!isAuthenticated()) return;
-        adding = undefined;
-        editors.clear();
-        selectedRows.clear();
-        render();
-        await refreshDeleteSelection();
+        const revision = ++queryRevision;
+        try {
+            cache.invalidate(name);
+            const next = await load(name, query());
+            const nextSources = await loadReferenceSources(next.foreignKeys, load);
+            if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
+            entity = next;
+            sources = nextSources;
+            columns = createRowEditor(entity, sources, undefined, false).cells;
+            adding = undefined;
+            editors.clear();
+            selectedRows.clear();
+            render();
+            await refreshDeleteSelection();
+        } finally { if (revision === queryRevision) table.inert = false; }
     }
+
+    const afterSave = async (editor: RowEditor) => {
+        if (adding === editor) adding = undefined;
+        if (!dirty()) await refresh();
+    };
+
+    let pendingRefresh = false;
+    resumeLive = () => {
+        if (!pendingRefresh || dirty() || workspace.disabled || generation !== viewGeneration) return;
+        pendingRefresh = false;
+        void run(refresh);
+    };
+    invalidateView = changed => {
+        if (changed !== null && changed !== name && !sources.some(source => source.reference.entity === changed)) return;
+        pendingRefresh = true;
+        if (dirty() || workspace.disabled) {
+            status.textContent = 'Hay datos nuevos. Tu borrador se conserva; podés revisarlos antes de actualizar.';
+            return;
+        }
+        resumeLive();
+    };
 
     const table = element('table');
     const headerRow = table.createTHead().insertRow();
@@ -188,22 +237,21 @@ async function show(name: EntityName): Promise<void> {
     headerRow.append(selectTh);
     headerRow.append(idxTh);
 
-    for (const col of columns) {
-        const th = element('th', col.label);
-        th.onclick = () => {
-            if (sortCol === col.name) sortAsc = !sortAsc;
-            else { sortCol = col.name; sortAsc = true; }
-            render();
-        };
-        headerRow.append(th);
+    function renderHeaders(): void {
+        headerRow.replaceChildren(selectTh, idxTh);
+        for (const col of columns) {
+            const th = element('th', col.label);
+            if (entity.columns.some(column => column.name === col.name)) th.onclick = () => {
+                void changeQuery({...query(), sort: col.name, direction: sortCol === col.name && sortAsc ? 'desc' : 'asc', page: 1} as EntityQuery);
+            };
+            headerRow.append(th);
+        }
+        headerRow.append(element('th', 'Acciones'));
     }
-    headerRow.append(element('th', 'Acciones'));
     selectVisible.onchange = () => {
-        const rows = filterAndSort(entity.rows, filter, sortCol, sortAsc);
-        const start = (page - 1) * pageSize;
-        for (const row of rows.slice(start, start + pageSize)) {
-            if (selectVisible.checked) selectedRows.add(row);
-            else selectedRows.delete(row);
+        for (const row of entityPage(entity, query()).rows) {
+            if (selectVisible.checked) selectedRows.set(selectionKey(row), row);
+            else selectedRows.delete(selectionKey(row));
         }
         render();
         void refreshDeleteSelection();
@@ -211,15 +259,15 @@ async function show(name: EntityName): Promise<void> {
 
     async function refreshDeleteSelection(): Promise<void> {
         const check = ++selectionCheck;
-        const rows = [...selectedRows];
+        const rows = [...selectedRows.values()];
         deleteSelectedButton.disabled = true;
         deleteSelectedButton.textContent = `Borrar todos los seleccionados (${rows.length})`;
         if (!rows.length) {
             selectionStatus.textContent = '';
             return;
         }
-        if (rows.length > 500) {
-            selectionStatus.textContent = 'El máximo por operación es 500 filas.';
+        if (rows.length > entity.browsing.bulkDeleteLimit) {
+            selectionStatus.textContent = `El máximo por operación es ${entity.browsing.bulkDeleteLimit} filas.`;
             return;
         }
         selectionStatus.textContent = 'Comprobando dependencias…';
@@ -241,7 +289,8 @@ async function show(name: EntityName): Promise<void> {
     }
 
     async function onDeleteSelected(): Promise<void> {
-        const rows = [...selectedRows];
+        if (!await canLeaveView()) return;
+        const rows = [...selectedRows.values()];
         if (!rows.length || deleteSelectedButton.disabled) return;
         deleteSelectedButton.disabled = true;
         let reloaded = false;
@@ -270,7 +319,7 @@ async function show(name: EntityName): Promise<void> {
         await run(async () => {
             await deleteRows(entity.name, rows.map(row => rowKey(entity, row)));
             selectedRows.clear();
-            delete cache[entity.name];
+            cache.invalidate(entity.name);
             await show(entity.name);
             status.textContent = `Se eliminaron ${rows.length} filas.`;
             reloaded = true;
@@ -282,8 +331,8 @@ async function show(name: EntityName): Promise<void> {
     const pagination = element('div');
     pagination.className = 'pagination';
     const pageSpan = element('span');
-    const prevBtn = button('◀ Anterior', () => { if (page > 1) { page--; render(); } });
-    const nextBtn = button('Siguiente ▶', () => { page++; render(); });
+    const prevBtn = button('◀ Anterior', () => { if (page > 1) void changeQuery({...query(), page: page - 1}); });
+    const nextBtn = button('Siguiente ▶', () => { void changeQuery({...query(), page: page + 1}); });
     pagination.append(prevBtn, pageSpan, nextBtn);
 
     const scroll = element('div');
@@ -291,23 +340,24 @@ async function show(name: EntityName): Promise<void> {
     scroll.append(table);
 
     function render(): void {
+        renderHeaders();
         columns.forEach((col, idx) => {
             headerRow.cells[idx + 2]!.textContent = col.label + (sortCol === col.name ? (sortAsc ? ' ▲' : ' ▼') : '');
         });
 
-        const rows = filterAndSort(entity.rows, filter, sortCol, sortAsc);
-        const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
-        if (page > totalPages) page = totalPages;
+        const result = entityPage(entity, query());
+        const totalPages = Math.max(1, Math.ceil(result.matched / pageSize));
+        page = result.page;
         const start = (page - 1) * pageSize;
-        const paged = rows.slice(start, start + pageSize);
+        const paged = result.rows;
 
-        count.textContent = filter ? `${rows.length} de ${entity.rows.length} ${unit}` : `${entity.rows.length} ${unit}`;
+        count.textContent = filter ? `${result.matched} de ${result.total} ${unit}` : `${result.total} ${unit}`;
         pageSpan.textContent = `Página ${page} de ${totalPages}`;
         prevBtn.disabled = page <= 1;
         nextBtn.disabled = page >= totalPages;
         selectVisible.disabled = paged.length === 0;
-        selectVisible.checked = paged.length > 0 && paged.every(row => selectedRows.has(row));
-        selectVisible.indeterminate = paged.some(row => selectedRows.has(row)) && !selectVisible.checked;
+        selectVisible.checked = paged.length > 0 && paged.every(row => selectedRows.has(selectionKey(row)));
+        selectVisible.indeterminate = paged.some(row => selectedRows.has(selectionKey(row))) && !selectVisible.checked;
         deleteSelectedButton.textContent = `Borrar todos los seleccionados (${selectedRows.size})`;
 
         tbody.replaceChildren();
@@ -327,7 +377,7 @@ async function show(name: EntityName): Promise<void> {
             const actions = tr.insertCell();
             actions.className = 'actions';
             actions.append(
-                button('Guardar', () => void saveRow(entity, editor, refresh), 'primary'),
+                button('Guardar', () => void saveRow(entity, editor, () => afterSave(editor)), 'primary'),
                 button('Cancelar', () => {
                     void confirmAction({
                         title: 'Descartar nueva fila',
@@ -350,11 +400,11 @@ async function show(name: EntityName): Promise<void> {
             selected.className = 'selection-col';
             const checkbox = element('input');
             checkbox.type = 'checkbox';
-            checkbox.checked = selectedRows.has(row);
+            checkbox.checked = selectedRows.has(selectionKey(row));
             checkbox.setAttribute('aria-label', `Seleccionar fila ${Object.values(rowKey(entity, row)).join(' · ')}`);
             checkbox.onchange = () => {
-                if (checkbox.checked) selectedRows.add(row);
-                else selectedRows.delete(row);
+                if (checkbox.checked) selectedRows.set(selectionKey(row), row);
+                else selectedRows.delete(selectionKey(row));
                 render();
                 void refreshDeleteSelection();
             };
@@ -366,8 +416,9 @@ async function show(name: EntityName): Promise<void> {
 
             if (!editors.has(row)) {
                 const editor = createRowEditor(entity, sources, row);
+                const version = entity.versions[entity.rows.findIndex(candidate => candidate === row)]!;
                 for (const cell of editor.cells) cell.field.addEventListener('change', () => {
-                    void saveRow(entity, editor, refresh, row);
+                    void saveRow(entity, editor, () => afterSave(editor), {row, version});
                 });
                 editors.set(row, editor);
             }
@@ -375,6 +426,12 @@ async function show(name: EntityName): Promise<void> {
 
             const actions = tr.insertCell();
             actions.className = 'actions';
+            actions.append(button('Ver datos actuales', () => void run(async () => {
+                cache.invalidate(name);
+                const query = {where: rowKey(entity, row)} as EntityQuery;
+                const current = entityPage(await load(name, query), query).rows[0];
+                reviewRow(entity, row, editors.get(row)!.read(), current);
+            })));
             actions.append(button('Eliminar', () => void onDeleteRow(entity, row), 'danger'));
         });
     }
@@ -389,14 +446,22 @@ async function show(name: EntityName): Promise<void> {
 initializeAuthentication(active => {
     workspace.hidden = !active;
     if (!active) {
-        for (const name of Object.keys(cache)) delete cache[name];
+        stopWatching();
+        cache.clear();
+        viewGeneration++;
+        invalidateView = () => {};
+        resumeLive = () => {};
+        canLeaveView = async () => true;
         currentEntity = null;
         content.replaceChildren();
         tabs.replaceChildren();
         return;
     }
     void run(async () => {
-        allEntities = await listEntities();
+        const catalog = await listEntities();
+        if (!isAuthenticated()) return;
+        allEntities = catalog.map(entity => entity.name);
+        labels = Object.fromEntries(catalog.map(entity => [entity.name, entity.label]));
         tabs.replaceChildren(...allEntities.map(name => {
             const tab = element('button', labels[name] ?? name);
             tab.type = 'button';
@@ -407,5 +472,6 @@ initializeAuthentication(active => {
         }));
         if (allEntities[0]) await selectTab(allEntities[0]);
         else content.textContent = 'No hay planillas disponibles.';
+        stopWatching = watchEntities(name => { cache.invalidate(name); invalidateView(name); });
     });
 });

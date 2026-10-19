@@ -4,6 +4,7 @@ import {once} from 'node:events';
 import test from 'node:test';
 import {initializeUsers} from '../dist/backend/bootstrap.js';
 import {withTestDatabase} from './helpers/database.mjs';
+import {versionOf} from './helpers/version.mjs';
 
 // Adapted from PR #6: launch the actual server against an isolated current schema.
 test('server startup, authenticated CRUD and atomic bulk deletion use the app connection', {timeout: 60000}, async t => {
@@ -51,7 +52,9 @@ test('server startup, authenticated CRUD and atomic bulk deletion use the app co
                 assert.equal((await send('materias', 'POST', row)).status, 204);
                 assert.equal((await send('materias', 'POST', {...row, cod_mat: 'OTRA'})).status, 204);
                 const changed = {...row, cod_mat: 'ALG2', materia: '', plan: null};
-                assert.equal((await send('materias', 'PUT', {key: {cod_mat: 'ALG', cod_dep: 'DC'}, row: changed})).status, 204);
+                const key = {cod_mat: 'ALG', cod_dep: 'DC'};
+                const version = versionOf(await (await send('materias')).json(), key);
+                assert.equal((await send('materias', 'PUT', {key, row: changed, version})).status, 204);
                 const listed = await (await send('materias')).json();
                 assert.deepEqual(listed.rows.find(value => value.cod_mat === 'ALG2'), changed);
                 assert.deepEqual(listed.rows.find(value => value.cod_mat === 'OTRA'), {...row, cod_mat: 'OTRA'});

@@ -6,13 +6,14 @@ import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {hashPassword, verifyPassword, createRecoveryCodes, hashRecoveryCode} from '../dist/backend/credentials.js';
 import {myContext} from '../dist/backend/system.js';
+import {entityResult} from './helpers/entity-result.mjs';
 
 const secret = 'test-only-signing-key-with-at-least-32-bytes';
 const password = 'test-password-with-enough-length';
 const user = {id: 'admin-id', usuario: 'admin', version_sesion: 'version-1'};
 const passwordHash = await hashPassword(password);
 
-async function start(t, query = async () => ({rows: [user], rowCount: 1}), connect) {
+async function start(t, query = async sql => sql.startsWith('WITH stats') ? entityResult([user]) : {rows: [user], rowCount: 1}, connect) {
     const app = express();
     const pool = {query, connect};
     const auth = createAuthentication(pool, secret);
@@ -137,10 +138,10 @@ test('every authenticated account discovers and administers users through ordina
     const {request} = await start(t);
     const discovery = await request('/api/entities');
     assert.equal(discovery.status, 200);
-    assert.ok((await discovery.json()).includes('usuarios'));
+    assert.ok((await discovery.json()).some(entity => entity.name === 'usuarios'));
     assert.equal((await request('/api/entities/usuarios')).status, 200);
     assert.equal((await request('/api/entities/usuarios', 'POST', {usuario: 'another', contrasena: password})).status, 204);
-    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: user.id}, row: {usuario: 'renamed'}})).status, 204);
+    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: user.id}, row: {usuario: 'renamed'}, version: '1'})).status, 204);
     assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: user.id})).status, 204);
 });
 
@@ -149,7 +150,7 @@ test('column security excludes secrets from SELECT, response metadata and rows, 
     const {request} = await start(t, async sql => {
         if (sql.includes('WHERE id = $1')) return {rows: [user]};
         selection = sql;
-        return {rows: [{...user, contrasena_hash: 'private-hash', recuperacion_hashes: 'private-codes'}]};
+        return entityResult([{...user, contrasena_hash: 'private-hash', recuperacion_hashes: 'private-codes'}]);
     });
     const response = await request('/api/entities/usuarios');
     assert.equal(response.status, 200);
@@ -161,7 +162,7 @@ test('column security excludes secrets from SELECT, response metadata and rows, 
     assert.deepEqual(body.inputs[1].constraints, {minLength: 12, maxLength: 128});
     assert.equal(body.inputs[1].optionalOnUpdate, true);
     assert.equal(body.columns[0].writable, false);
-    assert.doesNotMatch(selection, /contrasena|recuperacion|version_sesion|\*/);
+    assert.doesNotMatch(selection, /contrasena|recuperacion|version_sesion|SELECT \*/);
     assert.doesNotMatch(JSON.stringify(body), /private-|contrasena_hash|recuperacion|version_sesion/);
 });
 
@@ -170,7 +171,7 @@ test('column security rejects writes to generated ids, password hashes, recovery
     const row = {usuario: 'nuevo', contrasena: password};
     for (const field of ['id', 'contrasena_hash', 'recuperacion_hashes', 'version_sesion']) {
         assert.equal((await request('/api/entities/usuarios', 'POST', {...row, [field]: 'attacker-value'})).status, 400);
-        assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: 'other'}, row: {...row, [field]: 'attacker-value'}})).status, 400);
+        assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: 'other'}, row: {...row, [field]: 'attacker-value'}, version: '1'})).status, 400);
     }
 });
 

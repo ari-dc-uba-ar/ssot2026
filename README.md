@@ -342,7 +342,7 @@ The TypeScript page discovers entities from the API and presents spreadsheet tab
 with inline editing, insertion, text filtering, sorting, ten-row client-side
 pagination and deletion confirmations. Existing rows save on change after their
 inputs are valid; new rows use **Guardar**. Entity definitions, fields and inputs
-come from the API; a presentation-only label map supplies friendly tab names.
+come from the API, including friendly entity labels defined in the backend.
 Foreign keys use dropdowns populated from the referenced entity.
 Option labels combine the field's code and readable fields marked `isName` in
 the SSOT; plans display their number and description. Nullable references include
@@ -363,6 +363,10 @@ without requiring redundant relationships on the edited entity. Narrower FK
 relationships identify the key described by an entity's `isName`. Independent relationships,
 including those on a join table, keep independent selections within their shared
 context.
+For large reference tables, selectors search and page through the same typed API
+and cache as the spreadsheet. Composite references retain all key components;
+related selections constrain the lookup. A partial page is never treated as a
+complete set of available references.
 Positive integer inputs use the type's minimum; enum inputs show its allowed values
 without selecting one automatically. Text, password, integer, enum and boolean editors preserve null separately
 from empty text, zero and false. New types require an editor at compile time.
@@ -375,7 +379,8 @@ or additional dependency.
 
 `GET /health` checks the database connection. All `/api/entities` requests require
 `Authorization: Bearer <JWT>`. `GET /api/entities` returns the
-available entity names. `GET /api/entities/:name` returns `{name, pk, columns, inputs, foreignKeys, rows}`,
+available `{name, label}` entries. `GET /api/entities/:name` returns
+`{name, label, browsing, pk, columns, inputs, foreignKeys, rows, versions, window}`,
 with only `{name, label, type, nullable, writable}` for each readable column. Keys identify rows for
 editing/deletion; nullability controls the form's explicit "Ninguna" option.
 `inputs` describes writable input names, labels, types, nullability, type constraints
@@ -384,7 +389,28 @@ input is available to the editor without exposing the stored hash as a column.
 `foreignKeys` supplies each editable relationship's name, target entity, mapping
 from input names to referenced columns, and readable display fields. The editor
 loads the referenced entities and their parent relationships through the
-authenticated API when loading a spreadsheet.
+authenticated API when loading a spreadsheet. Tabs and reference loaders share
+complete datasets and in-flight requests within the authenticated session.
+
+`src/backend/browsing.ts` supplies the app's 200-row cutoff, existing 10-row page
+size and bulk-delete limit. At or below the cutoff, `window: {kind: 'complete'}`
+means the response contains the entire table and the browser applies the query.
+Above it, `window: {kind: 'page', total, matched, page}` identifies a server page.
+The `query` URL parameter is JSON with optional `filter`, `sort`, `direction`,
+`page`, and typed equality filters in `where`. Only readable SSOT columns are
+accepted. Both modes use case-insensitive substring search, nulls last, and primary
+keys to break sorting ties; text ordering uses Unicode code points consistently
+with PostgreSQL's C collation. The client retains one dataset or most recent page
+per entity, clears it on logout, and discards obsolete responses.
+
+`GET /api/events` is an authenticated event stream containing changed entity
+names. Successful CRUD operations notify other open clients after the database
+write commits. Clean views and affected reference data refresh; unsaved drafts
+remain visible with a notice. Reconnecting or returning online invalidates the
+cache so missed events cannot leave it stale. This serves multiple users in the
+current single HTTP process. Direct SQL writes and separate backend replicas do
+not publish through this process-local stream; those require a database-backed
+notification channel before scaling beyond the current deployment.
 The `materias.plan` relationship references `planes.plan`; deleting or renumbering
 a referenced plan is rejected. Migration `0004_materias_plan_fk` adds only that
 constraint and requires existing non-null plan values to have matching rows.
@@ -392,7 +418,8 @@ constraint and requires existing non-null plan values to have matching rows.
 All mutations use JSON at `/api/entities/:name`:
 
 - `POST`: the complete new row using the names declared in `inputs`.
-- `PUT`: `{key, row}`, with the original primary key and writable inputs, omitting optional inputs to preserve their stored values.
+- `PUT`: `{key, row, version}`, with the original primary key, its read version,
+  and writable inputs, omitting optional inputs to preserve their stored values.
 - `DELETE`: the primary-key object.
 
 Bulk deletion adds `POST /api/entities/:name/delete-check` and
@@ -403,10 +430,17 @@ deletion. The second locks the selected rows, rechecks dependencies and deletes
 the entire selection in one transaction. Missing rows or dependencies abort the
 whole batch. Both endpoints require the same authentication as ordinary CRUD.
 
+`versions[i]` is the opaque PostgreSQL `xmin` change token for `rows[i]`; it is
+concurrency metadata, not a domain field or a new database column. An update
+checks the key and token atomically. A changed or deleted row returns 409 instead
+of overwriting another user's work. The spreadsheet preserves the draft, offers
+**Ver datos actuales** to compare values, and asks before discarding it on refresh
+or navigation.
+
 Successful mutations return HTTP 204. The backend checks exact field sets, types,
 nullability and declared entity validators using system-definition before writing
 through the app connection. SQL values are parameterized. Unknown entities or
-missing rows return 404, invalid input returns 400, and database constraint
+missing rows on deletion return 404, invalid input returns 400, and database constraint
 conflicts return 409. Unexpected failures return 500 without exposing SQL details.
 The old `/poc/*` handlers were replaced by this shared API.
 
@@ -426,8 +460,10 @@ owned scratch databases, starts the real server on an available port (`PORT=0`),
 and exercises HTTP CRUD, composite keys, dependency previews and atomic bulk
 deletion with the app role. Authentication checks cover concurrent cold starts,
 bootstrap credentials, migration of existing accounts, concurrent recovery-code
-reuse, generic user CRUD and session revocation. Pagination and text filtering
-operate on the rows loaded into the browser; the API still returns all rows.
+reuse, generic user CRUD and session revocation. Cache tests cover shared requests,
+invalidation races and logout. Database tests cover the 200/201-row boundary,
+client/server query parity, concurrent versioned saves and authenticated live
+notifications.
 
 The selected contributions from PRs #15, #16 and #6, their authors, and the
 compatibility adjustments are recorded in [PR integration notes](docs/pr-integration.md).

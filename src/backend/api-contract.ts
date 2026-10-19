@@ -4,7 +4,12 @@ import type {myRecords, myEntities} from './system.js';
 import type {InputConstraints} from './value-types.js';
 
 export type EntityName = keyof typeof myEntities;
-export type EntityNamesResponse = EntityName[];
+export type EntityNamesResponse = {name: EntityName; label: string}[];
+export type EntityQuery<E extends EntityName = EntityName> = E extends EntityName ? {
+    filter?: string; sort?: keyof EntityRow<E> & string; direction?: 'asc' | 'desc'; page?: number;
+    where?: Readonly<Partial<EntityRow<E>>>;
+} : never;
+export type EntityWindow = {kind: 'complete'} | {kind: 'page'; total: number; matched: number; page: number};
 type StoredRow<E extends EntityName> = EntityInstanceType<typeof myRecords, (typeof myEntities)[E]>;
 type Definitions<E extends EntityName> = (typeof myEntities)[E]['fields'];
 type AllowedNames<E extends EntityName, P extends 'readable' | 'writable'> = {
@@ -45,11 +50,15 @@ export type EntityForeignKey = {
 
 export type EntityResponse<E extends EntityName = EntityName> = E extends EntityName ? {
     name: E;
+    label: string;
+    browsing: {clientRows: number; pageSize: number; bulkDeleteLimit: number};
     pk: (typeof myEntities)[E]['pk'];
     columns: EntityColumn<E>[];
     inputs: EntityInputColumn<E>[];
     foreignKeys: EntityForeignKey[];
     rows: EntityRow<E>[];
+    versions: string[];
+    window: EntityWindow;
 } : never;
 export type EntityKey<E extends EntityName> = E extends EntityName
     ? Pick<EntityRow<E>, (typeof myEntities)[E]['pk'][number] & keyof EntityRow<E>> : never;
@@ -65,6 +74,7 @@ export type DeleteDependencyCheck = {blockers: DeleteDependencyBlocker[]};
 export type EntityUpdate<E extends EntityName> = E extends EntityName ? {
     key: EntityKey<E>;
     row: EntityInput<E>;
+    version: string;
 } : never;
 export type ApiError = {error: string; problems?: readonly Problem[]};
 export type AuthenticatedUser = {id: string; usuario: string};

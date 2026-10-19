@@ -11,6 +11,7 @@ import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {initializeUsers} from '../dist/backend/bootstrap.js';
 import {hashPassword, verifyPassword} from '../dist/backend/credentials.js';
+import {versionOf} from './helpers/version.mjs';
 
 const value = result => { if (!result.ok) throw new Error(JSON.stringify(result.problems)); return result.value; };
 const password = 'initial-auth-test-password';
@@ -67,15 +68,17 @@ test('PostgreSQL: materia FKs accept existing plans and null, and reject missing
     const key = {cod_mat: row.cod_mat, cod_dep: row.cod_dep};
     assert.equal((await send('materias', 'POST', row)).status, 204);
     const metadata = await (await send('materias', 'GET')).json();
+    const version = versionOf(metadata, key);
+    const planVersion = versionOf(await (await send('planes', 'GET')).json(), {plan: 0});
     assert.deepEqual(metadata.foreignKeys.find(fk => fk.name === 'plan'), {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']});
     for (const response of [
         await send('materias', 'POST', {...row, cod_mat: 'MISSING', materia: 'Plan inexistente', plan: 2000}),
-        await send('materias', 'PUT', {key, row: {...row, plan: 2000}}),
+        await send('materias', 'PUT', {key, row: {...row, plan: 2000}, version}),
         await send('planes', 'DELETE', {plan: 0}),
-        await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 1, descripcion: 'Nuevo número'}}),
+        await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 1, descripcion: 'Nuevo número'}, version: planVersion}),
     ]) assert.equal(response.status, 409, await response.text());
-    assert.equal((await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 0, descripcion: 'Descripción actualizada'}})).status, 204);
-    assert.equal((await send('materias', 'PUT', {key, row: {...row, plan: null}})).status, 204);
+    assert.equal((await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 0, descripcion: 'Descripción actualizada'}, version: planVersion})).status, 204);
+    assert.equal((await send('materias', 'PUT', {key, row: {...row, plan: null}, version})).status, 204);
     assert.equal((await send('materias', 'POST', {...row, cod_mat: 'SIN', materia: 'Sin plan', plan: null})).status, 204);
     assert.equal((await send('planes', 'DELETE', {plan: 0})).status, 204);
 });
@@ -142,12 +145,13 @@ test('PostgreSQL: all authenticated accounts manage users with generic CRUD and 
     assert.equal((await request('/api/entities/usuarios', 'POST', {usuario: 'third', contrasena: password}, second.token)).status, 204);
     const stored = (await pool.query('SELECT * FROM ssot.usuarios WHERE usuario = $1', ['second'])).rows[0];
     assert.equal(await verifyPassword(password, stored.contrasena_hash), true);
-    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {usuario: 'renamed'}}, admin.token)).status, 204);
+    const userVersion = async () => versionOf(await (await request('/api/entities/usuarios', 'GET', undefined, admin.token)).json(), {id: stored.id});
+    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {usuario: 'renamed'}, version: await userVersion()}, admin.token)).status, 204);
     assert.equal((await request('/api/entities', 'GET', undefined, second.token)).status, 401);
     assert.equal((await pool.query('SELECT contrasena_hash FROM ssot.usuarios WHERE id = $1', [stored.id])).rows[0].contrasena_hash, stored.contrasena_hash);
     await login('renamed');
     const resetPassword = 'reset-by-another-account-password';
-    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {usuario: 'renamed', contrasena: resetPassword}}, admin.token)).status, 204);
+    assert.equal((await request('/api/entities/usuarios', 'PUT', {key: {id: stored.id}, row: {usuario: 'renamed', contrasena: resetPassword}, version: await userVersion()}, admin.token)).status, 204);
     const reset = await login('renamed', resetPassword);
     assert.equal((await pool.query('SELECT recuperacion_hashes FROM ssot.usuarios WHERE id = $1', [stored.id])).rows[0].recuperacion_hashes, '[]');
     assert.equal((await request('/api/entities/usuarios', 'DELETE', {id: stored.id}, admin.token)).status, 204);

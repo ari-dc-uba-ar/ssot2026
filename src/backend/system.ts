@@ -171,6 +171,12 @@ const usuarios = defineEntity(myContext, {
 
 export const myEntities = defineEntities({materias, pabellones, planes, usuarios, departamentos, estudiantes, enrolamientos})
 
+// Presentation is app-owned metadata; browsers receive it through the API.
+export const entityLabels = {
+    materias: 'Materias', pabellones: 'Pabellones', planes: 'Planes de Estudio', usuarios: 'Usuarios',
+    departamentos: 'Departamentos', estudiantes: 'Estudiantes', enrolamientos: 'Inscripciones',
+} satisfies Record<keyof typeof myEntities, string>;
+
 const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',
     entities: myEntities,

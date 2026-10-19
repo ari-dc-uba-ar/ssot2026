@@ -38,6 +38,7 @@ export function createAuthentication(pool: Pick<Pool, 'query'>, secret = process
             });
             if (typeof payload.sub !== 'string' || typeof payload['ver'] !== 'string') throw new Error('Invalid claims');
             identity = {id: payload.sub, version: payload['ver']};
+            res.locals['expiresAt'] = payload.exp! * 1000;
         } catch {
             throw new ApiFailure(401, 'La sesión venció o no es válida.');
         }
