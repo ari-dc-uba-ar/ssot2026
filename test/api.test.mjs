@@ -15,7 +15,7 @@ async function startApi(t, query) {
     const app = express();
     const user = {id: 'admin', usuario: 'admin', version_sesion: 'test-version'};
     const auth = createAuthentication({query: async () => ({rows: [user]})}, 'test-only-secret-with-at-least-32-bytes');
-    registerEntityApi(app, {query}, auth);
+    registerEntityApi(app, typeof query === 'function' ? {query, connect: async () => { throw new Error('Unexpected transaction'); }} : query, auth);
     const server = await new Promise(resolve => {
         const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
     });
@@ -236,4 +236,109 @@ test('missing rows and constraint conflicts have useful, non-sensitive errors', 
     const conflict = await send(base, 'planes', 'POST', {plan: 1, descripcion: null});
     assert.equal(conflict.status, 409);
     assert.deepEqual(await conflict.json(), {error: 'Ya existe un registro con esa clave.'});
+});
+
+test('delete dependency checks report simple and composite SSOT foreign keys', async t => {
+    const queries = [];
+    const base = await startApi(t, async (sql, values) => {
+        queries.push({sql, values});
+        const dependentRows = sql.includes('FROM "ssot"."enrolamientos"')
+            ? [{legajo: '123', cod_mat: 'ALG', cod_dep: 'DM', año: 2026, cuatrimestre: '1C'}]
+            : [{cod_mat: 'ALG', cod_dep: 'DM'}];
+        const count = sql.includes('FROM "ssot"."enrolamientos"') ? 2 : 1;
+        return {rows: [{count, keys: dependentRows}]};
+    });
+    const composite = await fetch(`${base}/api/entities/materias/delete-check`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({keys: [{cod_mat: 'ALG', cod_dep: 'DM'}]}),
+    });
+    assert.equal(composite.status, 200);
+    assert.deepEqual(await composite.json(), {
+        blockers: [{
+            entity: 'enrolamientos',
+            relationship: 'materia',
+            count: 2,
+            keys: [{legajo: '123', cod_mat: 'ALG', cod_dep: 'DM', año: 2026, cuatrimestre: '1C'}],
+        }],
+    });
+    assert.match(queries[0].sql, /LIMIT 10/);
+    assert.match(queries[0].sql, /SELECT DISTINCT dependent\."legajo", dependent\."cod_mat", dependent\."cod_dep", dependent\."año", dependent\."cuatrimestre"/);
+    assert.doesNotMatch(queries[0].sql, /SELECT DISTINCT dependent\.\*/);
+    assert.match(queries[0].sql, /dependent\."cod_mat" = target\."cod_mat" AND dependent\."cod_dep" = target\."cod_dep"/);
+    assert.deepEqual(queries[0].values, ['ALG', 'DM']);
+
+    const simple = await fetch(`${base}/api/entities/planes/delete-check`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({keys: [{plan: 2026}]}),
+    });
+    assert.equal(simple.status, 200);
+    assert.deepEqual(await simple.json(), {
+        blockers: [{entity: 'materias', relationship: 'plan', count: 1, keys: [{cod_mat: 'ALG', cod_dep: 'DM'}]}],
+    });
+});
+
+test('bulk delete rejects malformed and duplicate selections before querying', async t => {
+    let calls = 0;
+    const base = await startApi(t, async () => { calls++; return {rows: []}; });
+    for (const keys of [[], [{plan: '2026'}], [{plan: 2026}, {plan: 2026}]]) {
+        const response = await fetch(`${base}/api/entities/planes/bulk-delete`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({keys}),
+        });
+        assert.equal(response.status, 400);
+    }
+    assert.equal(calls, 0);
+});
+
+test('bulk delete rolls the whole selection back when any row has dependents', async t => {
+    const statements = [];
+    const client = {
+        async query(sql) {
+            statements.push(sql);
+            if (sql === 'BEGIN' || sql === 'ROLLBACK') return {rowCount: null, rows: []};
+            if (sql.includes('FOR UPDATE')) return {rowCount: 2, rows: [{cod_mat: 'ALG'}, {cod_mat: 'FIS'}]};
+            if (sql.startsWith('WITH matching')) return {rows: [{count: 1, keys: [{legajo: '123'}]}]};
+            if (sql.startsWith('DELETE')) return {rowCount: 2, rows: []};
+            throw new Error('Unexpected query in bulk-delete test');
+        },
+        release() {},
+    };
+    const base = await startApi(t, {query: async () => ({rows: []}), connect: async () => client});
+    const response = await fetch(`${base}/api/entities/materias/bulk-delete`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({keys: [{cod_mat: 'ALG', cod_dep: 'DM'}, {cod_mat: 'FIS', cod_dep: 'DM'}]}),
+    });
+    assert.equal(response.status, 409);
+    assert.match((await response.json()).error, /enrolamientos \(materia\): 1/);
+    assert.ok(statements.includes('ROLLBACK'));
+    assert.ok(!statements.some(sql => sql.startsWith('DELETE')));
+});
+
+test('bulk delete removes all selected rows in one transaction when unreferenced', async t => {
+    const statements = [];
+    const client = {
+        async query(sql) {
+            statements.push(sql);
+            if (sql === 'BEGIN' || sql === 'COMMIT') return {rowCount: null, rows: []};
+            if (sql.includes('FOR UPDATE')) return {rowCount: 2, rows: [{plan: 2026}, {plan: 2027}]};
+            if (sql.startsWith('WITH matching')) return {rows: [{count: 0, keys: []}]};
+            if (sql.startsWith('DELETE')) return {rowCount: 2, rows: [{plan: 2026}, {plan: 2027}]};
+            throw new Error('Unexpected query in bulk-delete test');
+        },
+        release() {},
+    };
+    const base = await startApi(t, {query: async () => ({rows: []}), connect: async () => client});
+    const response = await fetch(`${base}/api/entities/planes/bulk-delete`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({keys: [{plan: 2026}, {plan: 2027}]}),
+    });
+    assert.equal(response.status, 204);
+    assert.ok(statements.includes('COMMIT'));
+    assert.equal(statements.filter(sql => sql.startsWith('DELETE')).length, 1);
+    assert.equal(statements.at(-1), 'COMMIT');
 });

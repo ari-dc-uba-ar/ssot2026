@@ -1,4 +1,5 @@
 import {changePassword, clearSession, generateRecoveryCodes, login, logout, recover} from './api.js';
+import {confirmAction} from './confirm.js';
 
 export function initializeAuthentication(onSession: (active: boolean) => void): void {
     const panel = document.querySelector<HTMLElement>('#authentication')!;
@@ -9,13 +10,32 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
     const codesDialog = document.querySelector<HTMLDialogElement>('#recovery-codes')!;
     const account = document.querySelector<HTMLDialogElement>('#account')!;
     const accountForm = document.querySelector<HTMLFormElement>('#account-form')!;
+    const accountManagement = document.querySelector<HTMLElement>('#account-management');
+    const accountTitle = document.querySelector<HTMLElement>('#account-dialog-title');
+    const loginPromptBtn = document.querySelector<HTMLButtonElement>('#login-prompt-btn');
+    const closeAccountDialog = document.querySelector<HTMLButtonElement>('#close-account-dialog');
+    const unauthNotice = document.querySelector<HTMLElement>('#unauthenticated-notice');
+
+    function openLoginModal(): void {
+        accountForm.reset();
+        error.textContent = '';
+        panel.hidden = false;
+        if (accountManagement) accountManagement.hidden = true;
+        if (accountTitle) accountTitle.textContent = 'Iniciar sesión';
+        if (!account.open) account.showModal();
+    }
+
     function signedOut(): void {
         clearSession();
         panel.hidden = false;
+        if (accountManagement) accountManagement.hidden = true;
+        if (unauthNotice) unauthNotice.hidden = false;
         session.hidden = true;
+        if (accountTitle) accountTitle.textContent = 'Iniciar sesión';
         account.close();
         onSession(false);
     }
+
     async function action(form: HTMLFormElement, work: () => Promise<void>): Promise<void> {
         const inputs = [...form.querySelectorAll<HTMLInputElement | HTMLButtonElement>('input, button')];
         inputs.forEach(input => { input.disabled = true; });
@@ -27,6 +47,7 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             inputs.forEach(input => { input.disabled = false; });
         }
     }
+
     function savedCodes(codes: string[]): Promise<void> {
         document.querySelector('#codes')!.textContent = codes.join('\n');
         codesDialog.oncancel = event => event.preventDefault();
@@ -51,6 +72,10 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             };
         });
     }
+
+    if (loginPromptBtn) loginPromptBtn.onclick = openLoginModal;
+    if (closeAccountDialog) closeAccountDialog.onclick = () => account.close();
+
     loginForm.onsubmit = event => {
         event.preventDefault();
         const data = new FormData(loginForm);
@@ -58,22 +83,27 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             const result = await login(String(data.get('usuario')), String(data.get('contrasena')));
             loginForm.reset();
             panel.hidden = true;
+            if (unauthNotice) unauthNotice.hidden = true;
             session.hidden = false;
             document.querySelector('#session-user')!.textContent = result.user.usuario;
+            account.close();
             onSession(true);
         });
     };
+
     document.querySelector<HTMLButtonElement>('#show-recovery')!.onclick = () => {
         loginForm.hidden = true;
         recoveryForm.hidden = false;
         error.textContent = '';
     };
+
     document.querySelector<HTMLButtonElement>('#show-login')!.onclick = () => {
         loginForm.hidden = false;
         recoveryForm.hidden = true;
         recoveryForm.reset();
         error.textContent = '';
     };
+
     recoveryForm.onsubmit = event => {
         event.preventDefault();
         const data = new FormData(recoveryForm);
@@ -86,15 +116,32 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             error.textContent = 'Contraseña recuperada. Iniciá sesión con la nueva contraseña.';
         });
     };
-    document.querySelector<HTMLButtonElement>('#logout')!.onclick = () => {
-        void logout().catch(() => {}).finally(signedOut);
+
+    document.querySelector<HTMLButtonElement>('#logout')!.onclick = async () => {
+        const ok = await confirmAction({
+            title: 'Cerrar sesión',
+            message: '¿Estás seguro de que deseas cerrar tu sesión actual?',
+            confirmText: 'Cerrar sesión',
+            danger: true,
+        });
+        if (!ok) return;
+        void logout().catch(() => {}).finally(() => {
+            signedOut();
+        });
     };
+
     document.querySelector<HTMLButtonElement>('#manage-account')!.onclick = () => {
         accountForm.reset();
         document.querySelector('#account-status')!.textContent = '';
+        panel.hidden = true;
+        if (accountManagement) accountManagement.hidden = false;
+        const user = document.querySelector('#session-user')?.textContent;
+        if (accountTitle) accountTitle.textContent = user ? `Mi cuenta · ${user}` : 'Mi cuenta';
         account.showModal();
     };
+
     document.querySelector<HTMLButtonElement>('#close-account')!.onclick = () => account.close();
+
     accountForm.onsubmit = event => {
         event.preventDefault();
         const data = new FormData(accountForm);
@@ -105,12 +152,18 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
                 const result = next ? await changePassword(password, next) : await generateRecoveryCodes(password);
                 account.close();
                 await savedCodes(result.codes);
-                if (next) signedOut();
+                if (next) {
+                    signedOut();
+                }
             } catch (failure) {
                 document.querySelector('#account-status')!.textContent = failure instanceof Error ? failure.message : 'No se pudo completar la operación.';
             }
         });
     };
-    window.addEventListener('sessionexpired', signedOut);
+
+    window.addEventListener('sessionexpired', () => {
+        signedOut();
+    });
+
     signedOut();
 }

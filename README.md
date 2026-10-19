@@ -338,9 +338,12 @@ share a limit of 20 requests per IP per 15 minutes in each backend process.
 ## Frontend and API contract
 
 Open `http://localhost:3000/` after starting the backend (`/menu` redirects there).
-The small TypeScript page discovers entities from the API and provides a table,
-create/edit form and delete confirmation for each one. Entity and field names
-are not hardcoded. Foreign keys use dropdowns populated from the referenced entity.
+The TypeScript page discovers entities from the API and presents spreadsheet tabs
+with inline editing, insertion, text filtering, sorting, ten-row client-side
+pagination and deletion confirmations. Existing rows save on change after their
+inputs are valid; new rows use **Guardar**. Entity definitions, fields and inputs
+come from the API; a presentation-only label map supplies friendly tab names.
+Foreign keys use dropdowns populated from the referenced entity.
 Option labels combine the field's code and readable fields marked `isName` in
 the SSOT; plans display their number and description. Nullable references include
 `Ninguna`, which stores `null`. Required references require an explicit selection.
@@ -381,7 +384,7 @@ input is available to the editor without exposing the stored hash as a column.
 `foreignKeys` supplies each editable relationship's name, target entity, mapping
 from input names to referenced columns, and readable display fields. The editor
 loads the referenced entities and their parent relationships through the
-authenticated API when opening a form.
+authenticated API when loading a spreadsheet.
 The `materias.plan` relationship references `planes.plan`; deleting or renumbering
 a referenced plan is rejected. Migration `0004_materias_plan_fk` adds only that
 constraint and requires existing non-null plan values to have matching rows.
@@ -391,6 +394,14 @@ All mutations use JSON at `/api/entities/:name`:
 - `POST`: the complete new row using the names declared in `inputs`.
 - `PUT`: `{key, row}`, with the original primary key and writable inputs, omitting optional inputs to preserve their stored values.
 - `DELETE`: the primary-key object.
+
+Bulk deletion adds `POST /api/entities/:name/delete-check` and
+`POST /api/entities/:name/bulk-delete`, both with `{keys: [...]}` (1–500 distinct
+primary keys). The first returns `{blockers}` with dependent entities,
+relationships, counts and up to ten example keys. The UI previews these before
+deletion. The second locks the selected rows, rechecks dependencies and deletes
+the entire selection in one transaction. Missing rows or dependencies abort the
+whole batch. Both endpoints require the same authentication as ordinary CRUD.
 
 Successful mutations return HTTP 204. The backend checks exact field sets, types,
 nullability and declared entity validators using system-definition before writing
@@ -408,10 +419,15 @@ npm run test:api
 npm run test:crud
 ```
 
-`test:api` includes API contract type checks and HTTP authentication, authorization
-and column-security tests. `test:crud` requires the configured migrated database;
-it exercises domain CRUD in a rolled-back transaction and authentication with the
-app role in owned scratch databases, including concurrent cold starts, configured
+`test:api` includes API contract type checks, HTTP authentication, authorization,
+column security, FK selectors and bulk-deletion tests. `test:crud` requires
+PostgreSQL plus the configured initial/app identities. It creates and removes
+owned scratch databases, starts the real server on an available port (`PORT=0`),
+and exercises HTTP CRUD, composite keys, dependency previews and atomic bulk
+deletion with the app role. Authentication checks cover concurrent cold starts,
 bootstrap credentials, migration of existing accounts, concurrent recovery-code
-reuse, generic user CRUD and session revocation. This initial page loads all rows; pagination and
-specialized field widgets are separate future steps.
+reuse, generic user CRUD and session revocation. Pagination and text filtering
+operate on the rows loaded into the browser; the API still returns all rows.
+
+The selected contributions from PRs #15, #16 and #6, their authors, and the
+compatibility adjustments are recorded in [PR integration notes](docs/pr-integration.md).

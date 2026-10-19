@@ -62,19 +62,21 @@ test('PostgreSQL: materia FKs accept existing plans and null, and reject missing
     const {token} = await login('admin');
     const send = (entity, method, body) => request(`/api/entities/${entity}`, method, body, token);
     assert.equal((await send('planes', 'POST', {plan: 0, descripcion: 'Inicial'})).status, 204);
-    const row = {cod_mat: null, materia: 'Con plan', plan: 0, obligatoria: false};
+    assert.equal((await send('departamentos', 'POST', {cod_dep: 'DC', departamento: null, pabellon: null})).status, 204);
+    const row = {cod_mat: 'ALG', cod_dep: 'DC', materia: 'Con plan', plan: 0, obligatoria: false};
+    const key = {cod_mat: row.cod_mat, cod_dep: row.cod_dep};
     assert.equal((await send('materias', 'POST', row)).status, 204);
     const metadata = await (await send('materias', 'GET')).json();
-    assert.deepEqual(metadata.foreignKeys, [{name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']}]);
+    assert.deepEqual(metadata.foreignKeys.find(fk => fk.name === 'plan'), {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']});
     for (const response of [
-        await send('materias', 'POST', {...row, materia: 'Plan inexistente', plan: 2000}),
-        await send('materias', 'PUT', {key: {materia: row.materia}, row: {...row, plan: 2000}}),
+        await send('materias', 'POST', {...row, cod_mat: 'MISSING', materia: 'Plan inexistente', plan: 2000}),
+        await send('materias', 'PUT', {key, row: {...row, plan: 2000}}),
         await send('planes', 'DELETE', {plan: 0}),
         await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 1, descripcion: 'Nuevo número'}}),
     ]) assert.equal(response.status, 409, await response.text());
     assert.equal((await send('planes', 'PUT', {key: {plan: 0}, row: {plan: 0, descripcion: 'Descripción actualizada'}})).status, 204);
-    assert.equal((await send('materias', 'PUT', {key: {materia: row.materia}, row: {...row, plan: null}})).status, 204);
-    assert.equal((await send('materias', 'POST', {...row, materia: 'Sin plan', plan: null})).status, 204);
+    assert.equal((await send('materias', 'PUT', {key, row: {...row, plan: null}})).status, 204);
+    assert.equal((await send('materias', 'POST', {...row, cod_mat: 'SIN', materia: 'Sin plan', plan: null})).status, 204);
     assert.equal((await send('planes', 'DELETE', {plan: 0})).status, 204);
 });
 
@@ -90,7 +92,8 @@ test('PostgreSQL: the FK migration preserves data and rolls back when an existin
     assert.deepEqual((await handle.session.query('SELECT * FROM ssot.planes', [])).rows, []);
     await handle.session.query('UPDATE ssot.materias SET plan = NULL', []);
     await handle.session.query(sql, []);
-    assert.deepEqual(value(await assessSchema(value(decodeSqlSsot(ssot, sqlMapping)), databaseSettings.database.schema, handle.session)), {equal: true, differences: []});
+    const target = JSON.parse(await readFile('migrations/entries/0004_materias_plan_fk/metadata.json', 'utf8'))['states/to.json'];
+    assert.deepEqual(value(await assessSchema(value(decodeSqlSsot(target.ssot, target.persistence.representations.postgres)), databaseSettings.database.schema, handle.session)), {equal: true, differences: []});
 });
 
 test('PostgreSQL: cold start requires configured credentials and initializes once under concurrent starts', async t => {

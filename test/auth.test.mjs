@@ -73,7 +73,7 @@ test('password inputs use the type behaviour and report validation problems unde
 test('anonymous access to all entity operations fails before touching the database', async t => {
     const {request} = await start(t, () => { throw new Error('Unexpected query'); });
     for (const method of ['GET', 'POST', 'PUT', 'DELETE']) {
-        for (const path of ['/api/entities', '/api/entities/usuarios', '/api/entities/materias']) {
+        for (const path of ['/api/entities', '/api/entities/usuarios', '/api/entities/materias', '/api/entities/materias/delete-check', '/api/entities/materias/bulk-delete']) {
             const result = await request(path, method, method === 'GET' ? undefined : {}, '');
             assert.equal(result.status, 401);
             assert.equal(typeof (await result.json()).error, 'string');

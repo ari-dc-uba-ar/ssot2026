@@ -20,10 +20,13 @@ app.get('/menu', (_, res) => { res.redirect('/'); });
 app.use('/assets', express.static(fileURLToPath(new URL('../frontend', import.meta.url))));
 app.use(express.static(fileURLToPath(new URL('../../src/frontend/public', import.meta.url))));
 
-const port = 3000;
+const port = Number(process.env['PORT'] ?? 3000);
 try {
     reportInitialization(await initializeUsers(pool));
-    app.listen(port, () => console.log(`SSOT2026 escuchando en http://localhost:${port}`));
+    const server = app.listen(port, () => {
+        const address = server.address();
+        if (address && typeof address !== 'string') console.log(`SSOT2026 escuchando en http://localhost:${address.port}`);
+    });
 } catch {
     console.error('No se pudo inicializar la app. Verificá las migraciones y AUTH_ADMIN_USERNAME/AUTH_ADMIN_PASSWORD para el primer arranque.');
     process.exitCode = 1;

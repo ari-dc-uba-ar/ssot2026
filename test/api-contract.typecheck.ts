@@ -1,5 +1,5 @@
-import type {EntityColumn, EntityCreate, EntityForeignKey, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
-import {createRow, deleteRow, updateRow} from '../src/frontend/api.js';
+import type {DeleteDependencyBlocker, EntityColumn, EntityCreate, EntityForeignKey, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
+import {checkDeleteDependencies, createRow, deleteRow, deleteRows, updateRow} from '../src/frontend/api.js';
 
 type Assert<T extends true> = T;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
@@ -20,6 +20,7 @@ export const invalidRegularidad: EntityRow<'enrolamientos'>['regularidad'] = 'li
 // @ts-expect-error Cuatrimestre is a literal enum, not a numeric index.
 export const invalidCuatrimestre: EntityRow<'enrolamientos'>['cuatrimestre'] = 1;
 export type EntityAndRowsStayTogether = Assert<Equal<Extract<EntityResponse, {name: 'pabellones'}>['rows'][number], EntityRow<'pabellones'>>>;
+export type DependencyKeysStayWithEntity = Assert<Equal<Extract<DeleteDependencyBlocker, {entity: 'materias'}>['keys'][number], EntityKey<'materias'>>>;
 export const planReference: EntityForeignKey = {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']};
 // @ts-expect-error Reference labels cannot expose private password hashes.
 export const secretReference: EntityForeignKey = {name: 'user', entity: 'usuarios', fields: {user: 'id'}, displayFields: ['contrasena_hash']};
@@ -36,6 +37,12 @@ export const stringBoolean: EntityRow<'materias'>['obligatoria'] = 'true';
 
 void createRow('planes', {plan: 1, descripcion: null});
 void updateRow('planes', {key: {plan: 1}, row: {plan: 2, descripcion: 'Changed key'}});
+void deleteRows('materias', [{cod_mat: 'ALG', cod_dep: 'DC'}]);
+void checkDeleteDependencies('planes', [{plan: 1}]);
+// @ts-expect-error Bulk deletion needs every component of the selected entity's key.
+void deleteRows('materias', [{cod_mat: 'ALG'}]);
+// @ts-expect-error Dependency previews use the same typed keys as deletion.
+void checkDeleteDependencies('planes', [{id: 'wrong-entity'}]);
 // @ts-expect-error The API client preserves each entity's row type.
 void createRow('planes', {materia: 'Wrong entity'});
 // @ts-expect-error Deletion requires the selected entity's primary key.
