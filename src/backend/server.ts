@@ -22,7 +22,7 @@ app.get('/menu', (_, res) => { res.redirect('/'); });
 app.use('/assets', express.static(fileURLToPath(new URL('../frontend', import.meta.url))));
 app.use(express.static(fileURLToPath(new URL('../../src/frontend/public', import.meta.url))));
 
-const port = Number(process.env['PORT'] ?? 3000);
+const port = Number(process.env['PORT'] ?? 3001);
 try {
     reportInitialization(await initializeUsers(pool));
     const server = app.listen(port, () => {

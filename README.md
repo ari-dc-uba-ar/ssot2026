@@ -248,7 +248,7 @@ Identical check references (kind, name and content hash) execute once per migrat
 boundary. A check referenced at a later boundary runs again after the intervening steps.
 
 For a host process, configure `.env` (including `JWT_SECRET`), start PostgreSQL, build, and run `npm start`.
-PostgreSQL is exposed on `127.0.0.1:5433`; the Docker backend is on port 3000.
+PostgreSQL is exposed on `127.0.0.1:5433`; the backend defaults to port 3001, also used by Docker.
 
 ## Authentication and users
 
@@ -337,7 +337,7 @@ share a limit of 20 requests per IP per 15 minutes in each backend process.
 
 ## Frontend and API contract
 
-Open `http://localhost:3000/` after starting the backend (`/menu` redirects there).
+Open `http://localhost:3001/` after starting the backend (`/menu` redirects there).
 The TypeScript page discovers entities from the API and presents spreadsheet tabs
 with inline editing, insertion, text filtering, sorting, ten-row client-side
 pagination and deletion confirmations. Existing rows save on change after their

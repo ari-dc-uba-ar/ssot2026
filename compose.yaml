@@ -36,14 +36,15 @@ services:
         PGDATABASE: ${PGDATABASE:-ssot2026}
         PGUSER: ${PGUSER:-ssot2026_user}
         PGPASSWORD: ${PGPASSWORD:-ssot2026_app_local}
+      PORT: "3001"
       AUTH_ADMIN_USERNAME: ${AUTH_ADMIN_USERNAME:-jamaica123}
       AUTH_ADMIN_PASSWORD: ${AUTH_ADMIN_PASSWORD:-josecito1234}
       JWT_SECRET: ${JWT_SECRET:-265018ff912d3101ecf1812623d191a57baa9247b1e9b54cdbb9324d27bd8797}
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3001"
     init: true
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 5s
       timeout: 5s
       retries: 10
