@@ -80,3 +80,10 @@ export type ApiError = {error: string; problems?: readonly Problem[]};
 export type AuthenticatedUser = {id: string; usuario: string};
 export type LoginResponse = {token: string; expiresIn: number; user: AuthenticatedUser};
 export type RecoveryCodesResponse = {codes: string[]};
+export type StudentSummary = {
+    legajo: string;
+    nombre: string | null;
+    promedio: number | null;
+    aprobadas: number;
+    materias: {cod_dep: string; cod_mat: string; materia: string | null; año: number; cuatrimestre: string; nota: number}[];
+};

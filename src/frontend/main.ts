@@ -1,9 +1,10 @@
 import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck, EntityQuery} from '../backend/api-contract.js';
-import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
+import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, loadStudentSummary, updateRow, watchEntities} from './api.js';
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
 import {element} from './dom.js';
 import {reviewRow} from './review-row.js';
+import {showStudentSummary} from './student-summary.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources, type LoadedReferenceSource} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
@@ -431,6 +432,9 @@ async function show(name: EntityName): Promise<void> {
                 const query = {where: rowKey(entity, row)} as EntityQuery;
                 const current = entityPage(await load(name, query), query).rows[0];
                 reviewRow(entity, row, editors.get(row)!.read(), current);
+            })));
+            if (entity.name === 'estudiantes') actions.append(button('Ver resumen', () => void run(async () => {
+                showStudentSummary(await loadStudentSummary(String(Reflect.get(row, 'legajo'))));
             })));
             actions.append(button('Eliminar', () => void onDeleteRow(entity, row), 'danger'));
         });

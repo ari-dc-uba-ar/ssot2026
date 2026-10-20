@@ -1,4 +1,4 @@
-import type {ApiError, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/api-contract.js';
+import type {ApiError, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse, StudentSummary} from '../backend/api-contract.js';
 import type {Problem} from 'system-definition';
 import type {EntityName as ChangedEntity, EntityQuery} from '../backend/api-contract.js';
 
@@ -93,6 +93,9 @@ export async function deleteRows<E extends EntityName>(name: E, keys: EntityKey<
     await request(`${path(name)}/bulk-delete`, 'POST', {keys});
 }
 
+export async function loadStudentSummary(legajo: string): Promise<StudentSummary> {
+    return (await request(`${path('estudiantes')}/${encodeURIComponent(legajo)}/resumen`)).json() as Promise<StudentSummary>;
+}
 export async function login(usuario: string, contrasena: string): Promise<LoginResponse> {
     const session = await (await request('/api/auth/login', 'POST', {usuario, contrasena})).json() as LoginResponse;
     token = session.token;
