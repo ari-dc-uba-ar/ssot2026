@@ -6,7 +6,7 @@ import {myContext, myEntities, entityLabels} from './system.js';
 import {browsing} from './browsing.js';
 import {readQuery, queryEntity} from './entity-query.js';
 import type {EntityName} from './api-contract.js';
-import type {ApiError, DeleteDependencyBlocker, DeleteDependencyCheck, EntityForeignKey, EntityNamesResponse, EntityResponse} from './api-contract.js';
+import type {ApiError, DeleteDependencyBlocker, DeleteDependencyCheck, EntityForeignKey, EntityNamesResponse, EntityResponse, StudentSummary} from './api-contract.js';
 import {ApiFailure, apiErrorHandler, readObject} from './api-errors.js';
 import type {Authentication} from './auth.js';
 import {allowedFields} from './column-security.js';
@@ -28,6 +28,20 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
     router.use(express.json({limit: '64kb'}));
     router.get('/', (_req, res) => {
         res.json(Object.values(myEntities).map(({name}) => ({name, label: entityLabels[name]})) satisfies EntityNamesResponse);
+    });
+    router.get('/estudiantes/:legajo/resumen', async (req, res) => {
+        const legajo = req.params['legajo'] ?? '';
+        const student = await pool.query(`SELECT "legajo", "nombre" FROM ${entityTable('estudiantes')} WHERE "legajo" = $1`, [legajo]);
+        if (!student.rowCount) throw new ApiFailure(404, 'El estudiante no existe.');
+        const passed = await pool.query(`SELECT e."cod_dep", e."cod_mat", m."materia", e."año", e."cuatrimestre", e."nota"
+            FROM ${entityTable('enrolamientos')} e
+            JOIN ${entityTable('materias')} m ON m."cod_dep" = e."cod_dep" AND m."cod_mat" = e."cod_mat"
+            WHERE e."legajo" = $1 AND e."nota" >= 4
+            ORDER BY e."año", e."cuatrimestre", e."cod_dep", e."cod_mat"`, [legajo]);
+        const materias = passed.rows as StudentSummary['materias'];
+        const approved = new Set(materias.map(row => `${row.cod_dep}/${row.cod_mat}`));
+        const promedio = materias.length ? Math.round(materias.reduce((sum, row) => sum + row.nota, 0) / materias.length * 100) / 100 : null;
+        res.json({legajo, nombre: student.rows[0].nombre, promedio, aprobadas: approved.size, materias} satisfies StudentSummary);
     });
     for (const definition of Object.values(myEntities)) {
         const entity = entities.get(definition.name)!;
