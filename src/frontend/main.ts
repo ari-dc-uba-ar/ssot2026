@@ -3,6 +3,7 @@ import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRo
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
 import {element} from './dom.js';
+import {createTableNavigation} from './table-navigation.js';
 import {reviewRow} from './review-row.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources, type LoadedReferenceSource} from './reference-sources.js';
@@ -12,7 +13,6 @@ import {createRowEditor, type RowEditor, type Row, type Value} from './row-edito
 let labels: Readonly<Record<string, string>> = {};
 
 const workspace = document.querySelector<HTMLFieldSetElement>('#workspace')!;
-const tabs = document.querySelector<HTMLElement>('#tabs')!;
 const content = document.querySelector<HTMLElement>('#content')!;
 const status = document.querySelector<HTMLElement>('#status')!;
 
@@ -25,6 +25,9 @@ let canLeaveView = async () => true;
 let viewGeneration = 0;
 let allEntities: EntityName[] = [];
 let currentEntity: EntityName | null = null;
+const navigation = createTableNavigation(name => {
+    if (!workspace.disabled && currentEntity !== name) void run(() => selectTab(name));
+});
 
 async function run(work: () => Promise<void>): Promise<void> {
     workspace.disabled = true;
@@ -97,13 +100,7 @@ async function onDeleteRow(entity: EntityResponse, row: Row): Promise<void> {
 async function selectTab(name: EntityName): Promise<void> {
     if (!await canLeaveView()) return;
     currentEntity = name;
-    allEntities.forEach((ent, i) => {
-        const tab = tabs.children[i] as HTMLButtonElement | undefined;
-        if (tab) {
-            tab.classList.toggle('active', ent === name);
-            tab.setAttribute('aria-selected', String(ent === name));
-        }
-    });
+    navigation.activate(name);
     await show(name);
 }
 
@@ -454,7 +451,7 @@ initializeAuthentication(active => {
         canLeaveView = async () => true;
         currentEntity = null;
         content.replaceChildren();
-        tabs.replaceChildren();
+        navigation.catalog([]);
         return;
     }
     void run(async () => {
@@ -462,14 +459,7 @@ initializeAuthentication(active => {
         if (!isAuthenticated()) return;
         allEntities = catalog.map(entity => entity.name);
         labels = Object.fromEntries(catalog.map(entity => [entity.name, entity.label]));
-        tabs.replaceChildren(...allEntities.map(name => {
-            const tab = element('button', labels[name] ?? name);
-            tab.type = 'button';
-            tab.className = 'tab';
-            tab.setAttribute('role', 'tab');
-            tab.onclick = () => { if (currentEntity !== name) void run(() => selectTab(name)); };
-            return tab;
-        }));
+        navigation.catalog(catalog);
         if (allEntities[0]) await selectTab(allEntities[0]);
         else content.textContent = 'No hay planillas disponibles.';
         stopWatching = watchEntities(name => { cache.invalidate(name); invalidateView(name); });

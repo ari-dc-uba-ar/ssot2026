@@ -10,6 +10,7 @@
 <body>
     <main>
         <header class="page-header">
+            <button id="open-tables" type="button" aria-label="Abrir planillas" aria-controls="tables-panel" aria-expanded="false" hidden>☰</button>
             <div class="user-nav">
                 <div id="session" class="session-info" hidden>
                     <span class="user-badge"><strong id="session-user"></strong></span>
@@ -27,10 +28,18 @@
         </div>
 
         <fieldset id="workspace" disabled hidden>
-            <nav id="tabs" class="tabs" role="tablist" aria-label="Planillas disponibles"></nav>
-            <section id="content" aria-label="Planilla activa" role="tabpanel"></section>
+            <section id="content" aria-label="Planilla activa"></section>
         </fieldset>
     </main>
+
+    <dialog id="tables-panel" aria-labelledby="tables-title">
+        <div class="dialog-header">
+            <h2 id="tables-title">Planillas</h2>
+            <button id="close-tables" type="button" aria-label="Cerrar planillas">✕</button>
+        </div>
+        <input id="table-search" type="search" placeholder="Buscar planilla…" aria-label="Buscar planilla">
+        <nav id="table-list" aria-label="Planillas disponibles"></nav>
+    </dialog>
 
     <dialog id="account" aria-labelledby="account-dialog-title">
         <div class="dialog-header">
