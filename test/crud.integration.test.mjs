@@ -88,6 +88,45 @@ test('server startup, authenticated CRUD and atomic bulk deletion use the app co
                 assert.equal((await send('enrolamientos/bulk-delete', 'POST', {keys: [key]})).status, 204);
                 assert.equal((await send('materias/bulk-delete', 'POST', {keys})).status, 204);
             });
+            await t.test('SQL-looking input remains data across CRUD, filters, pagination, dependency checks and authentication', async () => {
+                await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) SELECT 'sentinel-' || i, 'Unchanged' FROM generate_series(1,200) i");
+                const baseline = (await pool.query('SELECT legajo, nombre FROM ssot.estudiantes ORDER BY legajo')).rows;
+                const payloads = ["' OR '1'='1", "'); DROP TABLE ssot.estudiantes; --", '"; SELECT pg_sleep(2); --',
+                    "/* comment */ UNION SELECT 'secret'", '100%_literal\\value', 'Unicode ＇；--'];
+                for (const [index, payload] of payloads.entries()) {
+                    const row = {legajo: payload, nombre: payload};
+                    assert.equal((await send('estudiantes', 'POST', row)).status, 204);
+                    for (const query of [{filter: payload}, {where: {legajo: payload}}]) {
+                        const response = await request(`/api/entities/estudiantes?query=${encodeURIComponent(JSON.stringify(query))}`);
+                        assert.equal(response.status, 200);
+                        const result = await response.json();
+                        assert.deepEqual(result.rows, [row]);
+                        assert.equal(result.window.matched, 1);
+                    }
+                    const original = await (await request(`/api/entities/estudiantes?query=${encodeURIComponent(JSON.stringify({where: {legajo: payload}}))}`)).json();
+                    const changed = {legajo: `changed-${payload}`, nombre: `updated-${payload}`};
+                    assert.equal((await send('estudiantes', 'PUT', {key: {legajo: payload}, row: changed, version: original.versions[0]})).status, 204);
+                    const key = {legajo: changed.legajo};
+                    assert.deepEqual(await (await send('estudiantes/delete-check', 'POST', {keys: [key]})).json(), {blockers: []});
+                    const deleted = index % 2 ? await send('estudiantes', 'DELETE', key) : await send('estudiantes/bulk-delete', 'POST', {keys: [key]});
+                    assert.equal(deleted.status, 204);
+                    for (const query of [{sort: payload}, {direction: payload}, {page: payload}, {where: {[payload]: 'x'}}]) {
+                        assert.equal((await request(`/api/entities/estudiantes?query=${encodeURIComponent(JSON.stringify(query))}`)).status, 400);
+                    }
+                    assert.equal((await send(encodeURIComponent(payload))).status, 404);
+                    assert.equal((await send('estudiantes', 'POST', {...row, [payload]: true})).status, 400);
+                    assert.equal((await send('estudiantes', 'PUT', {key: {legajo: '1'}, row: {legajo: '1', nombre: 'bad'}, version: payload})).status, 400);
+                    const login = await request('/api/auth/login', 'POST', {usuario: 'crud-admin', contrasena: payload.padEnd(12, '-')});
+                    assert.equal(login.status, 401);
+                    assert.equal((await login.json()).token, undefined);
+                    assert.deepEqual((await pool.query('SELECT legajo, nombre FROM ssot.estudiantes ORDER BY legajo')).rows, baseline);
+                }
+                for (const name of ['__proto__', 'constructor', 'toString']) {
+                    const query = {where: {[name]: 'injected'}};
+                    assert.equal((await request(`/api/entities/estudiantes?query=${encodeURIComponent(JSON.stringify(query))}`)).status, 400);
+                }
+                assert.equal((await pool.query('SELECT count(*)::int AS count FROM ssot.usuarios')).rows[0].count, 1);
+            });
         } finally {
             if (child.exitCode === null) child.kill();
             await exited;
