@@ -1,4 +1,4 @@
-import type {EntityForeignKey, EntityName, EntityResponse, EntityQuery} from '../backend/api-contract.js';
+import type {EntityForeignKey, EntityName, EntityResponse, EntityQuery} from '../backend/browser-contract.js';
 import {loadEntity} from './api.js';
 import type {ReferenceSource} from './foreign-keys.js';
 export type LoadedReferenceSource = ReferenceSource & {reference: EntityForeignKey; target: EntityResponse;

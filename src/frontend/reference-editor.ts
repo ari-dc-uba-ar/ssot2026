@@ -1,4 +1,4 @@
-import type {EntityResponse} from '../backend/api-contract.js';
+import type {EntityResponse} from '../backend/browser-contract.js';
 import type {LoadedReferenceSource} from './reference-sources.js';
 import {referenceOptions} from './foreign-keys.js';
 import {entityPage} from './entity-query.js';

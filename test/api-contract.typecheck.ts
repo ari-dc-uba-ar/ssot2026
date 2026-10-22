@@ -1,8 +1,9 @@
-import type {DeleteDependencyBlocker, EntityColumn, EntityCreate, EntityForeignKey, EntityInput, EntityKey, EntityResponse, EntityRow} from '../src/backend/api-contract.js';
+import type {DeleteDependencyBlocker, EntityColumn, EntityCreate, EntityForeignKey, EntityInput, EntityKey, EntityResponse, EntityRow, EntityQuery} from '../src/backend/api-contract.js';
 import {checkDeleteDependencies, createRow, deleteRow, deleteRows, updateRow, loadEntity} from '../src/frontend/api.js';
 
 type Assert<T extends true> = T;
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+export type BackendFitsBrowser = Assert<EntityResponse extends import('../src/backend/browser-contract.js').EntityResponse ? true : false>;
 export type RequiredPrimaryKey = Assert<Equal<EntityRow<'materias'>['cod_mat'], string>>;
 export type RequiredDepartmentKey = Assert<Equal<EntityRow<'materias'>['cod_dep'], string>>;
 export type NullableText = Assert<Equal<EntityRow<'materias'>['materia'], string | null>>;
@@ -35,29 +36,25 @@ export const nullKey: EntityRow<'materias'>['cod_mat'] = null;
 // @ts-expect-error Boolean values cannot be strings.
 export const stringBoolean: EntityRow<'materias'>['obligatoria'] = 'true';
 
-void createRow('planes', {plan: 1, descripcion: null});
-void loadEntity('planes', {sort: 'plan', where: {plan: 1}});
+// The browser accepts names discovered at runtime, including new backend entities.
+void createRow('a-new-table', {new_field: 'value'});
+void loadEntity('a-new-table', {sort: 'new_field', where: {new_field: 1}});
+void updateRow('a-new-table', {key: {new_key: 1}, version: '1', row: {new_field: true}});
+// @ts-expect-error Updating still requires the version originally read.
+void updateRow('a-new-table', {key: {new_key: 1}, row: {new_field: true}});
+// @ts-expect-error Values must belong to the SSOT's supported value types.
+void createRow('a-new-table', {new_field: {arbitrary: 'object'}});
+// @ts-expect-error Primary keys cannot be null.
+void deleteRow('a-new-table', {new_key: null});
+void deleteRows('a-new-table', [{new_key: 1}]);
+void checkDeleteDependencies('a-new-table', [{new_key: 1}]);
+// Backend authoring retains the concrete SSOT constraints.
 // @ts-expect-error Query columns belong to the selected entity.
-void loadEntity('planes', {sort: 'usuario'});
+export const wrongSort: EntityQuery<'planes'> = {sort: 'usuario'};
 // @ts-expect-error Equality filters preserve SSOT value types.
-void loadEntity('planes', {where: {plan: '1'}});
-// @ts-expect-error Queries cannot access private fields.
-void loadEntity('usuarios', {sort: 'contrasena_hash'});
-void updateRow('planes', {key: {plan: 1}, version: '1', row: {plan: 2, descripcion: 'Changed key'}});
-// @ts-expect-error Updating requires the version originally read.
-void updateRow('planes', {key: {plan: 1}, row: {plan: 2, descripcion: 'Stale'}});
-void deleteRows('materias', [{cod_mat: 'ALG', cod_dep: 'DC'}]);
-void checkDeleteDependencies('planes', [{plan: 1}]);
-// @ts-expect-error Bulk deletion needs every component of the selected entity's key.
-void deleteRows('materias', [{cod_mat: 'ALG'}]);
-// @ts-expect-error Dependency previews use the same typed keys as deletion.
-void checkDeleteDependencies('planes', [{id: 'wrong-entity'}]);
-// @ts-expect-error The API client preserves each entity's row type.
-void createRow('planes', {materia: 'Wrong entity'});
-// @ts-expect-error Deletion requires the selected entity's primary key.
-void deleteRow('planes', {materia: 'Wrong key'});
-// @ts-expect-error A key cannot be null.
-void deleteRow('planes', {plan: null});
+export const wrongFilter: EntityQuery<'planes'> = {where: {plan: '1'}};
+// @ts-expect-error Bulk keys require every component.
+export const incompleteKey: EntityKey<'materias'> = {cod_mat: 'ALG'};
 
 export type PublicUserFields = Assert<Equal<keyof EntityRow<'usuarios'>, 'id' | 'usuario'>>;
 export type PublicUserColumns = Assert<Equal<EntityColumn<'usuarios'>['name'], keyof EntityRow<'usuarios'>>>;
@@ -67,8 +64,8 @@ export type HiddenPassword = EntityRow<'usuarios'>['contrasena_hash'];
 // @ts-expect-error A password is required when creating a user.
 export const missingPassword: EntityCreate<'usuarios'> = {usuario: 'usuario'};
 // @ts-expect-error Recovery hashes cannot be assigned through the public API.
-void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password', recuperacion_hashes: '[]'});
+export const privateInput: EntityCreate<'usuarios'> = {usuario: 'usuario', contrasena: 'a-long-password', recuperacion_hashes: '[]'};
 void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password'});
 void updateRow('usuarios', {key: {id: 'id'}, version: '1', row: {usuario: 'usuario'}});
 // @ts-expect-error There are no per-account roles.
-void createRow('usuarios', {usuario: 'usuario', contrasena: 'a-long-password', administrador: true});
+export const roleInput: EntityCreate<'usuarios'> = {usuario: 'usuario', contrasena: 'a-long-password', administrador: true};

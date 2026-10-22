@@ -1,4 +1,4 @@
-import type {EntityInputColumn, EntityName, EntityResponse, EntityRow} from '../backend/api-contract.js';
+import type {EntityInputColumn, EntityResponse, EntityRow} from '../backend/browser-contract.js';
 import type {Problem} from 'system-definition';
 import {createReferenceFields} from './foreign-keys.js';
 import type {LoadedReferenceSource} from './reference-sources.js';
@@ -6,9 +6,9 @@ import {createReferenceEditors} from './reference-editor.js';
 import {element} from './dom.js';
 import {messageOf} from './messages.js';
 
-type Column = EntityInputColumn<EntityName>;
-export type Row = EntityRow<EntityName>;
-export type Value = {[E in EntityName]: EntityRow<E>[keyof EntityRow<E>]}[EntityName];
+type Column = EntityInputColumn;
+export type Row = EntityRow;
+export type Value = EntityRow[string];
 type FieldReader = {label: string; field: HTMLElement; names: string[]; error: HTMLElement; read: () => (readonly [string, Value])[]};
 type Editor = {input: HTMLInputElement | HTMLSelectElement; read: () => Value; requiredWhenEnabled?: boolean};
 

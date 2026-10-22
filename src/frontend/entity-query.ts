@@ -1,4 +1,4 @@
-import type {EntityQuery, EntityResponse} from '../backend/api-contract.js';
+import type {EntityQuery, EntityResponse} from '../backend/browser-contract.js';
 
 // PostgreSQL uses C collation for text: compare Unicode code points, not browser locale.
 function compare(left: unknown, right: unknown): number {

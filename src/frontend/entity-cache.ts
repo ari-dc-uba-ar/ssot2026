@@ -1,4 +1,4 @@
-import type {EntityName, EntityQuery, EntityResponse} from '../backend/api-contract.js';
+import type {EntityName, EntityQuery, EntityResponse} from '../backend/browser-contract.js';
 import {loadEntity} from './api.js';
 
 // One reusable dataset (or most recent page) per entity, including in-flight loads.

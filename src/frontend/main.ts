@@ -1,4 +1,4 @@
-import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck, EntityQuery} from '../backend/api-contract.js';
+import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck, EntityQuery} from '../backend/browser-contract.js';
 import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
@@ -51,9 +51,9 @@ function button(label: string, action: () => void, className = ''): HTMLButtonEl
     return node;
 }
 
-function rowKey(entity: EntityResponse, row: Row): EntityKey<EntityName> {
+function rowKey(entity: EntityResponse, row: Row): EntityKey {
     const values: Readonly<Record<string, Value>> = row;
-    return Object.fromEntries(entity.pk.map(name => [name, values[name]])) as EntityKey<EntityName>;
+    return Object.fromEntries(entity.pk.map(name => [name, values[name]])) as EntityKey;
 }
 
 async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () => Promise<void>, previous?: {row: Row; version: string}): Promise<void> {
@@ -63,8 +63,8 @@ async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () =>
         try {
             const input = editor.read();
             if (previous) await updateRow(entity.name, {key: rowKey(entity, previous.row), row: input,
-                version: previous.version} as EntityUpdate<EntityName>);
-            else await createRow(entity.name, input as EntityCreate<EntityName>);
+                version: previous.version} as EntityUpdate);
+            else await createRow(entity.name, input as EntityCreate);
         } catch (error) {
             if (error instanceof ApiRequestError) editor.problems(error.problems);
             throw error;

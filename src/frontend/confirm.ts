@@ -1,4 +1,4 @@
-import type {DeleteDependencyBlocker} from '../backend/api-contract.js';
+import type {DeleteDependencyBlocker} from '../backend/browser-contract.js';
 
 export function confirmAction(options: {
     title?: string;

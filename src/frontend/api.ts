@@ -1,6 +1,6 @@
-import type {ApiError, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/api-contract.js';
+import type {ApiError, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/browser-contract.js';
 import type {Problem} from 'system-definition';
-import type {EntityName as ChangedEntity, EntityQuery} from '../backend/api-contract.js';
+import type {EntityName as ChangedEntity, EntityQuery} from '../backend/browser-contract.js';
 
 export class ApiRequestError extends Error {
     readonly problems: readonly Problem[];
@@ -37,8 +37,8 @@ const path = (name: EntityName) => `/api/entities/${encodeURIComponent(name)}`;
 export async function listEntities(): Promise<EntityNamesResponse> {
     return (await request('/api/entities')).json() as Promise<EntityNamesResponse>;
 }
-export async function loadEntity<E extends EntityName>(name: E, query?: EntityQuery<NoInfer<E>>): Promise<EntityResponse<E>> {
-    return (await request(`${path(name)}?query=${encodeURIComponent(JSON.stringify(query ?? {}))}`)).json() as Promise<EntityResponse<E>>;
+export async function loadEntity(name: EntityName, query?: EntityQuery): Promise<EntityResponse> {
+    return (await request(`${path(name)}?query=${encodeURIComponent(JSON.stringify(query ?? {}))}`)).json() as Promise<EntityResponse>;
 }
 
 export function watchEntities(changed: (name: ChangedEntity | null) => void): () => void {
@@ -77,19 +77,19 @@ export function watchEntities(changed: (name: ChangedEntity | null) => void): ()
     })();
     return () => controller.abort();
 }
-export async function createRow<E extends EntityName>(name: E, row: EntityCreate<NoInfer<E>>): Promise<void> {
+export async function createRow(name: EntityName, row: EntityCreate): Promise<void> {
     await request(path(name), 'POST', row);
 }
-export async function updateRow<E extends EntityName>(name: E, update: EntityUpdate<NoInfer<E>>): Promise<void> {
+export async function updateRow(name: EntityName, update: EntityUpdate): Promise<void> {
     await request(path(name), 'PUT', update);
 }
-export async function deleteRow<E extends EntityName>(name: E, key: EntityKey<NoInfer<E>>): Promise<void> {
+export async function deleteRow(name: EntityName, key: EntityKey): Promise<void> {
     await request(path(name), 'DELETE', key);
 }
-export async function checkDeleteDependencies<E extends EntityName>(name: E, keys: EntityKey<NoInfer<E>>[]): Promise<DeleteDependencyCheck> {
+export async function checkDeleteDependencies(name: EntityName, keys: EntityKey[]): Promise<DeleteDependencyCheck> {
     return (await request(`${path(name)}/delete-check`, 'POST', {keys})).json() as Promise<DeleteDependencyCheck>;
 }
-export async function deleteRows<E extends EntityName>(name: E, keys: EntityKey<NoInfer<E>>[]): Promise<void> {
+export async function deleteRows(name: EntityName, keys: EntityKey[]): Promise<void> {
     await request(`${path(name)}/bulk-delete`, 'POST', {keys});
 }
 

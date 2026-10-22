@@ -1,7 +1,9 @@
-// Browser consumers import these types only; domain definitions stay in the backend.
-import type {EntityInfoOf, EntityInstanceType, Problem} from 'system-definition';
+// Backend-only specialization of the public protocol using the concrete SSOT.
+import type {EntityInfoOf, EntityInstanceType} from 'system-definition';
 import type {myRecords, myEntities} from './system.js';
 import type {InputConstraints} from './value-types.js';
+import type {EntityResponse as BrowserEntityResponse} from './browser-contract.js';
+export type {EntityWindow, ApiError, AuthenticatedUser, LoginResponse, RecoveryCodesResponse} from './browser-contract.js';
 
 export type EntityName = keyof typeof myEntities;
 export type EntityNamesResponse = {name: EntityName; label: string}[];
@@ -9,7 +11,6 @@ export type EntityQuery<E extends EntityName = EntityName> = E extends EntityNam
     filter?: string; sort?: keyof EntityRow<E> & string; direction?: 'asc' | 'desc'; page?: number;
     where?: Readonly<Partial<EntityRow<E>>>;
 } : never;
-export type EntityWindow = {kind: 'complete'} | {kind: 'page'; total: number; matched: number; page: number};
 type StoredRow<E extends EntityName> = EntityInstanceType<typeof myRecords, (typeof myEntities)[E]>;
 type Definitions<E extends EntityName> = (typeof myEntities)[E]['fields'];
 type AllowedNames<E extends EntityName, P extends 'readable' | 'writable'> = {
@@ -48,17 +49,13 @@ export type EntityForeignKey = {
     }
 }[EntityName];
 
-export type EntityResponse<E extends EntityName = EntityName> = E extends EntityName ? {
+export type EntityResponse<E extends EntityName = EntityName> = E extends EntityName ? Pick<BrowserEntityResponse, 'label' | 'browsing' | 'versions' | 'window'> & {
     name: E;
-    label: string;
-    browsing: {clientRows: number; pageSize: number; bulkDeleteLimit: number};
     pk: (typeof myEntities)[E]['pk'];
     columns: EntityColumn<E>[];
     inputs: EntityInputColumn<E>[];
     foreignKeys: EntityForeignKey[];
     rows: EntityRow<E>[];
-    versions: string[];
-    window: EntityWindow;
 } : never;
 export type EntityKey<E extends EntityName> = E extends EntityName
     ? Pick<EntityRow<E>, (typeof myEntities)[E]['pk'][number] & keyof EntityRow<E>> : never;
@@ -76,7 +73,3 @@ export type EntityUpdate<E extends EntityName> = E extends EntityName ? {
     row: EntityInput<E>;
     version: string;
 } : never;
-export type ApiError = {error: string; problems?: readonly Problem[]};
-export type AuthenticatedUser = {id: string; usuario: string};
-export type LoginResponse = {token: string; expiresIn: number; user: AuthenticatedUser};
-export type RecoveryCodesResponse = {codes: string[]};

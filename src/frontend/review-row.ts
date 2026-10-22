@@ -1,4 +1,4 @@
-import type {EntityResponse} from '../backend/api-contract.js';
+import type {EntityResponse} from '../backend/browser-contract.js';
 import type {Row, Value} from './row-editor.js';
 import {element} from './dom.js';
 
