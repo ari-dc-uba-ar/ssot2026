@@ -218,7 +218,9 @@ async function show(name: EntityName): Promise<void> {
             };
             headerRow.append(th);
         }
-        headerRow.append(element('th', 'Acciones'));
+        const actionsHeader = element('th', 'Acciones');
+        actionsHeader.className = 'row-actions';
+        headerRow.append(actionsHeader);
     }
     selectVisible.onchange = () => {
         for (const row of entityPage(entity, query()).rows) {
@@ -309,6 +311,9 @@ async function show(name: EntityName): Promise<void> {
 
     const scroll = element('div');
     scroll.className = 'table-scroll';
+    scroll.tabIndex = 0;
+    scroll.setAttribute('role', 'region');
+    scroll.setAttribute('aria-label', title);
     scroll.append(table);
 
     function render(): void {
@@ -408,10 +413,10 @@ async function show(name: EntityName): Promise<void> {
     }
 
     render();
-    content.replaceChildren(toolbar, scroll, pagination);
-    if (!entity.rows.length && !adding) {
-        content.append(element('p', 'No hay filas. Agregá la primera para comenzar.'));
-    }
+    const controls = element('div');
+    controls.className = 'sheet-controls';
+    controls.append(toolbar, pagination);
+    content.replaceChildren(controls, scroll);
 }
 
 initializeAuthentication(active => {
