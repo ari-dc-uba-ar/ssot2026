@@ -21,7 +21,7 @@ export function createAuthentication(pool: Pick<Pool, 'query'>, secret = process
     if (Buffer.byteLength(secret) < 32) throw new Error('JWT_SECRET debe contener al menos 32 bytes aleatorios.');
     const key = new TextEncoder().encode(secret);
     const issuer = 'ssot2026', audience = 'ssot2026-api';
-    const expiresIn = 15 * 60;
+    const expiresIn = 24 * 60 * 60;
     async function issueToken(user: UserSession): Promise<LoginResponse> {
         const token = await new SignJWT({ver: user.version_sesion})
             .setProtectedHeader({alg: 'HS256', typ: 'JWT'}).setSubject(user.id)
@@ -34,7 +34,7 @@ export function createAuthentication(pool: Pick<Pool, 'query'>, secret = process
         let identity;
         try {
             const {payload} = await jwtVerify(token, key, {
-                algorithms: ['HS256'], typ: 'JWT', issuer, audience, maxTokenAge: '15m', requiredClaims: ['sub', 'iat', 'exp', 'ver'],
+                algorithms: ['HS256'], typ: 'JWT', issuer, audience, maxTokenAge: expiresIn, requiredClaims: ['sub', 'iat', 'exp', 'ver'],
             });
             if (typeof payload.sub !== 'string' || typeof payload['ver'] !== 'string') throw new Error('Invalid claims');
             identity = {id: payload.sub, version: payload['ver']};

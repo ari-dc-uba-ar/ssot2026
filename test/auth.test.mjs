@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
-import {SignJWT} from 'jose';
+import {SignJWT, decodeJwt} from 'jose';
 import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {hashPassword, verifyPassword, createRecoveryCodes, hashRecoveryCode} from '../dist/backend/credentials.js';
@@ -110,12 +110,25 @@ test('login is public, normalizes usernames, returns a JWT and safe identity, an
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const result = await response.json();
-    assert.equal(result.expiresIn, 900);
+    assert.equal(result.expiresIn, 86400);
+    const claims = decodeJwt(result.token);
+    assert.equal(claims.exp - claims.iat, 86400);
     assert.deepEqual(result.user, {id: user.id, usuario: user.usuario});
     assert.equal(result.token.split('.').length, 3);
     assert.ok(!JSON.stringify(result).includes(passwordHash));
     assert.deepEqual(queries[0].values, ['admin']);
     assert.equal((await request('/api/auth/me', 'GET', undefined, result.token)).status, 200);
+});
+
+test('session age is absolute: accepted near one day and rejected past it even with a later exp', async t => {
+    const {request} = await start(t);
+    const now = Math.floor(Date.now() / 1000);
+    const token = age => new SignJWT({ver: user.version_sesion})
+        .setProtectedHeader({alg: 'HS256', typ: 'JWT'}).setSubject(user.id)
+        .setIssuer('ssot2026').setAudience('ssot2026-api').setIssuedAt(now - age)
+        .setExpirationTime(now + 3600).sign(new TextEncoder().encode(secret));
+    assert.equal((await request('/api/auth/me', 'GET', undefined, await token(86340))).status, 200);
+    assert.equal((await request('/api/auth/me', 'GET', undefined, await token(86401))).status, 401);
 });
 
 test('bad credentials and missing users return the same error without disclosing secrets', async t => {

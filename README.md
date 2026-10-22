@@ -284,7 +284,7 @@ the existing hash. Updating or deleting the current account has the same effect
 as updating or deleting another account, including revocation of its JWTs.
 
 Passwords use salted scrypt (`N=32768, r=8, p=3`). JWTs use HS256 through `jose`,
-expire after 15 minutes and validate the algorithm, issuer, audience and required
+expire 24 hours after login (without sliding renewal) and validate the algorithm, issuer, audience and required
 claims. Every authenticated request also checks the account's existence and
 session version. Account updates, password resets/changes and logout
 revoke existing sessions. Logout closes all sessions for that account. The browser
