@@ -13,5 +13,6 @@ COPY src ./src
 RUN npm run migration:load
 COPY migrations ./migrations
 COPY test ./test
+COPY examples ./examples
 
 CMD ["node", "dist/backend/server.js"]

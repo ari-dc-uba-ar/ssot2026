@@ -2,11 +2,12 @@
     "name": "ssot2026",
     "type": "module",
     "dependencies": {
+        "@system-definition/postgres-migrations": "file:../system-definition/consumers/postgres-migrations",
         "express": "^5.2.1",
         "jose": "^6.2.12",
         "pg": "^8.23.0",
         "system-definition": "file:../system-definition",
-        "@system-definition/postgres-migrations": "file:../system-definition/consumers/postgres-migrations"
+        "tab-plus": "0.2.0"
     },
     "devDependencies": {
         "@types/express": "^5.0.6",
@@ -18,6 +19,8 @@
         "build": "tsc -b ./src/backend && tsc -p ./src/frontend",
         "start": "node --env-file-if-exists=.env ./dist/backend/server",
         "auth:create-admin": "node --env-file-if-exists=.env ./dist/backend/create-admin.js",
+        "data:examples": "node --env-file-if-exists=.env ./dist/backend/load-examples.js",
+        "test:data": "npm run build && node --env-file-if-exists=.env --test test/tab-data.integration.test.mjs",
         "ssot:load": "npm run build && postgres-migrations capture --ssot ./dist/backend/system.js",
         "migration:load": "npm run build && postgres-migrations capture --ssot ./dist/backend/system.js --database ./dist/backend/database.js",
         "migration:assess": "npm run build && postgres-migrations assess --ssot ./dist/backend/system.js --database ./dist/backend/database.js",

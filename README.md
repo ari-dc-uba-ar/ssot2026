@@ -335,6 +335,38 @@ share a limit of 20 requests per IP per 15 minutes in each backend process.
 | `POST /api/auth/recovery-codes` | Bearer JWT | `{contrasena}` → `{codes}` |
 | `POST /api/auth/logout` | Bearer JWT | HTTP 204 |
 
+## Optional example data with tab-plus
+
+After applying migrations, load the small fictional dataset explicitly:
+
+```sh
+npm run build
+npm run data:examples
+```
+
+With Docker, rebuild first so the image includes the loader and files:
+
+```sh
+docker compose up --build -d
+docker compose run --rm --no-deps backend npm run data:examples
+```
+
+The loader uses **tab-plus** to read `examples/data/*.tab`. Each filename names
+an SSOT entity; headers use the API's creation-input names. SSOT type behaviours
+decode numbers, booleans and enums, and the ordinary creation path validates and
+transforms every row. `\N` means null; `\E` means empty text. Included foreign-key
+parents load before their children, with no hardcoded table order.
+
+The command uses the app database identity and one transaction. Duplicates,
+invalid values or missing references roll back the whole import; existing rows
+are never overwritten. It does not run during startup or change migration history.
+Refresh an open sheet after importing, since this separate process does not emit
+the HTTP server's live events. No sample accounts or passwords are included.
+
+To supply your own directory, use `npm run data:examples -- path/to/data` after
+building. `npm run test:data` checks parsing, SSOT validation, foreign keys and
+rollback in an isolated database.
+
 ## Frontend and API contract
 
 Open `http://localhost:3001/` after starting the backend (`/menu` redirects there).
