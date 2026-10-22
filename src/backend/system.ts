@@ -16,6 +16,7 @@ type MyFieldDef = CoreFieldDef<typeof appTypeDefs> & {
     description?: string
     maxLength?: number
     readable?: boolean
+    visible?: boolean
     writable?: boolean
     inputName?: string
     inputType?: keyof typeof appTypeDefs
@@ -36,6 +37,7 @@ const myTypes = defineTypes({
         description: fieldDef.description ?? '',
         maxLength  : fieldDef.maxLength ?? 100,
         readable   : fieldDef.readable ?? true,
+        visible    : fieldDef.visible ?? true,
         writable   : fieldDef.writable ?? true,
         inputName  : fieldDef.inputName ?? name,
         inputType  : fieldDef.inputType ?? fieldDef.type,
@@ -93,7 +95,7 @@ const pabellon = defineRecord(myTypes,{
 });
 
 const usuario = defineRecord(myTypes, {
-    id: {type: 'text', nullable: false, writable: false as const, onCreate: 'uuid' as const},
+    id: {type: 'text', nullable: false, writable: false as const, visible: false as const, onCreate: 'uuid' as const},
     usuario: {type: 'text', nullable: false, transform: 'username' as const},
     contrasena_hash: {type: 'text', nullable: false, label: 'Contraseña', readable: false as const,
         inputName: 'contrasena' as const, inputType: 'password' as const, transform: 'password' as const},

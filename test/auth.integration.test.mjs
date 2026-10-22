@@ -139,7 +139,8 @@ test('PostgreSQL: all authenticated accounts manage users with generic CRUD and 
     const second = await login('second');
     const body = await (await request('/api/entities/usuarios', 'GET', undefined, second.token)).json();
     assert.equal(body.rows.length, 2);
-    assert.deepEqual(body.columns.map(column => column.name), ['id', 'usuario']);
+    assert.deepEqual(body.columns.map(column => column.name), ['usuario']);
+    assert.deepEqual(body.pk, ['id']);
     assert.deepEqual(body.inputs.map(column => column.type), ['text', 'password']);
     assert.doesNotMatch(JSON.stringify(body), /contrasena_hash|recuperacion_hashes|version_sesion|administrador|activo/);
     assert.equal((await request('/api/entities/usuarios', 'POST', {usuario: 'third', contrasena: password}, second.token)).status, 204);

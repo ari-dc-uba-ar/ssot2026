@@ -36,7 +36,8 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
         const readNames = Object.keys(readable);
         const table = entityTable(entity.name);
         const keys = Object.fromEntries(entity.pk.map(name => [name, entity.fields[name]!]));
-        const columns = Object.values(readable).map(({name, label, type, nullable, writable}) => ({name, label, type, nullable, writable}));
+        const columns = Object.values(readable).filter(field => field.visible)
+            .map(({name, label, type, nullable, writable}) => ({name, label, type, nullable, writable}));
         const inputs = Object.values(writable).map(({inputName: name, inputType: type, inputConstraints: constraints, label, nullable, transform}) => ({
             name, label, type, nullable, constraints, optionalOnUpdate: transform === 'password',
         }));

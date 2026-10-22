@@ -57,7 +57,7 @@ export const wrongFilter: EntityQuery<'planes'> = {where: {plan: '1'}};
 export const incompleteKey: EntityKey<'materias'> = {cod_mat: 'ALG'};
 
 export type PublicUserFields = Assert<Equal<keyof EntityRow<'usuarios'>, 'id' | 'usuario'>>;
-export type PublicUserColumns = Assert<Equal<EntityColumn<'usuarios'>['name'], keyof EntityRow<'usuarios'>>>;
+export type PublicUserColumns = Assert<Equal<EntityColumn<'usuarios'>['name'], 'usuario'>>;
 export type WritableUserFields = Assert<Equal<keyof EntityInput<'usuarios'>, 'usuario' | 'contrasena'>>;
 // @ts-expect-error Password hashes cannot be read through the public API.
 export type HiddenPassword = EntityRow<'usuarios'>['contrasena_hash'];

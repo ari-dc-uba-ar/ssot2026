@@ -169,12 +169,12 @@ test('column security excludes secrets from SELECT, response metadata and rows, 
     assert.equal(response.status, 200);
     const body = await response.json();
     assert.deepEqual(body.rows, [{id: user.id, usuario: user.usuario}]);
-    assert.deepEqual(body.columns.map(c => c.name), ['id', 'usuario']);
+    assert.deepEqual(body.columns.map(c => c.name), ['usuario']);
+    assert.deepEqual(body.pk, ['id']);
     assert.deepEqual(body.inputs.map(c => c.name), ['usuario', 'contrasena']);
     assert.equal(body.inputs[1].type, 'password');
     assert.deepEqual(body.inputs[1].constraints, {minLength: 12, maxLength: 128});
     assert.equal(body.inputs[1].optionalOnUpdate, true);
-    assert.equal(body.columns[0].writable, false);
     assert.doesNotMatch(selection, /contrasena|recuperacion|version_sesion|SELECT \*/);
     assert.doesNotMatch(JSON.stringify(body), /private-|contrasena_hash|recuperacion|version_sesion/);
 });

@@ -13,7 +13,7 @@ export type EntityQuery<E extends EntityName = EntityName> = E extends EntityNam
 } : never;
 type StoredRow<E extends EntityName> = EntityInstanceType<typeof myRecords, (typeof myEntities)[E]>;
 type Definitions<E extends EntityName> = (typeof myEntities)[E]['fields'];
-type AllowedNames<E extends EntityName, P extends 'readable' | 'writable'> = {
+type AllowedNames<E extends EntityName, P extends 'readable' | 'writable' | 'visible'> = {
     [K in keyof (typeof myEntities)[E]['fields']]: (typeof myEntities)[E]['fields'][K] extends Record<P, false> ? never : K
 }[keyof (typeof myEntities)[E]['fields']] & keyof StoredRow<E>;
 export type EntityRow<E extends EntityName> = E extends EntityName ? Pick<StoredRow<E>, AllowedNames<E, 'readable'>> : never;
@@ -32,7 +32,7 @@ type Fields<E extends EntityName> = EntityInfoOf<typeof myRecords, (typeof myEnt
 type DisplayColumn<T> = T extends {name: string; label: string; type: string; nullable: boolean}
     ? Pick<T, 'name' | 'label' | 'type' | 'nullable'> & {writable: boolean} : never;
 export type EntityColumn<E extends EntityName> = E extends EntityName
-    ? DisplayColumn<Fields<E>[AllowedNames<E, 'readable'> & keyof Fields<E>]> : never;
+    ? DisplayColumn<Fields<E>[AllowedNames<E, 'readable'> & AllowedNames<E, 'visible'> & keyof Fields<E>]> : never;
 type InputColumn<T, N, D> = T extends {label: string; type: string; nullable: boolean}
     ? Pick<T, 'label' | 'nullable'> & {name: N; type: D extends {inputType: infer I} ? I : T['type'];
         constraints: InputConstraints; optionalOnUpdate: boolean} : never;
