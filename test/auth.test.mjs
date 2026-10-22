@@ -134,9 +134,16 @@ test('session age is absolute: accepted near one day and rejected past it even w
 test('bad credentials and missing users return the same error without disclosing secrets', async t => {
     for (const rows of [[], [{...user, contrasena_hash: passwordHash}]]) {
         const {request} = await start(t, async () => ({rows}));
-        const response = await request('/api/auth/login', 'POST', {usuario: 'admin', contrasena: 'incorrect-long-password'}, '');
-        assert.equal(response.status, 401);
-        assert.deepEqual(await response.json(), {error: 'Usuario o contraseña incorrectos.'});
+        for (const credentials of [
+            {usuario: 'admin', contrasena: 'incorrect-long-password'},
+            {usuario: 'admin', contrasena: 'short'},
+            {usuario: 'invalid@username', contrasena: password},
+            {usuario: 'admin', contrasena: 123},
+        ]) {
+            const response = await request('/api/auth/login', 'POST', credentials, '');
+            assert.equal(response.status, 401);
+            assert.deepEqual(await response.json(), {error: 'No existe usuario con esas credenciales.'});
+        }
     }
 });
 

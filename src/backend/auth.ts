@@ -78,13 +78,20 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
     const limit = authenticationLimit();
     router.post('/login', limit, async (req, res) => {
         const body = readObject(req.body, ['usuario', 'contrasena']);
-        const usuario = readUsername(body['usuario']);
-        const password = readPassword(body['contrasena']);
+        const invalidCredentials = 'No existe usuario con esas credenciales.';
+        let usuario: string, password: string;
+        try {
+            usuario = readUsername(body['usuario']);
+            password = readPassword(body['contrasena']);
+        } catch (error) {
+            if (!(error instanceof ApiFailure)) throw error;
+            throw new ApiFailure(401, invalidCredentials);
+        }
         const {rows} = await pool.query<UserSession & {contrasena_hash: string}>(
             `SELECT id, usuario, version_sesion, contrasena_hash FROM ${usersTable} WHERE usuario = $1`, [usuario]);
         const user = rows[0];
         const verified = await verifyPassword(password, user?.contrasena_hash);
-        if (!verified || !user) throw new ApiFailure(401, 'Usuario o contraseña incorrectos.');
+        if (!verified || !user) throw new ApiFailure(401, invalidCredentials);
         res.json(await auth.issueToken(user));
     });
     router.post('/recover', limit, async (req, res) => {
