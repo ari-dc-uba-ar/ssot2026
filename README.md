@@ -274,7 +274,13 @@ can also be run manually with `npm run auth:create-admin` or:
 docker compose run --rm -e AUTH_ADMIN_USERNAME -e AUTH_ADMIN_PASSWORD backend npm run auth:create-admin
 ```
 
-Log in on the home page. Every authenticated account is an administrator and can
+The home page starts with the username form, followed by the password form.
+Advancing between steps makes no server request; login checks both credentials
+together and returns the same generic error for unknown users, wrong passwords
+and invalid credential formats. Recovery is available on the page; account
+management remains accessible after login.
+
+Every authenticated account is an administrator and can
 create, edit and delete users through the same CRUD used for other entities. There
 are no role or activation-state columns and no account-specific deletion rules.
 Usernames are case-insensitive and accept 3–64 ASCII

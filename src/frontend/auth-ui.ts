@@ -3,6 +3,10 @@ import {confirmAction} from './confirm.js';
 
 export function initializeAuthentication(onSession: (active: boolean) => void): void {
     const panel = document.querySelector<HTMLElement>('#authentication')!;
+    const identityForm = document.querySelector<HTMLFormElement>('#identity-form')!;
+    const username = document.querySelector<HTMLInputElement>('#login-user')!;
+    const loginUsername = document.querySelector<HTMLInputElement>('#login-username')!;
+    const password = document.querySelector<HTMLInputElement>('#login-password')!;
     const loginForm = document.querySelector<HTMLFormElement>('#login-form')!;
     const recoveryForm = document.querySelector<HTMLFormElement>('#recovery-form')!;
     const session = document.querySelector<HTMLElement>('#session')!;
@@ -12,28 +16,30 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
     const accountForm = document.querySelector<HTMLFormElement>('#account-form')!;
     const accountManagement = document.querySelector<HTMLElement>('#account-management');
     const accountTitle = document.querySelector<HTMLElement>('#account-dialog-title');
-    const loginPromptBtn = document.querySelector<HTMLButtonElement>('#login-prompt-btn');
     const closeAccountDialog = document.querySelector<HTMLButtonElement>('#close-account-dialog');
-    const unauthNotice = document.querySelector<HTMLElement>('#unauthenticated-notice');
 
-    function openLoginModal(): void {
-        accountForm.reset();
+    function showStep(step: 'identity' | 'password' | 'recovery'): void {
+        identityForm.hidden = step !== 'identity';
+        loginForm.hidden = step !== 'password';
+        recoveryForm.hidden = step !== 'recovery';
+        password.value = '';
         error.textContent = '';
-        panel.hidden = false;
-        if (accountManagement) accountManagement.hidden = true;
-        if (accountTitle) accountTitle.textContent = 'Iniciar sesión';
-        if (!account.open) account.showModal();
+        document.querySelector('#authentication-title')!.textContent = step === 'recovery' ? 'Recuperar contraseña' : 'Iniciar sesión';
+        const focus = step === 'identity' ? username : step === 'password' ? password : document.querySelector<HTMLInputElement>('#recover-user')!;
+        focus.focus();
     }
 
     function signedOut(): void {
         clearSession();
         panel.hidden = false;
         if (accountManagement) accountManagement.hidden = true;
-        if (unauthNotice) unauthNotice.hidden = false;
         session.hidden = true;
-        if (accountTitle) accountTitle.textContent = 'Iniciar sesión';
         account.close();
+        identityForm.reset();
+        loginForm.reset();
+        recoveryForm.reset();
         onSession(false);
+        showStep('identity');
     }
 
     async function action(form: HTMLFormElement, work: () => Promise<void>): Promise<void> {
@@ -45,6 +51,7 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         finally {
             form.querySelectorAll<HTMLInputElement>('input[type=password]').forEach(input => { input.value = ''; });
             inputs.forEach(input => { input.disabled = false; });
+            if (form === loginForm && !panel.hidden && !form.hidden) password.focus();
         }
     }
 
@@ -73,8 +80,15 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         });
     }
 
-    if (loginPromptBtn) loginPromptBtn.onclick = openLoginModal;
     if (closeAccountDialog) closeAccountDialog.onclick = () => account.close();
+
+    identityForm.onsubmit = event => {
+        event.preventDefault();
+        loginUsername.value = username.value;
+        document.querySelector('#login-identity')!.textContent = username.value;
+        showStep('password');
+    };
+    document.querySelector<HTMLButtonElement>('#change-identity')!.onclick = () => showStep('identity');
 
     loginForm.onsubmit = event => {
         event.preventDefault();
@@ -83,7 +97,6 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             const result = await login(String(data.get('usuario')), String(data.get('contrasena')));
             loginForm.reset();
             panel.hidden = true;
-            if (unauthNotice) unauthNotice.hidden = true;
             session.hidden = false;
             document.querySelector('#session-user')!.textContent = result.user.usuario;
             account.close();
@@ -92,16 +105,13 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
     };
 
     document.querySelector<HTMLButtonElement>('#show-recovery')!.onclick = () => {
-        loginForm.hidden = true;
-        recoveryForm.hidden = false;
-        error.textContent = '';
+        document.querySelector<HTMLInputElement>('#recover-user')!.value = username.value;
+        showStep('recovery');
     };
 
     document.querySelector<HTMLButtonElement>('#show-login')!.onclick = () => {
-        loginForm.hidden = false;
-        recoveryForm.hidden = true;
         recoveryForm.reset();
-        error.textContent = '';
+        showStep('password');
     };
 
     recoveryForm.onsubmit = event => {
@@ -111,8 +121,7 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
             const result = await recover(String(data.get('usuario')), String(data.get('codigo')), String(data.get('contrasena')));
             recoveryForm.reset();
             await savedCodes(result.codes);
-            recoveryForm.hidden = true;
-            loginForm.hidden = false;
+            showStep('identity');
             error.textContent = 'Contraseña recuperada. Iniciá sesión con la nueva contraseña.';
         });
     };

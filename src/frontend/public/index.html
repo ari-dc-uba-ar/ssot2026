@@ -22,42 +22,23 @@
 
         <p id="status" role="status" aria-live="polite"></p>
 
-        <div id="unauthenticated-notice" class="unauthenticated-notice" hidden>
-            <h2>Acceso a las planillas</h2>
-            <button id="login-prompt-btn" type="button" class="primary">Iniciar sesión</button>
-        </div>
-
-        <fieldset id="workspace" disabled hidden>
-    <dialog id="tables-panel" aria-labelledby="tables-title">
-        <div class="dialog-header">
-            <h2 id="tables-title">Planillas</h2>
-            <button id="close-tables" type="button" aria-label="Cerrar planillas">✕</button>
-        </div>
-        <input id="table-search" type="search" placeholder="Buscar planilla…" aria-label="Buscar planilla">
-        <nav id="table-list" aria-label="Planillas disponibles"></nav>
-    </dialog>
-            <section id="content" aria-label="Planilla activa"></section>
-        </fieldset>
-    </main>
-
-
-
-    <dialog id="account" aria-labelledby="account-dialog-title">
-        <div class="dialog-header">
-            <h2 id="account-dialog-title">Cuenta</h2>
-            <button id="close-account-dialog" type="button" class="close-btn" aria-label="Cerrar modal">✕</button>
-        </div>
-
-        <section id="authentication" aria-label="Autenticación">
+        <section id="authentication" aria-labelledby="authentication-title">
+            <h1 id="authentication-title">Iniciar sesión</h1>
             <p id="auth-status" role="alert"></p>
-            <form id="login-form">
+            <form id="identity-form">
                 <div class="field">
                     <label for="login-user">Usuario</label>
-                    <input id="login-user" name="usuario" autocomplete="username" required minlength="3" maxlength="64">
+                    <input id="login-user" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required>
                 </div>
+                <button type="submit" class="primary">Continuar</button>
+            </form>
+            <form id="login-form" hidden>
+                <p id="login-identity"></p>
+                <button id="change-identity" type="button">Cambiar usuario</button>
+                <input id="login-username" name="usuario" autocomplete="username" hidden>
                 <div class="field">
                     <label for="login-password">Contraseña</label>
-                    <input id="login-password" name="contrasena" type="password" autocomplete="current-password" required minlength="12" maxlength="128">
+                    <input id="login-password" name="contrasena" type="password" autocomplete="current-password" required>
                 </div>
                 <div class="actions">
                     <button type="submit" class="primary">Ingresar</button>
@@ -65,7 +46,6 @@
                 </div>
             </form>
             <form id="recovery-form" hidden>
-                <h3>Recuperar contraseña</h3>
                 <p class="muted">Usá uno de los códigos que guardaste. Al recuperar tu cuenta se reemplazarán todos los códigos anteriores y se cerrarán tus sesiones.</p>
                 <div class="field">
                     <label for="recover-user">Usuario</label>
@@ -86,6 +66,24 @@
             </form>
         </section>
 
+        <fieldset id="workspace" disabled hidden>
+            <dialog id="tables-panel" aria-labelledby="tables-title">
+                <div class="dialog-header">
+                    <h2 id="tables-title">Planillas</h2>
+                    <button id="close-tables" type="button" aria-label="Cerrar planillas">✕</button>
+                </div>
+                <input id="table-search" type="search" placeholder="Buscar planilla…" aria-label="Buscar planilla">
+                <nav id="table-list" aria-label="Planillas disponibles"></nav>
+            </dialog>
+            <section id="content" aria-label="Planilla activa"></section>
+        </fieldset>
+    </main>
+
+    <dialog id="account" aria-labelledby="account-dialog-title">
+        <div class="dialog-header">
+            <h2 id="account-dialog-title">Mi cuenta</h2>
+            <button id="close-account-dialog" type="button" class="close-btn" aria-label="Cerrar modal">✕</button>
+        </div>
         <section id="account-management" hidden aria-label="Administración de cuenta">
             <p class="muted">Generá códigos y guardalos en un lugar seguro para recuperar tu cuenta. Cada generación reemplaza los códigos anteriores.</p>
             <p id="account-status" role="alert"></p>

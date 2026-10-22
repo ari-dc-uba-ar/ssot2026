@@ -14,6 +14,8 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
         await initializeUsers(pool, {username: 'browser', password: 'browser-test-password'});
         await pool.query("INSERT INTO ssot.planes (plan, descripcion) SELECT i, 'Plan ' || i FROM generate_series(1,201) i");
         const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
+        const loginRequests = [];
+        app.use('/api/auth/login', (req, _res, next) => { loginRequests.push(req.method); next(); });
         const publish = registerEntityEvents(app, auth);
         registerAuthApi(app, pool, auth);
         registerEntityApi(app, pool, auth, publish);
@@ -25,7 +27,23 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
                 await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}`});
                 await until(() => evaluate("return typeof document.querySelector('#login-form')?.onsubmit === 'function'"));
-                await evaluate("document.querySelector('#login-prompt-btn').click(); document.querySelector('#login-user').value='browser'; document.querySelector('#login-password').value='browser-test-password'; document.querySelector('#login-form').requestSubmit();");
+                assert.equal(await evaluate("return !document.querySelector('#authentication').hidden && !document.querySelector('#identity-form').hidden && document.querySelector('#login-form').hidden && !document.querySelector('dialog[open]')"), true);
+                await evaluate("document.querySelector('#login-user').value='missing-user'; document.querySelector('#identity-form').requestSubmit();");
+                assert.equal(loginRequests.length, 0);
+                assert.equal(await evaluate("return document.activeElement.id === 'login-password' && document.querySelector('#identity-form').hidden && !document.querySelector('#login-form').hidden"), true);
+                await evaluate("document.querySelector('#login-password').value='browser-test-password'; document.querySelector('#login-form').requestSubmit();");
+                await until(() => evaluate("return !document.querySelector('#login-password').disabled && document.querySelector('#auth-status').textContent !== ''"));
+                const unknownUserError = await evaluate("return document.querySelector('#auth-status').textContent");
+                assert.equal(unknownUserError, 'No existe usuario con esas credenciales.');
+                assert.equal(await evaluate("return document.querySelector('#login-password').value"), '');
+                await evaluate("document.querySelector('#login-password').value='discard-me'; document.querySelector('#change-identity').click()");
+                assert.equal(await evaluate("return !document.querySelector('#identity-form').hidden && document.activeElement.id === 'login-user' && document.querySelector('#login-password').value === ''"), true);
+                await evaluate("document.querySelector('#login-user').value='browser'; document.querySelector('#identity-form').requestSubmit(); document.querySelector('#login-password').value='wrong'; document.querySelector('#login-form').requestSubmit();");
+                await until(() => evaluate("return !document.querySelector('#login-password').disabled && document.querySelector('#auth-status').textContent !== ''"));
+                assert.equal(await evaluate("return document.querySelector('#auth-status').textContent"), unknownUserError);
+                await evaluate("document.querySelector('#show-recovery').click()");
+                assert.equal(await evaluate("return !document.querySelector('#recovery-form').hidden && document.querySelector('#recover-user').value === 'browser' && !document.querySelector('dialog[open]')"), true);
+                await evaluate("document.querySelector('#show-login').click(); document.querySelector('#login-password').value='browser-test-password'; document.querySelector('#login-form').requestSubmit();");
                 await until(() => evaluate("return !document.querySelector('#workspace').disabled && !!document.querySelector('table')"));
                 assert.equal(await evaluate("return document.querySelectorAll('#login-form h3').length"), 0);
                 assert.deepEqual(await evaluate(`return import('/assets/value-field.js').then(({createValueField}) => {
@@ -90,6 +108,10 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
                 await until(() => evaluate("return !document.querySelector('#open-tables').hidden"));
                 assert.deepEqual(errors, []);
+                await evaluate("document.querySelector('#manage-account').click()");
+                assert.equal(await evaluate("return document.querySelector('#account').matches(':modal') && !document.querySelector('#account-management').hidden && document.querySelector('#authentication').hidden"), true);
+                await evaluate("document.querySelector('#close-account').click(); window.dispatchEvent(new Event('sessionexpired'))");
+                assert.equal(await evaluate("return !document.querySelector('#authentication').hidden && !document.querySelector('#identity-form').hidden && document.querySelector('#workspace').hidden && document.querySelector('#login-user').value === '' && !document.querySelector('dialog[open]')"), true);
             });
         } finally {
             const closed = new Promise(resolve => server.close(resolve));
