@@ -370,9 +370,15 @@ rollback in an isolated database.
 ## Frontend and API contract
 
 Open `http://localhost:3001/` after starting the backend (`/menu` redirects there).
-The TypeScript page discovers entities from the API and presents spreadsheet tabs
-with inline editing, insertion, text filtering, sorting, ten-row client-side
-pagination and deletion confirmations. Existing rows save on change after their
+The TypeScript page discovers entities from the API. A searchable left drawer
+lists their labels. The spreadsheet fills the remaining viewport, with fixed
+filter/pagination controls, sticky column headers, and pinned selection/action
+columns inside a single two-axis scroll area. The drawer becomes a permanent
+sidebar only when its text and the sheet fit together without horizontal overflow.
+Actions use labelled icons with text added when space permits.
+
+The sheet supports inline editing, insertion, text search, typed column equality
+filters, sorting, hybrid pagination and selection-based deletion confirmations. Existing rows save on change after their
 inputs are valid; new rows use **Guardar**. Entity definitions, fields and inputs
 come from the API, including friendly entity labels defined in the backend.
 Foreign keys use dropdowns populated from the referenced entity.
@@ -404,8 +410,11 @@ without selecting one automatically. Text, password, integer, enum and boolean e
 from empty text, zero and false. New types require an editor at compile time.
 
 `npm run build` compiles the backend and browser separately, using a TypeScript
-project reference for the backend declarations. The frontend imports the API
-contract with `import type`; no SSOT implementation, database settings, validators
+project reference for the backend declarations. The frontend imports
+`src/backend/browser-contract.ts` with `import type`. That protocol knows supported
+value types and constraints, but table/column names remain runtime strings. The
+concrete entity catalog is confined to backend-only `api-contract.ts`; no SSOT
+implementation, database settings, validators
 or migration code is emitted into the browser. There is no frontend framework
 or additional dependency.
 
@@ -413,7 +422,9 @@ or additional dependency.
 `Authorization: Bearer <JWT>`. `GET /api/entities` returns the
 available `{name, label}` entries. `GET /api/entities/:name` returns
 `{name, label, browsing, pk, columns, inputs, foreignKeys, rows, versions, window}`,
-with only `{name, label, type, nullable, writable}` for each readable column. Keys identify rows for
+with `{name, label, type, nullable, writable, constraints}` for each visible readable column.
+SSOT `visible: false` hides a column without removing its internal key from rows;
+the generated user ID uses this setting and remains non-writable. Keys identify rows for
 editing/deletion; nullability controls the form's explicit "Ninguna" option.
 `inputs` describes writable input names, labels, types, nullability, type constraints
 and whether omission on update preserves the stored value. A write-only password
@@ -421,7 +432,7 @@ input is available to the editor without exposing the stored hash as a column.
 `foreignKeys` supplies each editable relationship's name, target entity, mapping
 from input names to referenced columns, and readable display fields. The editor
 loads the referenced entities and their parent relationships through the
-authenticated API when loading a spreadsheet. Tabs and reference loaders share
+authenticated API when loading a spreadsheet. Sheets and reference loaders share
 complete datasets and in-flight requests within the authenticated session.
 
 `src/backend/browsing.ts` supplies the app's 200-row cutoff, existing 10-row page
@@ -476,9 +487,9 @@ missing rows on deletion return 404, invalid input returns 400, and database con
 conflicts return 409. Unexpected failures return 500 without exposing SQL details.
 The old `/poc/*` handlers were replaced by this shared API.
 
-The types in `src/backend/api-contract.ts` derive field names, value types,
-nullability, and primary keys from the backend definitions. Browser code can
-import this contract with `import type`.
+Backend types in `src/backend/api-contract.ts` derive concrete field names, value
+types, nullability and primary keys from the SSOT. Type checks also verify that
+those responses satisfy the independent browser protocol.
 
 ```sh
 npm run test:api
@@ -490,12 +501,20 @@ column security, FK selectors and bulk-deletion tests. `test:crud` requires
 PostgreSQL plus the configured initial/app identities. It creates and removes
 owned scratch databases, starts the real server on an available port (`PORT=0`),
 and exercises HTTP CRUD, composite keys, dependency previews and atomic bulk
-deletion with the app role. Authentication checks cover concurrent cold starts,
+deletion with the app role. SQL-injection regressions cover literal hostile values,
+query identifiers/direction/pagination, row keys, bulk operations
+and authentication while checking that unrelated rows remain intact. Authentication checks cover concurrent cold starts,
 bootstrap credentials, migration of existing accounts, concurrent recovery-code
 reuse, generic user CRUD and session revocation. Cache tests cover shared requests,
 invalidation races and logout. Database tests cover the 200/201-row boundary,
 client/server query parity, concurrent versioned saves and authenticated live
 notifications.
+
+For browser checks, set `BROWSER_BIN` to an installed Chromium browser executable,
+then run `npm run test:ui`. The test uses a temporary browser profile and scratch
+DB, checks mobile scrolling/sticky geometry and desktop docking, and exercises
+navigation, typed filters and dropdown validity against the real API. Set
+`UI_SCREENSHOT` to an output PNG path to capture the mobile view.
 
 The selected contributions from PRs #15, #16 and #6, their authors, and the
 compatibility adjustments are recorded in [PR integration notes](docs/pr-integration.md).
