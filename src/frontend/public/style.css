@@ -3,18 +3,14 @@
 [hidden] { display: none !important; }
 body { margin: 0; }
 main { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
-h1 { font-size: 2rem; margin: 4px 0 8px; letter-spacing: -.03em; color: #107c41; }
 h2 { font-size: 1.2rem; margin: 0; }
 h3 { font-size: 1.1rem; margin: 0 0 12px; color: #201f1e; }
-header p { color: #605e5c; margin: 0; }
-.eyebrow { font-size: .75rem; letter-spacing: .15em; font-weight: 700; color: #107c41; margin-bottom: 2px; }
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
-.user-nav { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.user-nav { margin-left: auto; display: flex; align-items: center; gap: 10px; margin-top: 6px; }
 .session-info { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
 .user-badge { color: #201f1e; background: #edebe9; padding: 5px 10px; border-radius: 4px; font-size: .85rem; }
 .unauthenticated-notice { background: white; border: 1px solid #d2d0ce; border-radius: 6px; padding: 36px 24px; text-align: center; max-width: 500px; margin: 40px auto; }
 .unauthenticated-notice h2 { font-size: 1.3rem; margin-bottom: 8px; color: #107c41; }
-.unauthenticated-notice p { color: #605e5c; margin-bottom: 20px; font-size: .95rem; }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 input, select, button { font: inherit; border: 1px solid #d2d0ce; border-radius: 4px; padding: 6px 10px; background: white; color: inherit; }
 button { cursor: pointer; font-weight: 600; }

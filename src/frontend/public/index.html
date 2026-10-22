@@ -10,11 +10,6 @@
 <body>
     <main>
         <header class="page-header">
-            <div>
-                <p class="eyebrow">Gestión Académica</p>
-                <h1>Planillas de Datos</h1>
-                <p>Consulta y administración de materias, planes de estudio y entidades relacionadas.</p>
-            </div>
             <div class="user-nav">
                 <div id="session" class="session-info" hidden>
                     <span class="user-badge"><strong id="session-user"></strong></span>
@@ -28,7 +23,6 @@
 
         <div id="unauthenticated-notice" class="unauthenticated-notice" hidden>
             <h2>Acceso a las planillas</h2>
-            <p>Iniciá sesión con tu cuenta para ver y editar las materias, pabellones y planes de estudio.</p>
             <button id="login-prompt-btn" type="button" class="primary">Iniciar sesión</button>
         </div>
 
@@ -47,7 +41,6 @@
         <section id="authentication" aria-label="Autenticación">
             <p id="auth-status" role="alert"></p>
             <form id="login-form">
-                <h3>Iniciar sesión</h3>
                 <div class="field">
                     <label for="login-user">Usuario</label>
                     <input id="login-user" name="usuario" autocomplete="username" required minlength="3" maxlength="64">
