@@ -1,11 +1,12 @@
 import type {ApiError, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/browser-contract.js';
 import type {Problem} from 'system-definition';
 import type {EntityName as ChangedEntity, EntityQuery} from '../backend/browser-contract.js';
+import {messageOf} from './messages.js';
 
 export class ApiRequestError extends Error {
     readonly problems: readonly Problem[];
     constructor(message: string, problems: readonly Problem[] = []) {
-        super(message);
+        super(problems.length ? problems.map(problem => messageOf(problem)).join(' ') : message);
         this.problems = problems;
     }
 }

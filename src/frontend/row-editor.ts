@@ -110,7 +110,7 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Loaded
         problems: (problems: readonly Problem[]) => {
             for (const reader of readers) {
                 reader.error.textContent = problems.filter(problem => problem.field !== null && reader.names.includes(problem.field))
-                    .map(messageOf).join('; ');
+                    .map(problem => messageOf(problem, entity.inputs.find(column => column.name === problem.field)?.constraints)).join('; ');
                 reader.field.classList.toggle('has-error', !!reader.error.textContent);
             }
         },
