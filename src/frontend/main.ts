@@ -1,8 +1,9 @@
 import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck, EntityQuery} from '../backend/browser-contract.js';
-import {ApiRequestError, checkDeleteDependencies, createRow, deleteRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
+import {ApiRequestError, checkDeleteDependencies, createRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
 import {element} from './dom.js';
+import {actionButton, setActionLabel} from './action-button.js';
 import {createTableNavigation} from './table-navigation.js';
 import {reviewRow} from './review-row.js';
 import {initializeAuthentication} from './auth-ui.js';
@@ -46,14 +47,6 @@ async function run(work: () => Promise<void>): Promise<void> {
     }
 }
 
-function button(label: string, action: () => void, className = ''): HTMLButtonElement {
-    const node = element('button', label);
-    node.type = 'button';
-    if (className) node.className = className;
-    node.onclick = action;
-    return node;
-}
-
 function rowKey(entity: EntityResponse, row: Row): EntityKey {
     const values: Readonly<Record<string, Value>> = row;
     return Object.fromEntries(entity.pk.map(name => [name, values[name]])) as EntityKey;
@@ -76,24 +69,6 @@ async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () =>
         cache.invalidate(entity.name);
         await refresh();
         status.textContent = previous ? 'Guardado' : 'Fila agregada correctamente.';
-    });
-}
-
-async function onDeleteRow(entity: EntityResponse, row: Row): Promise<void> {
-    if (!await canLeaveView()) return;
-    const desc = Object.values(rowKey(entity, row)).join(' · ');
-    const name = labels[entity.name] ?? entity.name;
-    const confirmed = await confirmAction({
-        title: `Eliminar de ${name}`,
-        message: `¿Eliminar permanentemente "${desc}"? Esta acción no se puede deshacer.`,
-        confirmText: 'Eliminar fila',
-        danger: true,
-    });
-    if (!confirmed) return;
-    await run(async () => {
-        await deleteRow(entity.name, rowKey(entity, row));
-        cache.invalidate(entity.name);
-        await show(entity.name);
     });
 }
 
@@ -173,14 +148,14 @@ async function show(name: EntityName): Promise<void> {
     const selectionStatus = element('span');
     selectionStatus.setAttribute('role', 'status');
     selectionStatus.setAttribute('aria-live', 'polite');
-    const deleteSelectedButton = button('Borrar todos los seleccionados', () => void onDeleteSelected(), 'danger');
+    const deleteSelectedButton = actionButton('Borrar todos los seleccionados', 'delete', () => void onDeleteSelected(), 'danger');
     deleteSelectedButton.disabled = true;
     toolbar.append(element('h2', title), count, filterInput, deleteSelectedButton, selectionStatus);
-    toolbar.append(button('Actualizar', () => { void run(async () => {
+    toolbar.append(actionButton('Actualizar', 'refresh', () => { void run(async () => {
         if (dirty() && !await confirmAction({title: 'Descartar borrador', message: 'Actualizar descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar y actualizar', danger: true})) return;
         await refresh();
     }); }));
-    toolbar.append(button('+ Agregar fila', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary'));
+    toolbar.append(actionButton('Agregar fila', 'add', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary'));
 
     async function refresh(): Promise<void> {
         const revision = ++queryRevision;
@@ -258,7 +233,7 @@ async function show(name: EntityName): Promise<void> {
         const check = ++selectionCheck;
         const rows = [...selectedRows.values()];
         deleteSelectedButton.disabled = true;
-        deleteSelectedButton.textContent = `Borrar todos los seleccionados (${rows.length})`;
+        setActionLabel(deleteSelectedButton, `Borrar seleccionados (${rows.length})`);
         if (!rows.length) {
             selectionStatus.textContent = '';
             return;
@@ -328,8 +303,8 @@ async function show(name: EntityName): Promise<void> {
     const pagination = element('div');
     pagination.className = 'pagination';
     const pageSpan = element('span');
-    const prevBtn = button('◀ Anterior', () => { if (page > 1) void changeQuery({...query(), page: page - 1}); });
-    const nextBtn = button('Siguiente ▶', () => { void changeQuery({...query(), page: page + 1}); });
+    const prevBtn = actionButton('Anterior', 'previous', () => { if (page > 1) void changeQuery({...query(), page: page - 1}); });
+    const nextBtn = actionButton('Siguiente', 'next', () => { void changeQuery({...query(), page: page + 1}); });
     pagination.append(prevBtn, pageSpan, nextBtn);
 
     const scroll = element('div');
@@ -355,7 +330,7 @@ async function show(name: EntityName): Promise<void> {
         selectVisible.disabled = paged.length === 0;
         selectVisible.checked = paged.length > 0 && paged.every(row => selectedRows.has(selectionKey(row)));
         selectVisible.indeterminate = paged.some(row => selectedRows.has(selectionKey(row))) && !selectVisible.checked;
-        deleteSelectedButton.textContent = `Borrar todos los seleccionados (${selectedRows.size})`;
+        setActionLabel(deleteSelectedButton, `Borrar seleccionados (${selectedRows.size})`);
 
         tbody.replaceChildren();
 
@@ -372,10 +347,10 @@ async function show(name: EntityName): Promise<void> {
             for (const cell of editor.cells) tr.insertCell().append(cell.field);
 
             const actions = tr.insertCell();
-            actions.className = 'actions';
+            actions.className = 'row-actions';
             actions.append(
-                button('Guardar', () => void saveRow(entity, editor, () => afterSave(editor)), 'primary'),
-                button('Cancelar', () => {
+                actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor)), 'primary'),
+                actionButton('Cancelar', 'cancel', () => {
                     void confirmAction({
                         title: 'Descartar nueva fila',
                         message: '¿Descartar los datos ingresados para la nueva fila? Los cambios no guardados se perderán.',
@@ -422,14 +397,13 @@ async function show(name: EntityName): Promise<void> {
             for (const cell of editors.get(row)!.cells) tr.insertCell().append(cell.field);
 
             const actions = tr.insertCell();
-            actions.className = 'actions';
-            actions.append(button('Ver datos actuales', () => void run(async () => {
+            actions.className = 'row-actions';
+            actions.append(actionButton('Ver datos actuales', 'review', () => void run(async () => {
                 cache.invalidate(name);
                 const query = {where: rowKey(entity, row)} as EntityQuery;
                 const current = entityPage(await load(name, query), query).rows[0];
                 reviewRow(entity, row, editors.get(row)!.read(), current);
             })));
-            actions.append(button('Eliminar', () => void onDeleteRow(entity, row), 'danger'));
         });
     }
 

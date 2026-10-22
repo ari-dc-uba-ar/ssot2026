@@ -1,0 +1,36 @@
+import {element} from './dom.js';
+
+const icons = {
+    add: 'M12 5v14M5 12h14',
+    delete: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',
+    refresh: 'M20 7v5h-5M4 17v-5h5M5 8a7 7 0 0 1 12-3l3 7M4 12l3 7a7 7 0 0 0 12-3',
+    review: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+    save: 'M5 12l4 4L19 6',
+    cancel: 'M6 6l12 12M6 18L18 6',
+    previous: 'M15 5l-7 7 7 7',
+    next: 'M9 5l7 7-7 7',
+} as const;
+
+export function setActionLabel(button: HTMLButtonElement, label: string): void {
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.querySelector('.action-label')!.textContent = label;
+}
+
+export function actionButton(label: string, icon: keyof typeof icons, action: () => void, className = ''): HTMLButtonElement {
+    const button = element('button');
+    button.type = 'button';
+    button.className = `icon-action ${className}`;
+    button.onclick = action;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(svg.namespaceURI, 'path');
+    path.setAttribute('d', icons[icon]);
+    svg.append(path);
+    const text = element('span');
+    text.className = 'action-label';
+    button.append(svg, text);
+    setActionLabel(button, label);
+    return button;
+}
