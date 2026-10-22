@@ -44,6 +44,16 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.toolbar h2')?.textContent === 'Planes de Estudio'"));
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').open"), false);
                 assert.equal(await evaluate("return document.querySelectorAll('tbody tr').length"), 10);
+                await evaluate(`document.querySelector('[aria-label^="Filtrar por columnas"]').click();
+                    const input=document.querySelector('.column-filters [name=plan]');
+                    input.closest('fieldset').previousElementSibling.querySelector('input').click();
+                    input.value='201'; document.querySelector('.column-filters form').requestSubmit();`);
+                await until(() => evaluate("return !document.querySelector('.column-filters') && document.querySelectorAll('tbody tr').length === 1"));
+                assert.equal(await evaluate("return document.querySelector('tbody [name=plan]').value"), '201');
+                await evaluate(`document.querySelector('[aria-label^="Filtrar por columnas"]').click();
+                    [...document.querySelectorAll('.column-filters button')].find(b=>b.textContent==='Quitar filtros').click();
+                    document.querySelector('.column-filters form').requestSubmit();`);
+                await until(() => evaluate("return !document.querySelector('.column-filters') && document.querySelectorAll('tbody tr').length === 10"));
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 500, deviceScaleFactor: 1, mobile: true});
                 await evaluate("const scroll=document.querySelector('.table-scroll'); scroll.scrollTop=100; scroll.scrollLeft=100;");
                 await until(() => evaluate("return document.querySelector('.table-scroll').scrollTop > 0"));

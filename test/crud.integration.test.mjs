@@ -38,7 +38,7 @@ test('server startup, authenticated CRUD and atomic bulk deletion use the app co
             const send = (entity, method, body) => request(`/api/entities/${entity}`, method, body);
             await t.test('real entry point serves health, frontend and authenticated API', async () => {
                 assert.deepEqual(await (await request('/health')).json(), {ok: true});
-                assert.match(await (await request('/')).text(), /id="tabs"/);
+                assert.match(await (await request('/')).text(), /id="tables-panel"/);
                 assert.equal((await request('/assets/main.js')).status, 200);
                 assert.equal((await request('/api/entities')).status, 401);
                 const login = await request('/api/auth/login', 'POST', {usuario: 'crud-admin', contrasena: password});

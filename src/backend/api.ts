@@ -4,6 +4,7 @@ import {completeEntity, instanceProblems, type EntityInfo} from 'system-definiti
 import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
 import {myContext, myEntities, entityLabels} from './system.js';
 import {browsing} from './browsing.js';
+import {inputConstraints} from './value-types.js';
 import {readQuery, queryEntity} from './entity-query.js';
 import type {EntityName} from './api-contract.js';
 import type {ApiError, DeleteDependencyBlocker, DeleteDependencyCheck, EntityForeignKey, EntityNamesResponse, EntityResponse} from './api-contract.js';
@@ -37,7 +38,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
         const table = entityTable(entity.name);
         const keys = Object.fromEntries(entity.pk.map(name => [name, entity.fields[name]!]));
         const columns = Object.values(readable).filter(field => field.visible)
-            .map(({name, label, type, nullable, writable}) => ({name, label, type, nullable, writable}));
+            .map(({name, label, type, nullable, writable}) => ({name, label, type, nullable, writable, constraints: inputConstraints[type]}));
         const inputs = Object.values(writable).map(({inputName: name, inputType: type, inputConstraints: constraints, label, nullable, transform}) => ({
             name, label, type, nullable, constraints, optionalOnUpdate: transform === 'password',
         }));

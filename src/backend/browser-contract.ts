@@ -16,8 +16,8 @@ export type EntityQuery = {
     where?: Readonly<Partial<EntityRow>>;
 };
 export type EntityWindow = {kind: 'complete'} | {kind: 'page'; total: number; matched: number; page: number};
-export type EntityColumn = {name: string; label: string; type: FieldType; nullable: boolean; writable: boolean};
-export type EntityInputColumn = Omit<EntityColumn, 'writable'> & {constraints: InputConstraints; optionalOnUpdate: boolean};
+export type EntityColumn = {name: string; label: string; type: FieldType; nullable: boolean; writable: boolean; constraints: InputConstraints};
+export type EntityInputColumn = Omit<EntityColumn, 'writable'> & {optionalOnUpdate: boolean};
 export type EntityForeignKey = {name: string; entity: EntityName; fields: Readonly<Record<string, string>>; displayFields: readonly string[]};
 export type EntityResponse = {
     name: EntityName;

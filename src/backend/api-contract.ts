@@ -30,7 +30,7 @@ export type EntityCreate<E extends EntityName> = E extends EntityName ? InputFie
 
 type Fields<E extends EntityName> = EntityInfoOf<typeof myRecords, (typeof myEntities)[E]>['fields'];
 type DisplayColumn<T> = T extends {name: string; label: string; type: string; nullable: boolean}
-    ? Pick<T, 'name' | 'label' | 'type' | 'nullable'> & {writable: boolean} : never;
+    ? Pick<T, 'name' | 'label' | 'type' | 'nullable'> & {writable: boolean; constraints: InputConstraints} : never;
 export type EntityColumn<E extends EntityName> = E extends EntityName
     ? DisplayColumn<Fields<E>[AllowedNames<E, 'readable'> & AllowedNames<E, 'visible'> & keyof Fields<E>]> : never;
 type InputColumn<T, N, D> = T extends {label: string; type: string; nullable: boolean}

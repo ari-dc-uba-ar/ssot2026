@@ -2,6 +2,7 @@ import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, 
 import {ApiRequestError, checkDeleteDependencies, createRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
+import {editColumnFilters} from './column-filters.js';
 import {element} from './dom.js';
 import {actionButton, setActionLabel} from './action-button.js';
 import {createTableNavigation} from './table-navigation.js';
@@ -104,6 +105,7 @@ async function show(name: EntityName): Promise<void> {
     let columns = createRowEditor(entity, sources, undefined, false).cells;
 
     let filter = '';
+    let where: NonNullable<EntityQuery['where']> = {};
     let sortCol = '';
     let sortAsc = true;
     let page = 1;
@@ -113,14 +115,15 @@ async function show(name: EntityName): Promise<void> {
     const selectionKey = (row: Row) => JSON.stringify(rowKey(entity, row));
     let selectionCheck = 0;
     const pageSize = entity.browsing.pageSize;
-    const query = (): EntityQuery => ({filter, ...(sortCol ? {sort: sortCol} : {}), direction: sortAsc ? 'asc' : 'desc', page}) as EntityQuery;
+    const query = (): EntityQuery => ({filter, ...(sortCol ? {sort: sortCol} : {}), direction: sortAsc ? 'asc' : 'desc', page, where});
     const dirty = () => !!adding || [...editors.values()].some(editor => editor.dirty());
     canLeaveView = async () => !dirty() || confirmAction({title: 'Descartar borrador',
         message: 'Cambiar de vista descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar', danger: true});
     let queryRevision = 0;
-    const changeQuery = async (nextQuery: EntityQuery) => {
-        if (!await canLeaveView()) { filterInput.value = filter; return; }
+    const changeQuery = async (nextQuery: EntityQuery): Promise<boolean> => {
+        if (!await canLeaveView()) { filterInput.value = filter; return false; }
         filter = nextQuery.filter ?? '';
+        where = nextQuery.where ?? {};
         sortCol = nextQuery.sort ?? '';
         sortAsc = nextQuery.direction !== 'desc';
         page = nextQuery.page ?? 1;
@@ -130,12 +133,14 @@ async function show(name: EntityName): Promise<void> {
         table.inert = true;
         try {
             const next = await load(name, query());
-            if (revision !== queryRevision || generation !== viewGeneration) return;
+            if (revision !== queryRevision || generation !== viewGeneration) return false;
             entity = next;
             render();
+            return true;
         } catch (error) {
             if (!(error instanceof DOMException && error.name === 'AbortError')) status.textContent = error instanceof Error ? error.message : 'No se pudo cargar la página.';
         } finally { if (revision === queryRevision) table.inert = false; }
+        return false;
     };
 
     const toolbar = element('div');
@@ -152,7 +157,9 @@ async function show(name: EntityName): Promise<void> {
     selectionStatus.setAttribute('aria-live', 'polite');
     const deleteSelectedButton = actionButton('Borrar todos los seleccionados', 'delete', () => void onDeleteSelected(), 'danger');
     deleteSelectedButton.disabled = true;
-    toolbar.append(element('h2', title), count, filterInput, deleteSelectedButton, selectionStatus);
+    const columnFilters = actionButton('Filtrar por columnas', 'filter', () =>
+        editColumnFilters(entity, where, selected => changeQuery({...query(), where: selected, page: 1})));
+    toolbar.append(element('h2', title), count, filterInput, columnFilters, deleteSelectedButton, selectionStatus);
     toolbar.append(actionButton('Actualizar', 'refresh', () => { void run(async () => {
         if (dirty() && !await confirmAction({title: 'Descartar borrador', message: 'Actualizar descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar y actualizar', danger: true})) return;
         await refresh();
@@ -330,7 +337,8 @@ async function show(name: EntityName): Promise<void> {
         const start = (page - 1) * pageSize;
         const paged = result.rows;
 
-        count.textContent = filter ? `${result.matched} de ${result.total} ${unit}` : `${result.total} ${unit}`;
+        setActionLabel(columnFilters, `Filtrar por columnas (${Object.keys(where ?? {}).length})`);
+        count.textContent = filter || Object.keys(where ?? {}).length ? `${result.matched} de ${result.total} ${unit}` : `${result.total} ${unit}`;
         pageSpan.textContent = `Página ${page} de ${totalPages}`;
         prevBtn.disabled = page <= 1;
         nextBtn.disabled = page >= totalPages;
