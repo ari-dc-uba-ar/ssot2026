@@ -497,6 +497,12 @@ Backend types in `src/backend/api-contract.ts` derive concrete field names, valu
 types, nullability and primary keys from the SSOT. Type checks also verify that
 those responses satisfy the independent browser protocol.
 
+Static backend queries use `entitySql` to quote SSOT-checked column names and
+derive SELECT result types from their selected fields. Authentication reuses
+these selections, and bootstrap inputs are checked against the SSOT. The helper
+does not parse SQL clauses or validate the live database; parameterized values,
+runtime input validation and migration checks still serve those responsibilities.
+
 ```sh
 npm run test:api
 npm run test:crud

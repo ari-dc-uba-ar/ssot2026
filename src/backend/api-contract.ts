@@ -11,7 +11,7 @@ export type EntityQuery<E extends EntityName = EntityName> = E extends EntityNam
     filter?: string; sort?: keyof EntityRow<E> & string; direction?: 'asc' | 'desc'; page?: number;
     where?: Readonly<Partial<EntityRow<E>>>;
 } : never;
-type StoredRow<E extends EntityName> = EntityInstanceType<typeof myRecords, (typeof myEntities)[E]>;
+export type StoredRow<E extends EntityName> = EntityInstanceType<typeof myRecords, (typeof myEntities)[E]>;
 type Definitions<E extends EntityName> = (typeof myEntities)[E]['fields'];
 type AllowedNames<E extends EntityName, P extends 'readable' | 'writable' | 'visible'> = {
     [K in keyof (typeof myEntities)[E]['fields']]: (typeof myEntities)[E]['fields'][K] extends Record<P, false> ? never : K

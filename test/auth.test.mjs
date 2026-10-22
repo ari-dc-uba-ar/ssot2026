@@ -168,7 +168,7 @@ test('every authenticated account discovers and administers users through ordina
 test('column security excludes secrets from SELECT, response metadata and rows, including unexpected extra database fields', async t => {
     let selection;
     const {request} = await start(t, async sql => {
-        if (sql.includes('WHERE id = $1')) return {rows: [user]};
+        if (sql.includes('WHERE "id" = $1')) return {rows: [user]};
         selection = sql;
         return entityResult([{...user, contrasena_hash: 'private-hash', recuperacion_hashes: 'private-codes'}]);
     });

@@ -2,14 +2,18 @@ import express, {type Express, type RequestHandler, type Response} from 'express
 import type {Pool} from 'pg';
 import {jwtVerify, SignJWT} from 'jose';
 import {randomUUID} from 'node:crypto';
-import {entityTable} from './entity-write.js';
+import {entitySql} from './entity-sql.js';
 import {authenticationEntity} from './system.js';
 import {ApiFailure, apiErrorHandler, readObject} from './api-errors.js';
 import {createRecoveryCodes, hashPassword, hashRecoveryCode, readPassword, readUsername, verifyPassword} from './credentials.js';
-import type {AuthenticatedUser, LoginResponse, RecoveryCodesResponse} from './api-contract.js';
+import type {AuthenticatedUser, LoginResponse, RecoveryCodesResponse, StoredRow} from './api-contract.js';
 
-export const usersTable = entityTable(authenticationEntity);
-type UserSession = AuthenticatedUser & {version_sesion: string};
+const users = entitySql(authenticationEntity);
+const column = users.column;
+const session = users.select('id', 'usuario', 'version_sesion');
+const credentials = users.select(...session.fields, 'contrasena_hash');
+const passwordHash = users.select('contrasena_hash');
+type UserSession = Pick<StoredRow<typeof authenticationEntity>, typeof session.fields[number]>;
 const publicUser = ({id, usuario}: AuthenticatedUser): AuthenticatedUser => ({id, usuario});
 export function principal(res: Response): AuthenticatedUser {
     const user = res.locals['user'] as AuthenticatedUser | undefined;
@@ -42,7 +46,7 @@ export function createAuthentication(pool: Pick<Pool, 'query'>, secret = process
         } catch {
             throw new ApiFailure(401, 'La sesión venció o no es válida.');
         }
-        const {rows} = await pool.query<UserSession>(`SELECT id, usuario, version_sesion FROM ${usersTable} WHERE id = $1`, [identity.id]);
+        const {rows} = await session.query(pool, `WHERE ${column('id')} = $1`, [identity.id]);
         const user = rows[0];
         if (!user || user.version_sesion !== identity.version) throw new ApiFailure(401, 'La sesión venció o no es válida.');
         res.locals['user'] = publicUser(user);
@@ -87,8 +91,7 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
             if (!(error instanceof ApiFailure)) throw error;
             throw new ApiFailure(401, invalidCredentials);
         }
-        const {rows} = await pool.query<UserSession & {contrasena_hash: string}>(
-            `SELECT id, usuario, version_sesion, contrasena_hash FROM ${usersTable} WHERE usuario = $1`, [usuario]);
+        const {rows} = await credentials.query(pool, `WHERE ${column('usuario')} = $1`, [usuario]);
         const user = rows[0];
         const verified = await verifyPassword(password, user?.contrasena_hash);
         if (!verified || !user) throw new ApiFailure(401, invalidCredentials);
@@ -103,15 +106,15 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const password = await hashPassword(readPassword(body['contrasena']));
         const recovery = createRecoveryCodes();
         // One atomic update consumes the previous set and revokes every existing JWT.
-        const result = await pool.query(`UPDATE ${usersTable} SET contrasena_hash = $1, recuperacion_hashes = $2, version_sesion = $3
-            WHERE usuario = $4 AND recuperacion_hashes::jsonb ? $5 RETURNING id`,
+        const result = await pool.query(`UPDATE ${users.table} SET ${column('contrasena_hash')} = $1, ${column('recuperacion_hashes')} = $2, ${column('version_sesion')} = $3
+            WHERE ${column('usuario')} = $4 AND ${column('recuperacion_hashes')}::jsonb ? $5 RETURNING ${column('id')}`,
         [password, recovery.hashes, randomUUID(), usuario, hashRecoveryCode(body['codigo'])]);
         if (!result.rowCount) throw new ApiFailure(401, 'Usuario o código de recuperación incorrectos.');
         res.json({codes: recovery.codes} satisfies RecoveryCodesResponse);
     });
     router.get('/me', auth.requireUser, (_req, res) => { res.json(principal(res)); });
     router.post('/logout', auth.requireUser, async (_req, res) => {
-        await pool.query(`UPDATE ${usersTable} SET version_sesion = $1 WHERE id = $2`, [randomUUID(), principal(res).id]);
+        await pool.query(`UPDATE ${users.table} SET ${column('version_sesion')} = $1 WHERE ${column('id')} = $2`, [randomUUID(), principal(res).id]);
         res.sendStatus(204);
     });
     router.post('/password', auth.requireUser, limit, async (req, res) => {
@@ -119,12 +122,12 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const currentPassword = readPassword(body['contrasenaActual']);
         const password = readPassword(body['contrasena']);
         const id = principal(res).id;
-        const {rows} = await pool.query<{contrasena_hash: string}>(`SELECT contrasena_hash FROM ${usersTable} WHERE id = $1`, [id]);
+        const {rows} = await passwordHash.query(pool, `WHERE ${column('id')} = $1`, [id]);
         const previous = rows[0]?.contrasena_hash;
         if (!await verifyPassword(currentPassword, previous) || !previous) throw new ApiFailure(401, 'Contraseña actual incorrecta.');
         const recovery = createRecoveryCodes();
-        const result = await pool.query(`UPDATE ${usersTable} SET contrasena_hash = $1, recuperacion_hashes = $2, version_sesion = $3
-            WHERE id = $4 AND contrasena_hash = $5`, [await hashPassword(password), recovery.hashes, randomUUID(), id, previous]);
+        const result = await pool.query(`UPDATE ${users.table} SET ${column('contrasena_hash')} = $1, ${column('recuperacion_hashes')} = $2, ${column('version_sesion')} = $3
+            WHERE ${column('id')} = $4 AND ${column('contrasena_hash')} = $5`, [await hashPassword(password), recovery.hashes, randomUUID(), id, previous]);
         if (!result.rowCount) throw new ApiFailure(409, 'La cuenta cambió. Volvé a iniciar sesión.');
         res.json({codes: recovery.codes} satisfies RecoveryCodesResponse);
     });
@@ -132,11 +135,11 @@ export function registerAuthApi(app: Express, pool: Pick<Pool, 'query'>, auth: A
         const body = readObject(req.body, ['contrasena']);
         const password = readPassword(body['contrasena']);
         const id = principal(res).id;
-        const {rows} = await pool.query<{contrasena_hash: string}>(`SELECT contrasena_hash FROM ${usersTable} WHERE id = $1`, [id]);
+        const {rows} = await passwordHash.query(pool, `WHERE ${column('id')} = $1`, [id]);
         const previous = rows[0]?.contrasena_hash;
         if (!await verifyPassword(password, previous) || !previous) throw new ApiFailure(401, 'Contraseña actual incorrecta.');
         const recovery = createRecoveryCodes();
-        const result = await pool.query(`UPDATE ${usersTable} SET recuperacion_hashes = $1 WHERE id = $2 AND contrasena_hash = $3`, [recovery.hashes, id, previous]);
+        const result = await pool.query(`UPDATE ${users.table} SET ${column('recuperacion_hashes')} = $1 WHERE ${column('id')} = $2 AND ${column('contrasena_hash')} = $3`, [recovery.hashes, id, previous]);
         if (!result.rowCount) throw new ApiFailure(409, 'La cuenta cambió. Volvé a iniciar sesión.');
         res.json({codes: recovery.codes} satisfies RecoveryCodesResponse);
     });
