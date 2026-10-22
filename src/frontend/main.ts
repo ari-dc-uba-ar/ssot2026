@@ -27,7 +27,9 @@ let viewGeneration = 0;
 let allEntities: EntityName[] = [];
 let currentEntity: EntityName | null = null;
 const navigation = createTableNavigation(name => {
-    if (!workspace.disabled && currentEntity !== name) void run(() => selectTab(name));
+    if (workspace.disabled) return;
+    if (currentEntity === name) navigation.activate(name);
+    else void run(() => selectTab(name));
 });
 
 async function run(work: () => Promise<void>): Promise<void> {

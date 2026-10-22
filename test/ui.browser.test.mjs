@@ -61,6 +61,16 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await evaluate("document.querySelector('#open-tables').click()");
                 await send('Input.dispatchKeyEvent', {type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27});
                 await until(() => evaluate("return !document.querySelector('#tables-panel').open"));
+                await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+                await until(() => evaluate("return document.querySelector('#workspace').classList.contains('docked')"));
+                assert.equal(await evaluate("return document.querySelector('#open-tables').hidden && !document.querySelector('#tables-panel').matches(':modal')"), true);
+                assert.equal(await evaluate("const scroll=document.querySelector('.table-scroll'); return scroll.scrollWidth <= scroll.clientWidth"), true);
+                assert.equal(await evaluate("return getComputedStyle(document.querySelector('.row-actions .action-label')).display !== 'none'"), true);
+                // Long API labels must make docking depend on content, not just screen size.
+                await evaluate("document.querySelector('#table-list [data-entity=planes]').textContent='A very long table label '.repeat(20)");
+                await until(() => evaluate("return !document.querySelector('#workspace').classList.contains('docked')"));
+                await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
+                await until(() => evaluate("return !document.querySelector('#open-tables').hidden"));
                 assert.deepEqual(errors, []);
             });
         } finally {

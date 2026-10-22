@@ -92,3 +92,10 @@ thead .row-actions, thead .selection-col { z-index: 3; background: #f3f2f1; }
 #open-tables, .session-info button { min-height: 44px; }
 #open-tables { min-width: 44px; }
 .user-badge { display: none; }
+
+#workspace { display: grid; grid-template-columns: minmax(0, 1fr); column-gap: 8px; }
+#workspace.docked { grid-template-columns: max-content minmax(0, 1fr); }
+.docked #tables-panel { position: static; height: 100%; max-height: none; max-width: none; box-shadow: none; }
+.docked #close-tables { display: none; }
+.roomy-actions .action-label { display: inline; }
+.selection-col input[type=checkbox] { width: 24px; height: 24px; }
