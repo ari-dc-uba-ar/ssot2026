@@ -28,6 +28,14 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await evaluate("document.querySelector('#login-prompt-btn').click(); document.querySelector('#login-user').value='browser'; document.querySelector('#login-password').value='browser-test-password'; document.querySelector('#login-form').requestSubmit();");
                 await until(() => evaluate("return !document.querySelector('#workspace').disabled && !!document.querySelector('table')"));
                 assert.equal(await evaluate("return document.querySelectorAll('#login-form h3').length"), 0);
+                assert.deepEqual(await evaluate(`return import('/assets/value-field.js').then(({createValueField}) => {
+                    const column={name:'choice',label:'Choice',type:'regularidad',nullable:true,optionalOnUpdate:false,constraints:{minLength:null,maxLength:null,options:['Libre','Regular']}};
+                    const nullable=createValueField(column,null), required=createValueField({...column,nullable:false});
+                    const bool=createValueField({...column,type:'boolean'},false);
+                    return {value:nullable.read(),none:nullable.input.options[0].text,
+                        checkboxes:nullable.field.querySelectorAll('input[type=checkbox]').length,
+                        optionalValid:nullable.input.checkValidity(),requiredValid:required.input.checkValidity(),falseValue:bool.read()};
+                })`), {value:null,none:'Ninguna',checkboxes:0,optionalValid:true,requiredValid:false,falseValue:false});
                 await evaluate("document.querySelector('#open-tables').click()");
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').matches(':modal')"), true);
                 await evaluate("const input=document.querySelector('#table-search'); input.value='planes'; input.dispatchEvent(new Event('input'))");

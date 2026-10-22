@@ -1,58 +1,15 @@
-import type {EntityInputColumn, EntityResponse, EntityRow} from '../backend/browser-contract.js';
+import type {EntityResponse, EntityRow} from '../backend/browser-contract.js';
 import type {Problem} from 'system-definition';
 import {createReferenceFields} from './foreign-keys.js';
 import type {LoadedReferenceSource} from './reference-sources.js';
 import {createReferenceEditors} from './reference-editor.js';
 import {element} from './dom.js';
 import {messageOf} from './messages.js';
+import {createValueField} from './value-field.js';
 
-type Column = EntityInputColumn;
 export type Row = EntityRow;
 export type Value = EntityRow[string];
 type FieldReader = {label: string; field: HTMLElement; names: string[]; error: HTMLElement; read: () => (readonly [string, Value])[]};
-type Editor = {input: HTMLInputElement | HTMLSelectElement; read: () => Value; requiredWhenEnabled?: boolean};
-
-function integerEditor(constraints: Column['constraints']): Editor {
-    const input = element('input');
-    input.type = 'number';
-    input.step = '1';
-    if (constraints.minimum !== undefined) input.min = String(constraints.minimum);
-    return {input, read: () => input.valueAsNumber, requiredWhenEnabled: true};
-}
-
-function enumEditor(constraints: Column['constraints']): Editor {
-    const input = element('select');
-    input.add(new Option('Seleccionar…', ''));
-    for (const value of constraints.options ?? []) input.add(new Option(value, value));
-    return {input, read: () => input.value, requiredWhenEnabled: true};
-}
-
-// Each supported display type has one editor. Adding a backend type requires a renderer.
-const editors = {
-    text: (_constraints) => {
-        const input = element('input');
-        return {input, read: () => input.value};
-    },
-    password: constraints => {
-        const input = element('input');
-        input.type = 'password';
-        input.autocomplete = 'new-password';
-        input.minLength = constraints.minLength ?? 0;
-        input.maxLength = constraints.maxLength ?? 524288;
-        return {input, read: () => input.value};
-    },
-    integer: integerEditor,
-    posInteger: integerEditor,
-    regularidad: enumEditor,
-    cuatrimestre: enumEditor,
-    boolean: (_constraints) => {
-        const input = element('select');
-        input.add(new Option('No', 'false'));
-        input.add(new Option('Sí', 'true'));
-        return {input, read: () => input.value === 'true'};
-    },
-} satisfies Record<Column['type'], (constraints: Column['constraints']) => Editor>;
-
 // The existing metadata-driven editor, shared by spreadsheet insertion and editing.
 export function createRowEditor(entity: EntityResponse, sources: readonly LoadedReferenceSource[], row?: Row, active = true) {
     const id = crypto.randomUUID();
@@ -60,11 +17,11 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Loaded
     const remote = sources.some(source => source.target.window.kind === 'page');
     const remoteReaders = remote ? createReferenceEditors(entity, sources, values, active) : [];
     const references = createReferenceFields(remote ? [] : sources, values);
-    const controls = new Map<string, {input: HTMLSelectElement; columns: Column[]}>();
+    const controls = new Map<string, HTMLSelectElement>();
     const refreshReferences = () => {
-        for (const [name, {input, columns}] of controls) {
+        for (const [name, input] of controls) {
             const options = references.options(name);
-            const empty = new Option(columns.every(column => column.nullable) ? 'Ninguna' : 'Seleccionar…', '');
+            const empty = new Option('Ninguna', '');
             input.replaceChildren(empty);
             input.title = options.length ? '' : 'No hay opciones compatibles con la selección actual.';
             options.forEach((option, index) => input.add(new Option(option.label, String(index + 1))));
@@ -99,7 +56,7 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Loaded
             input.id = `field-${id}-${group.name}`;
             input.name = group.name;
             input.required = !columns.every(column => column.nullable);
-            controls.set(group.name, {input, columns});
+            controls.set(group.name, input);
             input.onchange = () => {
                 const option = input.value === '' ? null : references.options(group.name)[Number(input.value) - 1]!;
                 references.change(group.name, option?.value ?? null, option?.key);
@@ -114,36 +71,13 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Loaded
             field.append(label, input, error);
             return [{label: label.textContent!, field, names: group.fields, error, read: () => group.fields.map(name => [name, references.value(name)] as const)}];
         }
-        const editor: Editor = editors[column.type](column.constraints);
-        editor.input.id = `field-${id}-${column.name}`;
-        editor.input.name = column.name;
-        editor.input.value = String(values[column.name] ?? (column.type === 'boolean' ? false : ''));
-        const optional = !!row && column.optionalOnUpdate;
-        if (optional && editor.input instanceof HTMLInputElement) editor.input.placeholder = 'Sin cambios';
-        editor.input.required = (!column.nullable || !!editor.requiredWhenEnabled) && !optional;
-        const label = element('label', column.label);
-        if (optional) label.append(document.createTextNode(' (opcional)'));
-        label.htmlFor = editor.input.id;
-        const field = element('div');
-        field.className = 'field';
-        field.append(label, editor.input);
-        const empty = element('input');
-        empty.type = 'checkbox';
-        empty.checked = column.nullable && values[column.name] == null;
-        if (column.nullable) {
-            const nullLabel = element('label');
-            nullLabel.className = 'null-option';
-            nullLabel.append(empty, document.createTextNode(' Ninguna'));
-            field.append(nullLabel);
-            empty.onchange = () => { editor.input.disabled = empty.checked; };
-        }
-        editor.input.disabled = empty.checked;
+        const editor = createValueField(column, values[column.name], !!row && column.optionalOnUpdate);
         const error = element('span');
         error.className = 'field-error';
-        field.append(error);
-        return [{label: label.textContent!, field, names: [column.name], error, read: () => {
-            const value = empty.checked ? null : editor.read();
-            return optional && value === '' ? [] : [[column.name, value] as const];
+        editor.field.append(error);
+        return [{label: editor.label, field: editor.field, names: [column.name], error, read: () => {
+            const value = editor.read();
+            return value === undefined ? [] : [[column.name, value] as const];
         }}];
     });
     refreshReferences();
