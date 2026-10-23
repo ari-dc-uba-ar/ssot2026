@@ -196,6 +196,26 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                         await writeFile(`${process.env.UI_SCREENSHOT}.${entity}.png`, Buffer.from(data, 'base64'));
                     }
                 }
+                // A required reference to an empty entity blocks insertion and links to that entity.
+                // Runs last because it removes the sample rows; "Actualizar" reloads them, as no live event reports SQL changes.
+                const notice = "return [document.querySelector('[aria-label=\"Agregar fila\"]').disabled, ...[...document.querySelectorAll('.reference-notice > *')].map(e=>e.getAttribute('aria-label') ?? e.textContent)]";
+                await pool.query('DELETE FROM ssot.enrolamientos; DELETE FROM ssot.materias; DELETE FROM ssot.estudiantes; DELETE FROM ssot.departamentos');
+                await evaluate("document.querySelector('[data-entity=enrolamientos]').click()");
+                await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Inscripciones'"));
+                await evaluate("document.querySelector('[aria-label=Actualizar]').click()");
+                await until(async () => !await evaluate("return document.querySelector('#workspace').disabled") && (await evaluate(notice)).length > 1);
+                assert.deepEqual(await evaluate(notice), [true, '⚠ Para agregar inscripciones primero tiene que haber al menos 1 estudiante y 1 materia.', 'Ir a Estudiantes', 'Ir a Materias']);
+                await evaluate("document.querySelector('.reference-notice [aria-label=\"Ir a Materias\"]').click()");
+                await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Materias'"));
+                assert.deepEqual(await evaluate(notice), [true, '⚠ Para agregar materias primero tiene que haber al menos 1 departamento.', 'Ir a Departamentos']);
+                await pool.query("INSERT INTO ssot.departamentos (cod_dep, departamento) VALUES ('D1', 'Computación')");
+                await evaluate("document.querySelector('[aria-label=Actualizar]').click()");
+                await until(async () => !await evaluate("return document.querySelector('#workspace').disabled") && (await evaluate(notice)).length === 1);
+                await evaluate("document.querySelector('[aria-label=\"Agregar fila\"]').click()");
+                await until(() => evaluate("return [...document.querySelectorAll('tr.new-row select[aria-label]')].every(select=>select.options.length)"));
+                assert.deepEqual(await evaluate("return [...document.querySelectorAll('tr.new-row select[aria-label]')].map(select=>select.options[0].text)"), ['Elegí una opción…', 'Ninguna']);
+                await evaluate("document.querySelector('tr.new-row [aria-label=Cancelar]').click(); document.querySelector('#confirm-ok').click()");
+                await until(() => evaluate("return !document.querySelector('tr.new-row')"));
                 assert.deepEqual(errors, []);
                 await evaluate("document.querySelector('#manage-account').click()");
                 assert.equal(await evaluate("return document.querySelector('#account').matches(':modal') && !document.querySelector('#account-management').hidden && document.querySelector('#authentication').hidden"), true);
