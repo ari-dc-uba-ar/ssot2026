@@ -386,6 +386,10 @@ Each data-column header has a pin toggle. One column at a time can be kept next
 to the row selectors; unpinning restores the API order. The pin survives paging,
 sorting and refreshes of the current sheet, and moving it preserves unsaved input.
 Its width is capped on narrow screens so scrolling data remains accessible.
+Colored arrows in the fixed header cells show which directions have off-screen
+columns. Clicking an arrow scrolls by the available width after excluding the
+fixed columns. Indicators update on scrolling, resizing and sheet changes, and
+disappear when the sheet fits.
 
 The sheet supports inline editing, insertion, text search, typed column equality
 filters, sorting, hybrid pagination and selection-based deletion confirmations. Existing rows save on change after their

@@ -122,6 +122,17 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await evaluate("document.querySelector('th[data-column=plan] .column-pin').click()");
                 assert.equal(await evaluate("return document.querySelectorAll('.pinned-col').length"), 0);
                 assert.deepEqual(await evaluate("return [...document.querySelectorAll('thead [data-column]')].map(cell=>cell.dataset.column)"), ['plan','descripcion']);
+                await evaluate("document.querySelector('.table-scroll').scrollLeft=0");
+                await until(() => evaluate("return document.querySelector('.scroll-cue[data-direction=left]').disabled && !document.querySelector('.scroll-cue[data-direction=right]').disabled"));
+                assert.equal(await evaluate("return getComputedStyle(document.querySelector('.scroll-cue[data-direction=right]')).visibility"), 'visible');
+                await evaluate("document.querySelector('.scroll-cue[data-direction=right]').click()");
+                await until(() => evaluate("return document.querySelector('.table-scroll').scrollLeft > 0 && !document.querySelector('.scroll-cue[data-direction=left]').disabled"));
+                await evaluate("const scroll=document.querySelector('.table-scroll'); scroll.scrollLeft=(scroll.scrollWidth-scroll.clientWidth)/2");
+                await until(() => evaluate("return [...document.querySelectorAll('.scroll-cue')].every(button=>!button.disabled)"));
+                await evaluate("document.querySelector('.table-scroll').scrollLeft=1e6");
+                await until(() => evaluate("return document.querySelector('.scroll-cue[data-direction=right]').disabled && !document.querySelector('.scroll-cue[data-direction=left]').disabled"));
+                await evaluate("document.querySelector('.scroll-cue[data-direction=left]').click()");
+                await until(() => evaluate("return !document.querySelector('.scroll-cue[data-direction=right]').disabled"));
                 if (process.env.UI_SCREENSHOT) {
                     const {data} = await send('Page.captureScreenshot');
                     await writeFile(process.env.UI_SCREENSHOT, Buffer.from(data, 'base64'));
@@ -133,7 +144,8 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await until(() => evaluate("return document.querySelector('#workspace').classList.contains('docked')"));
                 assert.equal(await evaluate("return document.querySelector('#open-tables').hidden && !document.querySelector('#tables-panel').matches(':modal')"), true);
                 assert.equal(await evaluate("const scroll=document.querySelector('.table-scroll'); return scroll.scrollWidth <= scroll.clientWidth"), true);
-                assert.equal(await evaluate("return getComputedStyle(document.querySelector('.row-actions .action-label')).display !== 'none'"), true);
+                assert.equal(await evaluate("return getComputedStyle(document.querySelector('tbody .row-actions .action-label')).display !== 'none'"), true);
+                await until(() => evaluate("return [...document.querySelectorAll('.scroll-cue')].every(button=>getComputedStyle(button).display === 'none')"));
                 // Long API labels must make docking depend on content, not just screen size.
                 await evaluate("document.querySelector('#table-list [data-entity=planes]').textContent='A very long table label '.repeat(20)");
                 await until(() => evaluate("return !document.querySelector('#workspace').classList.contains('docked')"));

@@ -10,6 +10,7 @@ import {reviewRow} from './review-row.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources, type LoadedReferenceSource} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
+import {scrollCue, updateScrollCues} from './sheet-scroll.js';
 import {createRowEditor, type RowEditor, type Row, type Value} from './row-editor.js';
 
 let labels: Readonly<Record<string, string>> = {};
@@ -251,6 +252,7 @@ async function show(name: EntityName): Promise<void> {
         }
         const actionsHeader = element('th', 'Acciones');
         actionsHeader.className = 'row-actions';
+        actionsHeader.prepend(scrollCue(scroll, 'right'));
         headerRow.append(actionsHeader);
     }
     selectVisible.onchange = () => {
@@ -346,6 +348,8 @@ async function show(name: EntityName): Promise<void> {
     scroll.setAttribute('role', 'region');
     scroll.setAttribute('aria-label', title);
     scroll.append(table);
+    selectTh.prepend(scrollCue(scroll, 'left'));
+    scroll.addEventListener('scroll', () => updateScrollCues(scroll), {passive: true});
 
     function render(): void {
         if (!columns.some(column => column.name === pinnedColumn)) pinnedColumn = null;
@@ -447,6 +451,7 @@ async function show(name: EntityName): Promise<void> {
                 row.insertBefore(pinned, row.cells[1]!);
             }
         }
+        updateScrollCues(scroll);
     }
 
     function appendCells(row: HTMLTableRowElement, editor: RowEditor): void {

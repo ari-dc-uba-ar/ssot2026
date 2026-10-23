@@ -111,3 +111,9 @@ button.column-label { background: transparent; border: 0; padding: 4px 0; min-he
 .pinned-col > * { max-width: var(--pinned-width); overflow-wrap: anywhere; }
 .pinned-col > .field { min-width: 0; width: min(var(--field-width), var(--pinned-width)); }
 thead .pinned-col { z-index: 3; background: #f3f2f1; }
+.scroll-cue { display: none; margin: 0 auto; color: #107c41; background: #e4f2e9; border-color: #107c41; }
+.horizontal-overflow .scroll-cue { display: flex; }
+.horizontal-overflow th.selection-col, .horizontal-overflow th.row-actions { vertical-align: top; }
+.scroll-cue:disabled { visibility: hidden; }
+.scroll-cue .action-label { display: none; }
+th.selection-col { padding-left: 0; padding-right: 0; }

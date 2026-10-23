@@ -1,3 +1,5 @@
+import {updateScrollCues} from './sheet-scroll.js';
+
 // Fit actual content instead of choosing a screen-width breakpoint.
 export function observeSheetLayout(panel: HTMLDialogElement, toggle: HTMLButtonElement): () => void {
     const workspace = document.querySelector<HTMLElement>('#workspace')!;
@@ -38,6 +40,7 @@ export function observeSheetLayout(panel: HTMLDialogElement, toggle: HTMLButtonE
         table.style.setProperty('--selection-width', `${selectionWidth}px`);
         // Share the remaining viewport between the pinned column and scrolling data.
         table.style.setProperty('--pinned-width', `${Math.max(0, (scroll.clientWidth - selectionWidth - actionsWidth) / 2)}px`);
+        updateScrollCues(scroll);
     }
     const schedule = () => { if (!frame) frame = requestAnimationFrame(fit); };
     const resize = new ResizeObserver(schedule);
