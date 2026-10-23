@@ -41,7 +41,7 @@ export function createReferenceEditors(entity: EntityResponse, sources: readonly
                 if (current !== revision) return;
                 page = result.page;
                 options = referenceOptions(reference, result.rows);
-                input.replaceChildren(new Option('Ninguna', ''));
+                input.replaceChildren(new Option(input.required ? 'Elegí una opción…' : 'Ninguna', ''));
                 options.forEach((option, index) => input.add(new Option(option.label, String(index))));
                 const selected = options.findIndex(option => names.every(name => option.values[name] === values[name]));
                 input.value = selected < 0 ? '' : String(selected);
