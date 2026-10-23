@@ -55,7 +55,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .close-btn:hover { background: #edebe9; color: #201f1e; }
 .field { margin: 12px 0; }
 .field > input, .field > select { width: 100%; margin-top: 4px; }
-.table-scroll .field { margin: 0; min-width: var(--field-width); }
+.table-scroll .field { position: relative; margin: 0; min-width: var(--field-width); }
 .table-scroll .field > label:first-child { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .null-option { display: flex; align-items: center; gap: 4px; font-size: .75rem; color: #605e5c; }
 td input[type=checkbox] { width: auto; height: auto; }

@@ -13,6 +13,10 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
     await withTestDatabase(async ({pool}) => {
         await initializeUsers(pool, {username: 'browser', password: 'browser-test-password'});
         await pool.query("INSERT INTO ssot.planes (plan, descripcion) SELECT i, 'Plan ' || i FROM generate_series(1,201) i");
+        await pool.query("INSERT INTO ssot.departamentos (cod_dep, departamento) VALUES ('DC', 'Computación')");
+        await pool.query("INSERT INTO ssot.materias (cod_mat, cod_dep, materia, plan, obligatoria) VALUES ('ALG', 'DC', 'Algoritmos', 1, true)");
+        await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) VALUES ('E001', 'Estudiante')");
+        await pool.query("INSERT INTO ssot.enrolamientos (legajo, cod_mat, cod_dep, año, cuatrimestre, nota, regularidad) VALUES ('E001', 'ALG', 'DC', 2026, '1C', 8, 'Regular')");
         const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
         const loginRequests = [];
         app.use('/api/auth/login', (req, _res, next) => { loginRequests.push(req.method); next(); });
@@ -77,7 +81,7 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await until(() => evaluate("return document.querySelector('.table-scroll').scrollTop > 0"));
                 const geometry = await evaluate(`
                     const scroll=document.querySelector('.table-scroll'), bounds=scroll.getBoundingClientRect();
-                    return {overflow: document.documentElement.scrollWidth > innerWidth,
+                    return {overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
                         header: Math.abs(document.querySelector('thead th').getBoundingClientRect().top - bounds.top),
                         selection: Math.abs(document.querySelector('tbody .selection-col').getBoundingClientRect().left - bounds.left),
                         actions: Math.abs(document.querySelector('tbody .row-actions').getBoundingClientRect().right - bounds.right),
@@ -98,10 +102,10 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                     return Math.abs(cell.left-document.querySelector('tbody .selection-col').getBoundingClientRect().right) < 2`));
                 assert.equal(await evaluate(`const pinned=document.querySelector('tbody .pinned-col').getBoundingClientRect();
                     const actions=document.querySelector('tbody .row-actions').getBoundingClientRect();
-                    return pinned.right < actions.left && document.documentElement.scrollWidth <= innerWidth`), true);
+                    return pinned.right < actions.left && document.documentElement.scrollWidth <= document.documentElement.clientWidth`), true);
                 await send('Emulation.setDeviceMetricsOverride', {width: 320, height: 700, deviceScaleFactor: 1, mobile: true});
                 await until(() => evaluate(`const pinned=document.querySelector('tbody .pinned-col').getBoundingClientRect();
-                    return pinned.right < document.querySelector('tbody .row-actions').getBoundingClientRect().left && document.documentElement.scrollWidth <= innerWidth`));
+                    return pinned.right < document.querySelector('tbody .row-actions').getBoundingClientRect().left && document.documentElement.scrollWidth <= document.documentElement.clientWidth`));
                 await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
                 await until(() => evaluate("const scroll=document.querySelector('.table-scroll'); return document.querySelector('#workspace').classList.contains('docked') && scroll.scrollWidth <= scroll.clientWidth"));
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 500, deviceScaleFactor: 1, mobile: true});
@@ -151,6 +155,19 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await until(() => evaluate("return !document.querySelector('#workspace').classList.contains('docked')"));
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
                 await until(() => evaluate("return !document.querySelector('#open-tables').hidden"));
+                // Wide populated sheets must scroll inside their viewport, never the page.
+                for (const [entity, label] of [['materias', 'Materias'], ['enrolamientos', 'Inscripciones']]) {
+                    await evaluate(`document.querySelector('[data-entity=${entity}]').click()`);
+                    await until(() => evaluate(`return !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === '${label}'`));
+                    for (const width of [320, 390]) {
+                        await send('Emulation.setDeviceMetricsOverride', {width, height: 844, deviceScaleFactor: 1, mobile: true});
+                        const bounds = await evaluate(`return {page: document.documentElement.scrollWidth,
+                            sheet: document.querySelector('.table-scroll').scrollWidth,
+                            clipped: document.querySelector('.table-scroll').clientWidth}`);
+                        assert.ok(bounds.page <= width, JSON.stringify({entity, width, ...bounds}));
+                        assert.ok(bounds.sheet > bounds.clipped);
+                    }
+                }
                 assert.deepEqual(errors, []);
                 await evaluate("document.querySelector('#manage-account').click()");
                 assert.equal(await evaluate("return document.querySelector('#account').matches(':modal') && !document.querySelector('#account-management').hidden && document.querySelector('#authentication').hidden"), true);
