@@ -50,53 +50,53 @@ const myTypes = defineTypes({
 })
 
 const plan = defineRecord(myTypes,{
-    plan        :{ type:'integer'},
-    descripcion :{ type:'text', isName: true },
+    plan        :{ type:'integer', label: 'Plan' },
+    descripcion :{ type:'text', label: 'Descripción', isName: true },
 })
 
 const materia = defineRecord(myTypes,{
-    cod_mat     :{ type:'text'   },
-    cod_dep     :{ type:'text'   },
-    materia     :{ type:'text', isName: true },
-    plan        :{ type:'integer'},
-    obligatoria :{ type:'boolean'},
+    cod_mat     :{ type:'text', label: 'Código' },
+    cod_dep     :{ type:'text', label: 'Código de departamento' },
+    materia     :{ type:'text', label: 'Materia', isName: true },
+    plan        :{ type:'integer', label: 'Plan' },
+    obligatoria :{ type:'boolean', label: 'Obligatoria' },
 })
 
 const departamento = defineRecord(myTypes,{
-    cod_dep     :{ type:'text'   },
-    departamento:{ type:'text', isName: true },
-    pabellon    :{ type:'text'   },
+    cod_dep     :{ type:'text', label: 'Código' },
+    departamento:{ type:'text', label: 'Departamento', isName: true },
+    pabellon    :{ type:'text', label: 'Código de pabellón' },
 })
 
 const estudiante = defineRecord(myTypes,{
-    legajo       :{ type:'text'   },
-    nombre       :{ type:'text', isName: true },
+    legajo       :{ type:'text', label: 'Legajo' },
+    nombre       :{ type:'text', label: 'Nombre', isName: true },
 })
 
 const enrolamiento = defineRecord(myTypes,{
-    legajo       :{ type:'text'   },
-    cod_mat      :{ type:'text'   },
-    cod_dep      :{ type:'text'   },
-    año          :{ type:'posInteger'},
-    cuatrimestre :{ type:'cuatrimestre'},
-    nota         :{ type:'integer'},
-    regularidad  :{ type:'regularidad'},
+    legajo       :{ type:'text', label: 'Legajo' },
+    cod_mat      :{ type:'text', label: 'Código de materia' },
+    cod_dep      :{ type:'text', label: 'Código de departamento' },
+    año          :{ type:'posInteger', label: 'Año' },
+    cuatrimestre :{ type:'cuatrimestre', label: 'Cuatrimestre' },
+    nota         :{ type:'integer', label: 'Nota' },
+    regularidad  :{ type:'regularidad', label: 'Regularidad' },
 })
 
 const regularidad = defineRecord(myTypes,{
-    regularidad  :{ type:'regularidad'},
-    descripcion  :{ type:'text'   },
+    regularidad  :{ type:'regularidad', label: 'Regularidad' },
+    descripcion  :{ type:'text', label: 'Descripción' },
 })
 
 const pabellon = defineRecord(myTypes,{
-    pab          :{ type:'text'   },
-    pabellon     :{ type:'text'   },
-    pisos        :{ type:'integer'},
+    pab          :{ type:'text', label: 'Código' },
+    pabellon     :{ type:'text', label: 'Pabellón' },
+    pisos        :{ type:'integer', label: 'Pisos' },
 });
 
 const usuario = defineRecord(myTypes, {
     id: {type: 'text', nullable: false, writable: false as const, visible: false as const, onCreate: 'uuid' as const},
-    usuario: {type: 'text', nullable: false, transform: 'username' as const},
+    usuario: {type: 'text', label: 'Usuario', nullable: false, transform: 'username' as const},
     contrasena_hash: {type: 'text', nullable: false, label: 'Contraseña', readable: false as const,
         inputName: 'contrasena' as const, inputType: 'password' as const, transform: 'password' as const},
     recuperacion_hashes: {type: 'text', nullable: false, readable: false as const, writable: false as const,
