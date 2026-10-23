@@ -147,7 +147,10 @@ async function show(name: EntityName): Promise<void> {
 
     const toolbar = element('div');
     toolbar.className = 'toolbar';
+    const heading = element('div');
+    heading.className = 'sheet-heading';
     const count = element('span');
+    heading.append(element('h2', title), count);
     const filterInput = element('input');
     filterInput.className = 'filter-input';
     filterInput.placeholder = `Filtrar ${unit}…`;
@@ -161,7 +164,7 @@ async function show(name: EntityName): Promise<void> {
     deleteSelectedButton.disabled = true;
     const columnFilters = actionButton('Filtrar por columnas', 'filter', () =>
         editColumnFilters(entity, where, selected => changeQuery({...query(), where: selected, page: 1})));
-    toolbar.append(element('h2', title), count, filterInput, columnFilters, deleteSelectedButton, selectionStatus);
+    toolbar.append(filterInput, columnFilters, deleteSelectedButton);
     toolbar.append(actionButton('Actualizar', 'refresh', () => { void run(async () => {
         if (dirty() && !await confirmAction({title: 'Descartar borrador', message: 'Actualizar descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar y actualizar', danger: true})) return;
         await refresh();
@@ -216,7 +219,10 @@ async function show(name: EntityName): Promise<void> {
     selectVisible.setAttribute('aria-label', 'Seleccionar todas las filas visibles');
     const selectTh = element('th');
     selectTh.className = 'selection-col';
-    selectTh.append(selectVisible);
+    const selectionHeading = element('div');
+    selectionHeading.className = 'fixed-heading';
+    selectionHeading.append(selectVisible);
+    selectTh.append(selectionHeading);
     headerRow.append(selectTh);
     headerRow.append(idxTh);
 
@@ -250,9 +256,12 @@ async function show(name: EntityName): Promise<void> {
             th.append(heading);
             headerRow.append(th);
         }
-        const actionsHeader = element('th', 'Acciones');
+        const actionsHeader = element('th');
         actionsHeader.className = 'row-actions';
-        actionsHeader.prepend(scrollCue(scroll, 'right'));
+        const actionsHeading = element('div');
+        actionsHeading.className = 'fixed-heading';
+        actionsHeading.append(element('span', 'Acciones'), scrollCue(scroll, 'right'));
+        actionsHeader.append(actionsHeading);
         headerRow.append(actionsHeader);
     }
     selectVisible.onchange = () => {
@@ -341,6 +350,7 @@ async function show(name: EntityName): Promise<void> {
     const prevBtn = actionButton('Anterior', 'previous', () => { if (page > 1) void changeQuery({...query(), page: page - 1}); });
     const nextBtn = actionButton('Siguiente', 'next', () => { void changeQuery({...query(), page: page + 1}); });
     pagination.append(prevBtn, pageSpan, nextBtn);
+    toolbar.append(pagination);
 
     const scroll = element('div');
     scroll.className = 'table-scroll';
@@ -348,7 +358,7 @@ async function show(name: EntityName): Promise<void> {
     scroll.setAttribute('role', 'region');
     scroll.setAttribute('aria-label', title);
     scroll.append(table);
-    selectTh.prepend(scrollCue(scroll, 'left'));
+    selectionHeading.prepend(scrollCue(scroll, 'left'));
     scroll.addEventListener('scroll', () => updateScrollCues(scroll), {passive: true});
 
     function render(): void {
@@ -363,7 +373,9 @@ async function show(name: EntityName): Promise<void> {
 
         setActionLabel(columnFilters, `Filtrar por columnas (${Object.keys(where ?? {}).length})`);
         count.textContent = filter || Object.keys(where ?? {}).length ? `${result.matched} de ${result.total} ${unit}` : `${result.total} ${unit}`;
-        pageSpan.textContent = `Página ${page} de ${totalPages}`;
+        pageSpan.textContent = `${page} / ${totalPages}`;
+        pageSpan.setAttribute('aria-label', `Página ${page} de ${totalPages}`);
+        pageSpan.title = `Página ${page} de ${totalPages}`;
         prevBtn.disabled = page <= 1;
         nextBtn.disabled = page >= totalPages;
         selectVisible.disabled = paged.length === 0;
@@ -465,7 +477,7 @@ async function show(name: EntityName): Promise<void> {
     render();
     const controls = element('div');
     controls.className = 'sheet-controls';
-    controls.append(toolbar, pagination);
+    controls.append(heading, toolbar, selectionStatus);
     content.replaceChildren(controls, scroll);
 }
 

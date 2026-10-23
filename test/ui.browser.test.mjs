@@ -59,7 +59,7 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await evaluate("const input=document.querySelector('#table-search'); input.value='planes'; input.dispatchEvent(new Event('input'))");
                 assert.deepEqual(await evaluate("return [...document.querySelectorAll('#table-list button')].filter(b=>!b.hidden).map(b=>b.textContent)"), ['Planes de Estudio']);
                 await evaluate("document.querySelector('[data-entity=planes]').click()");
-                await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.toolbar h2')?.textContent === 'Planes de Estudio'"));
+                await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Planes de Estudio'"));
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').open"), false);
                 assert.equal(await evaluate("return document.querySelectorAll('tbody tr').length"), 10);
                 await evaluate(`document.querySelector('[aria-label^="Filtrar por columnas"]').click();
