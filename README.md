@@ -382,6 +382,10 @@ filter/pagination controls, sticky column headers, and pinned selection/action
 columns inside a single two-axis scroll area. The drawer becomes a permanent
 sidebar only when its text and the sheet fit together without horizontal overflow.
 Actions use labelled icons with text added when space permits.
+Each data-column header has a pin toggle. One column at a time can be kept next
+to the row selectors; unpinning restores the API order. The pin survives paging,
+sorting and refreshes of the current sheet, and moving it preserves unsaved input.
+Its width is capped on narrow screens so scrolling data remains accessible.
 
 The sheet supports inline editing, insertion, text search, typed column equality
 filters, sorting, hybrid pagination and selection-based deletion confirmations. Existing rows save on change after their

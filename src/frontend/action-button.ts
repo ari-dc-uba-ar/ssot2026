@@ -10,6 +10,7 @@ const icons = {
     cancel: 'M6 6l12 12M6 18L18 6',
     previous: 'M15 5l-7 7 7 7',
     next: 'M9 5l7 7-7 7',
+    pin: 'M8 3h8M9 3v6l-3 4v2h12v-2l-3-4V3M12 15v6',
 } as const;
 
 export function setActionLabel(button: HTMLButtonElement, label: string): void {

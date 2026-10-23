@@ -109,6 +109,7 @@ async function show(name: EntityName): Promise<void> {
     let sortCol = '';
     let sortAsc = true;
     let page = 1;
+    let pinnedColumn: string | null = null;
     let adding: RowEditor | undefined;
     const editors = new Map<Row, RowEditor>();
     const selectedRows = new Map<string, Row>();
@@ -221,10 +222,31 @@ async function show(name: EntityName): Promise<void> {
     function renderHeaders(): void {
         headerRow.replaceChildren(selectTh, idxTh);
         for (const col of columns) {
-            const th = element('th', col.label);
-            if (entity.columns.some(column => column.name === col.name)) th.onclick = () => {
-                void changeQuery({...query(), sort: col.name, direction: sortCol === col.name && sortAsc ? 'desc' : 'asc', page: 1} as EntityQuery);
-            };
+            const th = element('th');
+            th.scope = 'col';
+            th.dataset['column'] = col.name;
+            const heading = element('div');
+            heading.className = 'column-heading';
+            const sortable = entity.columns.some(column => column.name === col.name);
+            const label = element(sortable ? 'button' : 'span', col.label + (sortCol === col.name ? (sortAsc ? ' ▲' : ' ▼') : ''));
+            label.className = 'column-label';
+            label.title = col.label;
+            if (label instanceof HTMLButtonElement) {
+                label.type = 'button';
+                th.setAttribute('aria-sort', sortCol === col.name ? (sortAsc ? 'ascending' : 'descending') : 'none');
+                label.onclick = () => {
+                    void changeQuery({...query(), sort: col.name, direction: sortCol === col.name && sortAsc ? 'desc' : 'asc', page: 1} as EntityQuery);
+                };
+            }
+            const pin = actionButton(`${pinnedColumn === col.name ? 'Soltar' : 'Fijar'} columna ${col.label}`, 'pin', () => {
+                pinnedColumn = pinnedColumn === col.name ? null : col.name;
+                render();
+                scroll.scrollLeft = 0;
+                [...headerRow.cells].find(cell => cell.dataset['column'] === col.name)?.querySelector<HTMLButtonElement>('.column-pin')?.focus();
+            }, 'column-pin');
+            pin.setAttribute('aria-pressed', String(pinnedColumn === col.name));
+            heading.append(label, pin);
+            th.append(heading);
             headerRow.append(th);
         }
         const actionsHeader = element('th', 'Acciones');
@@ -326,10 +348,8 @@ async function show(name: EntityName): Promise<void> {
     scroll.append(table);
 
     function render(): void {
+        if (!columns.some(column => column.name === pinnedColumn)) pinnedColumn = null;
         renderHeaders();
-        columns.forEach((col, idx) => {
-            headerRow.cells[idx + 2]!.textContent = col.label + (sortCol === col.name ? (sortAsc ? ' ▲' : ' ▼') : '');
-        });
 
         const result = entityPage(entity, query());
         const totalPages = Math.max(1, Math.ceil(result.matched / pageSize));
@@ -359,7 +379,7 @@ async function show(name: EntityName): Promise<void> {
             num.textContent = '+';
 
             const editor = adding;
-            for (const cell of editor.cells) tr.insertCell().append(cell.field);
+            appendCells(tr, editor);
 
             const actions = tr.insertCell();
             actions.className = 'row-actions';
@@ -409,7 +429,7 @@ async function show(name: EntityName): Promise<void> {
                 });
                 editors.set(row, editor);
             }
-            for (const cell of editors.get(row)!.cells) tr.insertCell().append(cell.field);
+            appendCells(tr, editors.get(row)!);
 
             const actions = tr.insertCell();
             actions.className = 'row-actions';
@@ -420,6 +440,21 @@ async function show(name: EntityName): Promise<void> {
                 reviewRow(entity, row, editors.get(row)!.read(), current);
             })));
         });
+        for (const row of table.rows) {
+            const pinned = [...row.cells].find(cell => cell.dataset['column'] === pinnedColumn);
+            if (pinned) {
+                pinned.classList.add('pinned-col');
+                row.insertBefore(pinned, row.cells[1]!);
+            }
+        }
+    }
+
+    function appendCells(row: HTMLTableRowElement, editor: RowEditor): void {
+        for (const {name, field} of editor.cells) {
+            const cell = row.insertCell();
+            cell.dataset['column'] = name;
+            cell.append(field);
+        }
     }
 
     render();

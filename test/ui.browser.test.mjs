@@ -90,6 +90,38 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 for (const key of ['header', 'selection', 'actions']) assert.ok(geometry[key] <= 2, JSON.stringify(geometry));
                 assert.ok(geometry.bottom <= 10, JSON.stringify(geometry));
                 assert.equal(await evaluate("return [...document.querySelectorAll('tbody button')].every(b=>b.getAttribute('aria-label') && b.getBoundingClientRect().height >= 44)"), true);
+                await evaluate("document.querySelector('th[data-column=descripcion] .column-pin').click()");
+                await until(() => evaluate("return document.querySelector('th.pinned-col')?.dataset.column === 'descripcion'"));
+                assert.equal(await evaluate("return document.querySelectorAll('th[aria-sort=ascending], th[aria-sort=descending]').length"), 0);
+                await evaluate("const scroll=document.querySelector('.table-scroll'); scroll.scrollLeft=scroll.scrollWidth; scroll.scrollTop=100");
+                await until(() => evaluate(`const cell=document.querySelector('tbody .pinned-col').getBoundingClientRect();
+                    return Math.abs(cell.left-document.querySelector('tbody .selection-col').getBoundingClientRect().right) < 2`));
+                assert.equal(await evaluate(`const pinned=document.querySelector('tbody .pinned-col').getBoundingClientRect();
+                    const actions=document.querySelector('tbody .row-actions').getBoundingClientRect();
+                    return pinned.right < actions.left && document.documentElement.scrollWidth <= innerWidth`), true);
+                await send('Emulation.setDeviceMetricsOverride', {width: 320, height: 700, deviceScaleFactor: 1, mobile: true});
+                await until(() => evaluate(`const pinned=document.querySelector('tbody .pinned-col').getBoundingClientRect();
+                    return pinned.right < document.querySelector('tbody .row-actions').getBoundingClientRect().left && document.documentElement.scrollWidth <= innerWidth`));
+                await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+                await until(() => evaluate("const scroll=document.querySelector('.table-scroll'); return document.querySelector('#workspace').classList.contains('docked') && scroll.scrollWidth <= scroll.clientWidth"));
+                await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 500, deviceScaleFactor: 1, mobile: true});
+                // Paging, editing and adding reuse the existing editors while retaining the pin.
+                await evaluate("document.querySelector('.pagination [aria-label=Siguiente]').click()");
+                await until(() => evaluate("return document.querySelector('tbody [name=plan]')?.value === '11'"));
+                assert.equal(await evaluate("return document.querySelector('tbody .pinned-col [name=descripcion]').value"), 'Plan 11');
+                await evaluate("const input=document.querySelector('tbody .pinned-col [name=descripcion]'); input.value='Edited while pinned'; input.dispatchEvent(new Event('change',{bubbles:true}))");
+                await until(async () => (await pool.query('SELECT descripcion FROM ssot.planes WHERE plan=11')).rows[0]?.descripcion === 'Edited while pinned');
+                await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('tbody .pinned-col [name=descripcion]')?.value === 'Edited while pinned'"));
+                await evaluate("document.querySelector('[aria-label=\"Agregar fila\"]').click(); document.querySelector('tr.new-row [name=descripcion]').value='Keep draft'; document.querySelector('th[data-column=plan] .column-pin').click()");
+                assert.equal(await evaluate("return document.querySelector('tr.new-row [name=descripcion]').value"), 'Keep draft');
+                assert.equal(await evaluate("return document.querySelectorAll('th.pinned-col').length === 1 && document.querySelector('tr.new-row .pinned-col').dataset.column === 'plan'"), true);
+                await evaluate("document.querySelector('tr.new-row [aria-label=Cancelar]').click(); document.querySelector('#confirm-ok').click()");
+                await until(() => evaluate("return !document.querySelector('tr.new-row')"));
+                await evaluate("document.querySelector('th[data-column=plan] .column-label').click()");
+                await until(() => evaluate("return document.querySelector('th[data-column=plan]').getAttribute('aria-sort') === 'ascending' && document.querySelector('tbody [name=plan]')?.value === '1'"));
+                await evaluate("document.querySelector('th[data-column=plan] .column-pin').click()");
+                assert.equal(await evaluate("return document.querySelectorAll('.pinned-col').length"), 0);
+                assert.deepEqual(await evaluate("return [...document.querySelectorAll('thead [data-column]')].map(cell=>cell.dataset.column)"), ['plan','descripcion']);
                 if (process.env.UI_SCREENSHOT) {
                     const {data} = await send('Page.captureScreenshot');
                     await writeFile(process.env.UI_SCREENSHOT, Buffer.from(data, 'base64'));
