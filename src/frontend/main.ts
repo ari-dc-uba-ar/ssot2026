@@ -167,9 +167,15 @@ async function show(name: EntityName): Promise<void> {
     toolbar.append(filterInput, columnFilters, deleteSelectedButton);
     toolbar.append(actionButton('Actualizar', 'refresh', () => { void run(async () => {
         if (dirty() && !await confirmAction({title: 'Descartar borrador', message: 'Actualizar descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar y actualizar', danger: true})) return;
+        // Referenced rows may have changed outside the app, without a live event.
+        for (const source of sources) cache.invalidate(source.reference.entity);
         await refresh();
     }); }));
-    toolbar.append(actionButton('Agregar fila', 'add', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary'));
+    const addButton = actionButton('Agregar fila', 'add', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary');
+    toolbar.append(addButton);
+    const referenceNotice = element('div');
+    referenceNotice.className = 'reference-notice';
+    referenceNotice.setAttribute('role', 'status');
 
     async function refresh(): Promise<void> {
         const revision = ++queryRevision;
@@ -382,6 +388,7 @@ async function show(name: EntityName): Promise<void> {
         selectVisible.checked = paged.length > 0 && paged.every(row => selectedRows.has(selectionKey(row)));
         selectVisible.indeterminate = paged.some(row => selectedRows.has(selectionKey(row))) && !selectVisible.checked;
         setActionLabel(deleteSelectedButton, `Borrar seleccionados (${selectedRows.size})`);
+        renderMissingReferences();
 
         tbody.replaceChildren();
 
@@ -466,6 +473,19 @@ async function show(name: EntityName): Promise<void> {
         updateScrollCues(scroll);
     }
 
+    function renderMissingReferences(): void {
+        // A required reference to an empty entity makes every new row unsaveable.
+        const missing = sources.filter(({reference, target}) => entity.foreignKeys.includes(reference) &&
+            Object.keys(reference.fields).some(field => entity.inputs.find(column => column.name === field)?.nullable === false) &&
+            (target.window.kind === 'page' ? target.window.total : target.rows.length) === 0);
+        const message = `Para agregar ${unit} primero tiene que haber al menos ${
+            new Intl.ListFormat('es').format(missing.map(({reference}) => `1 ${reference.name}`))}.`;
+        addButton.disabled = missing.length > 0;
+        addButton.title = missing.length ? message : 'Agregar fila';
+        referenceNotice.replaceChildren(...missing.length ? [element('span', `⚠ ${message}`),
+            ...missing.map(({target}) => actionButton(`Ir a ${target.label}`, 'next', () => void run(() => selectTab(target.name))))] : []);
+    }
+
     function appendCells(row: HTMLTableRowElement, editor: RowEditor): void {
         for (const {name, field} of editor.cells) {
             const cell = row.insertCell();
@@ -477,7 +497,7 @@ async function show(name: EntityName): Promise<void> {
     render();
     const controls = element('div');
     controls.className = 'sheet-controls';
-    controls.append(heading, toolbar, selectionStatus);
+    controls.append(heading, toolbar, referenceNotice, selectionStatus);
     content.replaceChildren(controls, scroll);
 }
 
