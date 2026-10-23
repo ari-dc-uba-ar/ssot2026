@@ -219,10 +219,7 @@ async function show(name: EntityName): Promise<void> {
     selectVisible.setAttribute('aria-label', 'Seleccionar todas las filas visibles');
     const selectTh = element('th');
     selectTh.className = 'selection-col';
-    const selectionHeading = element('div');
-    selectionHeading.className = 'fixed-heading';
-    selectionHeading.append(selectVisible);
-    selectTh.append(selectionHeading);
+    selectTh.append(selectVisible);
     headerRow.append(selectTh);
     headerRow.append(idxTh);
 
@@ -256,12 +253,9 @@ async function show(name: EntityName): Promise<void> {
             th.append(heading);
             headerRow.append(th);
         }
-        const actionsHeader = element('th');
+        const actionsHeader = element('th', 'Acciones');
         actionsHeader.className = 'row-actions';
-        const actionsHeading = element('div');
-        actionsHeading.className = 'fixed-heading';
-        actionsHeading.append(element('span', 'Acciones'), scrollCue(scroll, 'right'));
-        actionsHeader.append(actionsHeading);
+        actionsHeader.append(rightCue);
         headerRow.append(actionsHeader);
     }
     selectVisible.onchange = () => {
@@ -358,7 +352,8 @@ async function show(name: EntityName): Promise<void> {
     scroll.setAttribute('role', 'region');
     scroll.setAttribute('aria-label', title);
     scroll.append(table);
-    selectionHeading.prepend(scrollCue(scroll, 'left'));
+    const leftCue = scrollCue(scroll, 'left');
+    const rightCue = scrollCue(scroll, 'right');
     scroll.addEventListener('scroll', () => updateScrollCues(scroll), {passive: true});
 
     function render(): void {
@@ -463,6 +458,8 @@ async function show(name: EntityName): Promise<void> {
                 row.insertBefore(pinned, row.cells[1]!);
             }
         }
+        // Anchor the left cue after any pinned column, over the scrolling headers.
+        (headerRow.querySelector('.pinned-col') ?? selectTh).append(leftCue);
         updateScrollCues(scroll);
     }
 

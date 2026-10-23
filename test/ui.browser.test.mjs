@@ -28,6 +28,23 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
         const server = await new Promise(resolve => { const server = app.listen(0, '127.0.0.1', () => resolve(server)); });
         try {
             await withBrowser(async ({send, evaluate, errors}) => {
+                async function checkHeaderControls() {
+                    const layout = await evaluate(`
+                        const header=document.querySelector('thead .selection-col input').getBoundingClientRect();
+                        const row=document.querySelector('tbody .selection-col input').getBoundingClientRect();
+                        const left=(document.querySelector('thead .pinned-col') ?? document.querySelector('thead .selection-col')).getBoundingClientRect().right;
+                        const right=document.querySelector('thead .row-actions').getBoundingClientRect().left;
+                        return {alignment: Math.abs(header.left-row.left),
+                            selectionWidth: document.querySelector('thead .selection-col').getBoundingClientRect().width,
+                            cues: [...document.querySelectorAll('.scroll-cue')].filter(button=>!button.disabled).map(button=>{
+                                const box=button.getBoundingClientRect();
+                                return {withinData: box.left >= left-1 && box.right <= right+1,
+                                    clickable: document.elementFromPoint(box.x+box.width/2,box.y+box.height/2)?.closest('.scroll-cue') === button};
+                            })};`);
+                    assert.ok(layout.alignment < 1, JSON.stringify(layout));
+                    assert.equal(layout.selectionWidth, 44);
+                    assert.ok(layout.cues.every(cue=>cue.withinData && cue.clickable), JSON.stringify(layout));
+                }
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 844, deviceScaleFactor: 1, mobile: true});
                 await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}`});
                 await until(() => evaluate("return typeof document.querySelector('#login-form')?.onsubmit === 'function'"));
@@ -106,6 +123,7 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await send('Emulation.setDeviceMetricsOverride', {width: 320, height: 700, deviceScaleFactor: 1, mobile: true});
                 await until(() => evaluate(`const pinned=document.querySelector('tbody .pinned-col').getBoundingClientRect();
                     return pinned.right < document.querySelector('tbody .row-actions').getBoundingClientRect().left && document.documentElement.scrollWidth <= document.documentElement.clientWidth`));
+                await checkHeaderControls();
                 await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
                 await until(() => evaluate("const scroll=document.querySelector('.table-scroll'); return document.querySelector('#workspace').classList.contains('docked') && scroll.scrollWidth <= scroll.clientWidth"));
                 await send('Emulation.setDeviceMetricsOverride', {width: 390, height: 500, deviceScaleFactor: 1, mobile: true});
@@ -129,12 +147,15 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await evaluate("document.querySelector('.table-scroll').scrollLeft=0");
                 await until(() => evaluate("return document.querySelector('.scroll-cue[data-direction=left]').disabled && !document.querySelector('.scroll-cue[data-direction=right]').disabled"));
                 assert.equal(await evaluate("return getComputedStyle(document.querySelector('.scroll-cue[data-direction=right]')).visibility"), 'visible');
+                await checkHeaderControls();
                 await evaluate("document.querySelector('.scroll-cue[data-direction=right]').click()");
                 await until(() => evaluate("return document.querySelector('.table-scroll').scrollLeft > 0 && !document.querySelector('.scroll-cue[data-direction=left]').disabled"));
                 await evaluate("const scroll=document.querySelector('.table-scroll'); scroll.scrollLeft=(scroll.scrollWidth-scroll.clientWidth)/2");
                 await until(() => evaluate("return [...document.querySelectorAll('.scroll-cue')].every(button=>!button.disabled)"));
+                await checkHeaderControls();
                 await evaluate("document.querySelector('.table-scroll').scrollLeft=1e6");
                 await until(() => evaluate("return document.querySelector('.scroll-cue[data-direction=right]').disabled && !document.querySelector('.scroll-cue[data-direction=left]').disabled"));
+                await checkHeaderControls();
                 await evaluate("document.querySelector('.scroll-cue[data-direction=left]').click()");
                 await until(() => evaluate("return !document.querySelector('.scroll-cue[data-direction=right]').disabled"));
                 if (process.env.UI_SCREENSHOT) {
@@ -166,6 +187,13 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                             clipped: document.querySelector('.table-scroll').clientWidth}`);
                         assert.ok(bounds.page <= width, JSON.stringify({entity, width, ...bounds}));
                         assert.ok(bounds.sheet > bounds.clipped);
+                        await evaluate("const scroll=document.querySelector('.table-scroll'); scroll.scrollLeft=(scroll.scrollWidth-scroll.clientWidth)/2");
+                        await until(() => evaluate("return [...document.querySelectorAll('.scroll-cue')].every(button=>!button.disabled)"));
+                        await checkHeaderControls();
+                    }
+                    if (process.env.UI_SCREENSHOT) {
+                        const {data} = await send('Page.captureScreenshot');
+                        await writeFile(`${process.env.UI_SCREENSHOT}.${entity}.png`, Buffer.from(data, 'base64'));
                     }
                 }
                 assert.deepEqual(errors, []);
