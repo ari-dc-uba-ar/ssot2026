@@ -26,7 +26,39 @@
     --danger-soft: #fde7e9;
     --danger-soft-border: #f3b2b7;
     --error: #d83b01;
+    color-scheme: light dark;
     font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: var(--page);
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --page: #1b1a19;
+        --surface: #252423;
+        --surface-alt: #323130;
+        --hover: #3b3a39;
+        --row-hover: #2d2c2b;
+        --row-new: #1f3328;
+        --text: #f3f2f1;
+        --text-header: #e1dfdd;
+        --text-muted: #c8c6c4;
+        --on-accent: white;
+        --border: #605e5c;
+        --border-strong: #a19f9d;
+        --divider: #3b3a39;
+        --grid-line: #3b3a39;
+        --edge: #797775;
+        --accent: #107c41;
+        --accent-hover: #138a48;
+        --accent-border: #3a9d63;
+        --accent-text: #5cc98a;
+        --accent-soft: #1d3a29;
+        --danger: #c50f1f;
+        --danger-hover: #a80000;
+        --danger-border: #d13438;
+        --danger-text: #f1707b;
+        --danger-soft: #442726;
+        --danger-soft-border: #6e3b3d;
+        --error: #f7894a;
+    }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -77,7 +109,7 @@ td.has-error { background: var(--danger-soft) !important; outline: 2px solid var
 #status { margin: 0; flex: none; font-size: .85rem; color: var(--accent-text); }
 #status.error, #auth-status, #account-status { color: var(--error); font-weight: 600; font-size: .85rem; }
 #codes { overflow-x: auto; line-height: 1.8; background: var(--surface-alt); padding: 12px; border-radius: 4px; }
-dialog { width: min(480px, calc(100% - 32px)); max-height: 90vh; border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; color: inherit; box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
+dialog { width: min(480px, calc(100% - 32px)); max-height: 90vh; border: 1px solid var(--border); border-radius: 8px; padding: 20px 24px; color: inherit; background: var(--surface); box-shadow: 0 8px 30px rgba(0,0,0,0.18); }
 dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
 .dialog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--divider); padding-bottom: 8px; }
 .close-btn { background: transparent; border: none; font-size: 1.1rem; color: var(--text-muted); padding: 2px 8px; cursor: pointer; border-radius: 4px; line-height: 1; }
