@@ -21,7 +21,7 @@ export function createRowEditor(entity: EntityResponse, sources: readonly Loaded
     const refreshReferences = () => {
         for (const [name, input] of controls) {
             const options = references.options(name);
-            const empty = new Option('Ninguna', '');
+            const empty = new Option(input.required ? 'Elegí una opción…' : 'Ninguna', '');
             input.replaceChildren(empty);
             input.title = options.length ? '' : 'No hay opciones compatibles con la selección actual.';
             options.forEach((option, index) => input.add(new Option(option.label, String(index + 1))));
