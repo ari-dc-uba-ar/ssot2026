@@ -350,6 +350,29 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                     }
                 });
 
+                await t.test('missing required references block new rows and link to the required table', async () => {
+                    // This step removes the fixtures, so keep it after all populated-sheet checks.
+                    const notice = () => inPage(() => [document.querySelector('[aria-label="Agregar fila"]').disabled,
+                        ...[...document.querySelectorAll('.reference-notice > *')].map(node => node.getAttribute('aria-label') ?? node.textContent)]);
+                    await pool.query('DELETE FROM ssot.enrolamientos; DELETE FROM ssot.materias; DELETE FROM ssot.estudiantes; DELETE FROM ssot.departamentos');
+                    await openTable('enrolamientos', 'Inscripciones');
+                    await click('[aria-label=Actualizar]');
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) && (await notice()).length > 1);
+                    assert.deepEqual(await notice(), [true, '⚠ Para agregar inscripciones primero tiene que haber al menos 1 estudiante y 1 materia.', 'Ir a Estudiantes', 'Ir a Materias']);
+                    await click('.reference-notice [aria-label="Ir a Materias"]');
+                    await sheetIsReady('Materias');
+                    assert.deepEqual(await notice(), [true, '⚠ Para agregar materias primero tiene que haber al menos 1 departamento.', 'Ir a Departamentos']);
+                    await pool.query("INSERT INTO ssot.departamentos (cod_dep, departamento) VALUES ('D1', 'Computación')");
+                    await click('[aria-label=Actualizar]');
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) && (await notice()).length === 1);
+                    await click('[aria-label="Agregar fila"]');
+                    await waitFor(() => [...document.querySelectorAll('tr.new-row select[aria-label]')].every(select => select.options.length));
+                    assert.deepEqual(await inPage(() => [...document.querySelectorAll('tr.new-row select[aria-label]')].map(select => select.options[0].text)), ['Elegí una opción…', 'Ninguna']);
+                    await click('tr.new-row [aria-label=Cancelar]');
+                    await click('#confirm-ok');
+                    await waitFor(() => !document.querySelector('tr.new-row'));
+                });
+
                 await t.test('the account dialog opens, and an expired session returns to an empty login', async () => {
                     await click('#manage-account');
                     assert.equal(await inPage(() => document.querySelector('#account').matches(':modal')), true);
