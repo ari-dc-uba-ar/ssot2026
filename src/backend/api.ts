@@ -183,7 +183,21 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
                 const key = keyValues(body['key']);
                 const row = await prepareEntityWrite(entity, body['row'], 'update');
                 const names = Object.keys(row);
-                const result = await pool.query(`UPDATE ${table} SET ${names.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(names.length)} AND xmin::text = $${names.length + key.length + 1}`, [...names.map(name => row[name]), ...key, body['version']]);
+                let result;
+                try {
+                    result = await pool.query(`UPDATE ${table} SET ${names.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(names.length)} AND xmin::text = $${names.length + key.length + 1}`, [...names.map(name => row[name]), ...key, body['version']]);
+                } catch (error) {
+                    // PostgreSQL identifies the referencing table without exposing submitted values.
+                    const dependent = error instanceof Error && 'table' in error
+                        ? Object.values(myEntities).find(definition => definition.name === error.table) : undefined;
+                    const changedKey = entity.pk.some((name, index) => Object.hasOwn(row, name) && row[name] !== key[index]);
+                    if (error instanceof Error && 'code' in error && error.code === '23503' && changedKey &&
+                        dependent && dependent.name !== entity.name &&
+                        Object.values(entities.get(dependent.name)!.fks).some(fk => fk.entity === entity.name)) {
+                        throw new ApiFailure(409, `No se puede cambiar la clave porque hay registros en ${entityLabels[dependent.name]} que utilizan esta fila. Tu borrador se conserva; podés corregir la clave o cancelar los cambios.`);
+                    }
+                    throw error;
+                }
                 if (!result.rowCount) throw new ApiFailure(409, 'Otra persona cambió o eliminó este registro. Tu borrador se conservó; revisá los datos actuales antes de volver a guardar.');
                 publish(definition.name);
                 res.sendStatus(204);

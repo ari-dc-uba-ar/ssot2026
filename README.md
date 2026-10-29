@@ -483,6 +483,9 @@ notification channel before scaling beyond the current deployment.
 The `materias.plan` relationship references `planes.plan`; deleting or renumbering
 a referenced plan is rejected. Migration `0004_materias_plan_fk` adds only that
 constraint and requires existing non-null plan values to have matching rows.
+Changing a referenced primary key (for example, a Materia code used by
+Inscripciones) remains blocked. The save error identifies the dependent entity;
+the row stays in draft until its key is corrected or its changes are cancelled.
 
 All mutations use JSON at `/api/entities/:name`:
 

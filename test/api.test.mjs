@@ -241,6 +241,32 @@ test('missing rows and constraint conflicts have useful, non-sensitive errors', 
     assert.deepEqual(await conflict.json(), {error: 'Ya existe un registro con esa clave.'});
 });
 
+test('referenced key changes explain the dependent entity without exposing database details', async t => {
+    let referencingTable = 'enrolamientos';
+    const base = await startApi(t, async () => {
+        throw Object.assign(new Error('Internal SQL and submitted values'), {
+            code: '23503', table: referencingTable, detail: 'Sensitive record contents',
+        });
+    });
+    const row = {cod_mat: 'ARIA', cod_dep: 'DC', materia: 'Arquitectura', plan: null, obligatoria: false};
+    const update = {key: {cod_mat: 'ARI', cod_dep: 'DC'}, row, version: '1'};
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const response = await send(base, 'materias', 'PUT', update);
+        assert.equal(response.status, 409);
+        assert.deepEqual(await response.json(), {
+            error: 'No se puede cambiar la clave porque hay registros en Inscripciones que utilizan esta fila. Tu borrador se conserva; podés corregir la clave o cancelar los cambios.',
+        });
+    }
+    const unchangedKey = await send(base, 'materias', 'PUT', {...update, row: {...row, cod_mat: 'ARI'}});
+    assert.deepEqual(await unchangedKey.json(), {error: 'El registro tiene una referencia inválida o está siendo utilizado.'});
+    // An outgoing or unknown constraint must not be misreported as a dependent row.
+    for (referencingTable of ['materias', 'unknown']) {
+        const response = await send(base, 'materias', 'PUT', update);
+        assert.equal(response.status, 409);
+        assert.deepEqual(await response.json(), {error: 'El registro tiene una referencia inválida o está siendo utilizado.'});
+    }
+});
+
 test('delete dependency checks report simple and composite SSOT foreign keys', async t => {
     const queries = [];
     const base = await startApi(t, async (sql, values) => {
