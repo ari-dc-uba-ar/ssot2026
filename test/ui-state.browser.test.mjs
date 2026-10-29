@@ -186,6 +186,44 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                     await click('#confirm-ok');
                     await waitFor(() => !document.querySelector('tr.new-row'));
                 });
+                await t.test('refreshing another saved row preserves the original version of a conflicting draft', async () => {
+                    const previous = (await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre;
+                    await enter('tbody tr:first-child [name=nombre]', 'Local conflict');
+                    await pool.query("UPDATE ssot.estudiantes SET nombre = 'Remote edit' WHERE legajo = 'E001'");
+                    publish('estudiantes');
+                    await waitFor(() => document.querySelector('#status').textContent.includes('Hay datos nuevos'));
+                    await enter('tbody tr:last-child [name=nombre]', 'Independent edit');
+                    await click('tbody tr:last-child [aria-label=Guardar]');
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
+                        (await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E002'")).rows[0].nombre === 'Independent edit');
+                    await click('tbody tr:first-child [aria-label=Guardar]');
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('#status').textContent.includes('Otra persona'));
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [name=nombre]').value), 'Local conflict');
+                    assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Remote edit');
+                    await click('tbody tr:first-child [aria-label="Ver datos actuales"]');
+                    await waitFor(() => [...document.querySelectorAll('dialog[open] h2')].some(heading => heading.textContent === 'Revisar cambios'));
+                    assert.deepEqual(await inPage(() => {
+                        const dialog = [...document.querySelectorAll('dialog[open]')].find(dialog => dialog.querySelector('h2')?.textContent === 'Revisar cambios');
+                        return [...[...dialog.querySelectorAll('tbody tr')].find(row => row.querySelector('th').textContent === 'Nombre').querySelectorAll('td')].map(cell => cell.textContent);
+                    }), [previous, 'Remote edit', 'Local conflict']);
+                    await inPage(() => [...document.querySelectorAll('dialog[open]')].find(dialog => dialog.querySelector('h2')?.textContent === 'Revisar cambios').querySelector('button').click());
+                    await click('tbody tr:first-child [aria-label=Cancelar]');
+                    await click('#confirm-ok');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [name=nombre]').value), 'Remote edit');
+                });
+                await t.test('saving a changed primary key preserves its row selection and the next edit uses the new key', async () => {
+                    await idle();
+                    await click('tbody tr:last-child .selection-col input');
+                    await enter('tbody tr:last-child [name=legajo]', 'E002R');
+                    await click('tbody tr:last-child [aria-label=Guardar]');
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('tbody tr:last-child [name=legajo]')?.value === 'E002R');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:last-child .selection-col input').checked), true);
+                    await enter('tbody tr:last-child [name=nombre]', 'After rename');
+                    await click('tbody tr:last-child [aria-label=Guardar]');
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
+                        (await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E002R'")).rows[0]?.nombre === 'After rename');
+                    assert.equal((await pool.query("SELECT count(*)::int AS count FROM ssot.estudiantes WHERE legajo = 'E002'")).rows[0].count, 0);
+                });
                 await t.test('a rejected key change keeps Guardar visible and never blocks saving another row', async () => {
                     await waitFor(() => {
                         if (document.querySelector('#workspace').disabled) return false;

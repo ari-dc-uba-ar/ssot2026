@@ -27,7 +27,6 @@ let invalidateView: (name: EntityName | null) => void = () => {};
 let resumeLive = () => {};
 let canLeaveView = async () => true;
 let viewGeneration = 0;
-let allEntities: EntityName[] = [];
 let currentEntity: EntityName | null = null;
 const navigation = createTableNavigation(name => {
     if (workspace.disabled) return;
@@ -57,7 +56,9 @@ function rowKey(entity: EntityResponse, row: Row): EntityKey {
     return Object.fromEntries(entity.pk.map(name => [name, values[name]])) as EntityKey;
 }
 
-async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () => Promise<void>, previous?: {row: Row; version: string}): Promise<void> {
+type RowSnapshot = {row: Row; version: string};
+
+async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () => Promise<void>, previous?: RowSnapshot): Promise<void> {
     editor.problems([]);
     if (!editor.valid()) return;
     await run(async () => {
@@ -113,14 +114,13 @@ async function show(name: EntityName): Promise<void> {
     let page = 1;
     let pinnedColumn: string | null = null;
     let adding: RowEditor | undefined;
-    const editors = new Map<Row, RowEditor>();
-    const originals = new WeakMap<RowEditor, {row: Row; version: string}>();
+    const editors = new Map<string, RowSnapshot & {editor: RowEditor}>();
     const selectedRows = new Map<string, Row>();
     const selectionKey = (row: Row) => JSON.stringify(rowKey(entity, row));
     let selectionCheck = 0;
     const pageSize = entity.browsing.pageSize;
     const query = (): EntityQuery => ({filter, ...(sortCol ? {sort: sortCol} : {}), direction: sortAsc ? 'asc' : 'desc', page, where});
-    const dirty = () => !!adding || [...editors.values()].some(editor => editor.dirty());
+    const dirty = () => !!adding || [...editors.values()].some(({editor}) => editor.dirty());
     canLeaveView = async () => !dirty() || confirmAction({title: 'Descartar borrador',
         message: 'Cambiar de vista descartará los cambios sin guardar. ¿Continuar?', confirmText: 'Descartar', danger: true});
     let queryRevision = 0;
@@ -187,16 +187,13 @@ async function show(name: EntityName): Promise<void> {
             const nextSources = await loadReferenceSources(next.foreignKeys, load);
             if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
             const currentRows = new Map(next.rows.map((row, index) => [selectionKey(row), {row, version: next.versions[index]}]));
-            const retained = preserveDrafts ? [...editors].filter(([row, editor]) => editor.dirty() ||
-                currentRows.get(selectionKey(row))?.version === originals.get(editor)?.version) : [];
+            for (const [key, {editor, version}] of editors) {
+                if (!preserveDrafts || (!editor.dirty() && currentRows.get(key)?.version !== version)) editors.delete(key);
+            }
             entity = next;
             sources = nextSources;
             columns = createRowEditor(entity, sources, undefined, false).cells;
             if (!preserveDrafts) adding = undefined;
-            editors.clear();
-            for (const [row, editor] of retained) {
-                editors.set(currentRows.get(selectionKey(row))?.row ?? row, editor);
-            }
             for (const key of selectedRows.keys()) {
                 const current = currentRows.get(key);
                 if (current) selectedRows.set(key, current.row);
@@ -212,8 +209,7 @@ async function show(name: EntityName): Promise<void> {
         } finally { if (revision === queryRevision) table.inert = false; }
     }
 
-    const afterSave = async (editor: RowEditor) => {
-        const original = originals.get(editor)?.row;
+    const afterSave = async (editor: RowEditor, original?: Row) => {
         if (original && selectedRows.delete(selectionKey(original))) {
             const key = rowKey(entity, original);
             const input = editor.read();
@@ -471,23 +467,24 @@ async function show(name: EntityName): Promise<void> {
             num.className = 'row-idx';
             num.textContent = String(start + i + 1);
 
-            if (!editors.has(row)) {
+            const key = selectionKey(row);
+            if (!editors.has(key)) {
                 const editor = createRowEditor(entity, sources, row);
                 const version = entity.versions[entity.rows.findIndex(candidate => candidate === row)]!;
-                originals.set(editor, {row, version});
-                editors.set(row, editor);
+                editors.set(key, {editor, row, version});
             }
-            const editor = editors.get(row)!;
+            const original = editors.get(key)!;
+            const {editor} = original;
             appendCells(tr, editor);
 
             const actions = tr.insertCell();
             actions.className = 'row-actions';
-            const save = actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor), originals.get(editor)!), 'primary save-action');
+            const save = actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor, original.row), original), 'primary save-action');
             const cancel = actionButton('Cancelar', 'cancel', () => {
                 void confirmAction({title: 'Descartar cambios de la fila', message: '¿Descartar los cambios sin guardar de esta fila?',
                     confirmText: 'Descartar', danger: true}).then(ok => {
                     if (!ok) return;
-                    editors.delete(row);
+                    editors.delete(key);
                     render();
                 });
             });
@@ -501,9 +498,9 @@ async function show(name: EntityName): Promise<void> {
             actions.append(save, cancel);
             actions.append(actionButton('Ver datos actuales', 'review', () => void run(async () => {
                 cache.invalidate(name);
-                const query = {where: rowKey(entity, row)} as EntityQuery;
+                const query = {where: rowKey(entity, original.row)} as EntityQuery;
                 const current = entityPage(await load(name, query), query).rows[0];
-                reviewRow(entity, row, editor.read(), current);
+                reviewRow(entity, original.row, editor.read(), current);
             })));
         });
         for (const row of table.rows) {
@@ -564,10 +561,9 @@ initializeAuthentication(active => {
     void run(async () => {
         const catalog = await listEntities();
         if (!isAuthenticated()) return;
-        allEntities = catalog.map(entity => entity.name);
         labels = Object.fromEntries(catalog.map(entity => [entity.name, entity.label]));
         navigation.catalog(catalog);
-        if (allEntities[0]) await selectTab(allEntities[0]);
+        if (catalog[0]) await selectTab(catalog[0].name);
         else content.textContent = 'No hay planillas disponibles.';
         stopWatching = watchEntities(name => { cache.invalidate(name); invalidateView(name); });
     });
