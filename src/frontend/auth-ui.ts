@@ -1,4 +1,5 @@
-import {changePassword, clearSession, generateRecoveryCodes, login, logout, recover} from './api.js';
+import {changePassword, clearSession, generateRecoveryCodes, isAuthenticated, login, logout, recover, restoreSession} from './api.js';
+import type {AuthenticatedUser} from '../backend/browser-contract.js';
 import {confirmAction} from './confirm.js';
 
 export function initializeAuthentication(onSession: (active: boolean) => void): void {
@@ -40,6 +41,15 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         recoveryForm.reset();
         onSession(false);
         showStep('identity');
+    }
+
+    function signedIn(user: AuthenticatedUser): void {
+        loginForm.reset();
+        panel.hidden = true;
+        session.hidden = false;
+        document.querySelector('#session-user')!.textContent = user.usuario;
+        account.close();
+        onSession(true);
     }
 
     async function action(form: HTMLFormElement, work: () => Promise<void>): Promise<void> {
@@ -95,12 +105,7 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         const data = new FormData(loginForm);
         void action(loginForm, async () => {
             const result = await login(String(data.get('usuario')), String(data.get('contrasena')));
-            loginForm.reset();
-            panel.hidden = true;
-            session.hidden = false;
-            document.querySelector('#session-user')!.textContent = result.user.usuario;
-            account.close();
-            onSession(true);
+            signedIn(result.user);
         });
     };
 
@@ -174,5 +179,20 @@ export function initializeAuthentication(onSession: (active: boolean) => void): 
         signedOut();
     });
 
-    signedOut();
+    if (!isAuthenticated()) signedOut();
+    else {
+        panel.hidden = true;
+        const status = document.querySelector<HTMLElement>('#status')!;
+        status.textContent = 'Restaurando sesión…';
+        void restoreSession().then(user => {
+            if (user) signedIn(user);
+            else signedOut();
+        }).catch(() => {
+            panel.hidden = false;
+            showStep('identity');
+            error.textContent = 'No se pudo recuperar la sesión. Volvé a cargar la página para reintentar.';
+        }).finally(() => {
+            if (status.textContent === 'Restaurando sesión…') status.textContent = '';
+        });
+    }
 }

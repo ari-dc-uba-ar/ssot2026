@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {randomUUID} from 'node:crypto';
 import express from 'express';
 import {withTestDatabase} from './helpers/database.mjs';
 import {withBrowser, until} from './helpers/browser.mjs';
@@ -8,7 +9,7 @@ import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {registerEntityEvents} from '../dist/backend/entity-events.js';
 
-test('theme preferences and saved rows survive reloads and live invalidation', {timeout: 90000}, async t => {
+test('theme preferences, row edits and sessions survive navigation and live invalidation', {timeout: 90000}, async t => {
     await withTestDatabase(async ({pool}) => {
         await initializeUsers(pool, {username: 'browser', password: 'browser-test-password'});
         await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) VALUES ('E001', 'Original')");
@@ -27,6 +28,16 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                     setTimeout(() => json(body), 100);
                     return res;
                 };
+            }
+            next();
+        });
+        let logins = 0, restoreUnavailable = false;
+        app.use('/api/auth', (req, res, next) => {
+            if (req.method === 'POST' && req.path === '/login') logins++;
+            if (req.path === '/me' && restoreUnavailable) {
+                restoreUnavailable = false;
+                res.status(503).json({error: 'Temporarily unavailable'});
+                return;
             }
             next();
         });
@@ -52,9 +63,23 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                 }, selector, value);
                 const idle = () => waitFor(() => !document.querySelector('#workspace').disabled);
                 const ready = () => waitFor(() => typeof document.querySelector('#login-form')?.onsubmit === 'function');
+                const signedIn = () => waitFor(() => !document.querySelector('#workspace')?.disabled &&
+                    document.querySelector('#session-user')?.textContent === 'browser' && document.querySelector('table'));
+                const signIn = async () => {
+                    await inPage(() => {
+                        document.querySelector('#login-user').value = 'browser';
+                        document.querySelector('#identity-form').requestSubmit();
+                        document.querySelector('#login-password').value = 'browser-test-password';
+                        document.querySelector('#login-form').requestSubmit();
+                    });
+                    await signedIn();
+                };
+                const signedOut = () => waitFor(() => !document.querySelector('#authentication')?.hidden &&
+                    document.querySelector('#workspace')?.hidden && !sessionStorage.getItem('ssot-session-token'));
+                const base = `http://127.0.0.1:${server.address().port}`;
                 await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
                 await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-color-scheme', value: 'dark'}]});
-                await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}`});
+                await send('Page.navigate', {url: base});
                 await ready();
 
                 await t.test('a header control overrides the system palette and remembers the choice', async () => {
@@ -79,13 +104,7 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                     await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
                 });
 
-                await inPage(() => {
-                    document.querySelector('#login-user').value = 'browser';
-                    document.querySelector('#identity-form').requestSubmit();
-                    document.querySelector('#login-password').value = 'browser-test-password';
-                    document.querySelector('#login-form').requestSubmit();
-                });
-                await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('table'));
+                await signIn();
                 await waitFor(() => {
                     if (document.querySelector('#workspace').disabled) return false;
                     document.querySelector('[data-entity=estudiantes]').click();
@@ -163,6 +182,48 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                     await click('tr.new-row [aria-label=Cancelar]');
                     await click('#confirm-ok');
                     await waitFor(() => !document.querySelector('tr.new-row'));
+                });
+                await t.test('reloads and returning to the app restore the validated session without another login', async () => {
+                    await send('Page.reload');
+                    await ready();
+                    await signedIn();
+                    assert.equal(logins, 1);
+                    await send('Page.navigate', {url: `${base}/style.css`});
+                    await waitFor(() => location.pathname === '/style.css');
+                    await send('Page.navigate', {url: base});
+                    await ready();
+                    await signedIn();
+                    assert.equal(logins, 1);
+                });
+                await t.test('a temporary restoration failure keeps the token for a later retry', async () => {
+                    restoreUnavailable = true;
+                    await send('Page.reload');
+                    await ready();
+                    await waitFor(() => document.querySelector('#auth-status')?.textContent.includes('No se pudo recuperar la sesión'));
+                    assert.equal(await inPage(() => !!sessionStorage.getItem('ssot-session-token')), true);
+                    assert.equal(await inPage(() => document.querySelector('#workspace').hidden), true);
+                    await send('Page.reload');
+                    await ready();
+                    await signedIn();
+                    assert.equal(logins, 1);
+                });
+                await t.test('revoked sessions are removed instead of restored', async () => {
+                    await pool.query('UPDATE ssot.usuarios SET version_sesion = $1 WHERE usuario = $2', [randomUUID(), 'browser']);
+                    await send('Page.reload');
+                    await ready();
+                    await signedOut();
+                    assert.equal(logins, 1);
+                });
+                await t.test('explicit logout removes the saved session and stays logged out after reload', async () => {
+                    await signIn();
+                    assert.equal(logins, 2);
+                    await click('#logout');
+                    await click('#confirm-ok');
+                    await signedOut();
+                    await send('Page.reload');
+                    await ready();
+                    await signedOut();
+                    assert.equal(logins, 2);
                 });
                 assert.deepEqual(errors, []);
             });

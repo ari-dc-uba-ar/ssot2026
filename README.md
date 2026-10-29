@@ -294,7 +294,11 @@ expire 24 hours after login (without sliding renewal) and validate the algorithm
 claims. Every authenticated request also checks the account's existence and
 session version. Account updates, password resets/changes and logout
 revoke existing sessions. Logout closes all sessions for that account. The browser
-keeps its token in memory; reloading requires logging in again.
+keeps its token in `sessionStorage` for the current tab, so refreshing or navigating
+away and back restores the session after validating it with `GET /api/auth/me`.
+Logout, revocation or expiry clears the saved token; closing the tab ends its
+browser storage. A temporary server error retains the token for a later reload.
+When browser storage is unavailable, login still works in memory until reload.
 
 The users table is a required SSOT entity. Anonymous access is limited to login
 and recovery handlers; all entity CRUD requires authentication.
