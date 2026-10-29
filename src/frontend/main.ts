@@ -11,6 +11,7 @@ import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources, type LoadedReferenceSource} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
 import {scrollCue, updateScrollCues} from './sheet-scroll.js';
+import {rememberSheetContext} from './sheet-context.js';
 import {createRowEditor, type RowEditor, type Row, type Value} from './row-editor.js';
 
 let labels: Readonly<Record<string, string>> = {};
@@ -185,17 +186,22 @@ async function show(name: EntityName): Promise<void> {
             const next = await load(name, query());
             const nextSources = await loadReferenceSources(next.foreignKeys, load);
             if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
-            const drafts = preserveDrafts ? [...editors].filter(([, editor]) => editor.dirty()) : [];
+            const currentRows = new Map(next.rows.map((row, index) => [selectionKey(row), {row, version: next.versions[index]}]));
+            const retained = preserveDrafts ? [...editors].filter(([row, editor]) => editor.dirty() ||
+                currentRows.get(selectionKey(row))?.version === originals.get(editor)?.version) : [];
             entity = next;
             sources = nextSources;
             columns = createRowEditor(entity, sources, undefined, false).cells;
             if (!preserveDrafts) adding = undefined;
             editors.clear();
-            for (const [row, editor] of drafts) {
-                const current = entity.rows.find(candidate => selectionKey(candidate) === selectionKey(row));
-                editors.set(current ?? row, editor);
+            for (const [row, editor] of retained) {
+                editors.set(currentRows.get(selectionKey(row))?.row ?? row, editor);
             }
-            selectedRows.clear();
+            for (const key of selectedRows.keys()) {
+                const current = currentRows.get(key);
+                if (current) selectedRows.set(key, current.row);
+                else if (next.window.kind === 'complete') selectedRows.delete(key);
+            }
             render();
             await refreshDeleteSelection();
             return;
@@ -207,6 +213,14 @@ async function show(name: EntityName): Promise<void> {
     }
 
     const afterSave = async (editor: RowEditor) => {
+        const original = originals.get(editor)?.row;
+        if (original && selectedRows.delete(selectionKey(original))) {
+            const key = rowKey(entity, original);
+            const input = editor.read();
+            for (const name of entity.pk) if (input[name] != null) key[name] = input[name];
+            const selected = {...original, ...key};
+            selectedRows.set(selectionKey(selected), selected);
+        }
         if (adding === editor) {
             adding = undefined;
             render();
@@ -216,9 +230,9 @@ async function show(name: EntityName): Promise<void> {
 
     let pendingRefresh = false;
     resumeLive = () => {
-        if (!pendingRefresh || dirty() || workspace.disabled || generation !== viewGeneration) return;
+        if (!pendingRefresh || dirty() || workspace.disabled || table.contains(document.activeElement) || generation !== viewGeneration) return;
         pendingRefresh = false;
-        void run(refresh);
+        void run(() => refresh(true));
     };
     invalidateView = changed => {
         if (changed !== null && changed !== name && !sources.some(source => source.reference.entity === changed)) return;
@@ -231,6 +245,7 @@ async function show(name: EntityName): Promise<void> {
     };
 
     const table = element('table');
+    table.addEventListener('focusout', () => queueMicrotask(resumeLive));
     const headerRow = table.createTHead().insertRow();
     const idxTh = element('th', '#');
     idxTh.className = 'row-idx';
@@ -377,6 +392,7 @@ async function show(name: EntityName): Promise<void> {
     scroll.addEventListener('scroll', () => updateScrollCues(scroll), {passive: true});
 
     function render(): void {
+        const restoreContext = rememberSheetContext(scroll);
         if (!columns.some(column => column.name === pinnedColumn)) pinnedColumn = null;
         renderHeaders();
 
@@ -404,6 +420,7 @@ async function show(name: EntityName): Promise<void> {
         if (adding) {
             const tr = tbody.insertRow();
             tr.className = 'new-row';
+            tr.dataset['key'] = 'new';
             const selection = tr.insertCell();
             selection.className = 'selection-col';
             const num = tr.insertCell();
@@ -435,6 +452,7 @@ async function show(name: EntityName): Promise<void> {
 
         paged.forEach((row, i) => {
             const tr = tbody.insertRow();
+            tr.dataset['key'] = selectionKey(row);
             const selected = tr.insertCell();
             selected.className = 'selection-col';
             const checkbox = element('input');
@@ -498,6 +516,7 @@ async function show(name: EntityName): Promise<void> {
         // Anchor the left cue after any pinned column, over the scrolling headers.
         (headerRow.querySelector('.pinned-col') ?? selectTh).append(leftCue);
         updateScrollCues(scroll);
+        restoreContext();
     }
 
     function renderMissingReferences(): void {

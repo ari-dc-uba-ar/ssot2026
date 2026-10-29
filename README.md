@@ -401,6 +401,8 @@ use **Guardar**. Entity definitions, fields and inputs
 come from the API, including friendly entity labels defined in the backend.
 Successful saves reload the sheet and close the insertion controls while preserving
 other unfinished rows. Reloads retry when live events invalidate an in-flight response.
+Reloads retain existing row selections and reuse unchanged editors. Rerendering
+preserves the focused control, caret and sheet scroll position when that control remains available.
 Foreign keys use dropdowns populated from the referenced entity.
 Option labels combine the field's code and readable fields marked `isName` in
 the SSOT; plans display their number and description. Nullable references include

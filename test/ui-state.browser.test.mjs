@@ -16,7 +16,7 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
         const publish = registerEntityEvents(app, auth);
         let interruptReload = false, interrupted = 0, inserts = 0, updates = 0;
         app.use('/api/entities/estudiantes', (req, res, next) => {
-            if (req.method === 'POST') inserts++;
+            if (req.method === 'POST' && req.path === '/') inserts++;
             if (req.method === 'PUT') updates++;
             if (req.method === 'GET' && interruptReload) {
                 interruptReload = false;
@@ -94,6 +94,12 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                 await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Estudiantes');
 
                 await t.test('editing fields never saves until Guardar, and Cancelar discards only that draft', async () => {
+                    await inPage(() => {
+                        const checkbox = document.querySelector('tbody .selection-col input');
+                        checkbox.focus();
+                        checkbox.click();
+                    });
+                    assert.equal(await inPage(() => document.activeElement.getAttribute('aria-label')), 'Seleccionar fila E001');
                     await enter('tbody [name=nombre]', 'Draft');
                     await inPage(() => {
                         document.querySelector('tbody [name=nombre]').dispatchEvent(new Event('change', {bubbles: true}));
@@ -112,6 +118,14 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                 await t.test('saving inserts immediately, removes its actions and preserves another dirty row', async () => {
                     await enter('tbody [name=nombre]', 'Pending edit');
                     const originalId = await inPage(() => document.querySelector('tbody [name=nombre]').id);
+                    await inPage(id => {
+                        const input = document.getElementById(id);
+                        input.focus();
+                        input.setSelectionRange(2, 4);
+                        document.querySelector('tbody .selection-col input').click();
+                        document.querySelector('tbody .selection-col input').click();
+                    }, originalId);
+                    assert.deepEqual(await inPage(() => [document.activeElement.value, document.activeElement.selectionStart, document.activeElement.selectionEnd]), ['Pending edit', 2, 4]);
                     await click('[aria-label="Agregar fila"]');
                     await enter('tr.new-row [name=legajo]', 'E002');
                     await enter('tr.new-row [name=nombre]', 'Created');
@@ -123,6 +137,7 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                     assert.equal(inserts, 1);
                     assert.equal(await inPage(() => [...document.querySelectorAll('tbody tr')].find(row => row.querySelector('[name=legajo]')?.value === 'E002').querySelector('[aria-label=Guardar]').hidden), true);
                     assert.equal(await inPage(id => document.getElementById(id)?.value, originalId), 'Pending edit');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:not(.new-row) .selection-col input').checked), true);
                     assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Original');
                     assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E002'")).rows[0].nombre, 'Created');
                     await inPage(id => document.getElementById(id).dispatchEvent(new Event('change', {bubbles: true})), originalId);
@@ -137,12 +152,14 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                     await idle();
                     await click('[aria-label="Agregar fila"]');
                     await enter('tr.new-row [name=legajo]', 'E003');
+                    const untouchedId = await inPage(() => [...document.querySelectorAll('tbody tr')].find(row => row.querySelector('[name=legajo]')?.value === 'E002').querySelector('[name=nombre]').id);
                     await enter('tbody tr:not(.new-row) [name=nombre]', 'Another edit');
                     await inPage(() => document.querySelector('tbody tr:not(.new-row) [name=nombre]').dispatchEvent(new Event('change', {bubbles: true})));
                     await click('tbody tr:not(.new-row) [aria-label=Guardar]');
                     await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('#status').textContent === 'Guardado');
                     assert.equal(await inPage(() => document.querySelector('tr.new-row [name=legajo]').value), 'E003');
                     assert.equal(inserts, 1);
+                    assert.equal(await inPage(id => document.getElementById(id)?.value, untouchedId), 'Created');
                     await click('tr.new-row [aria-label=Cancelar]');
                     await click('#confirm-ok');
                     await waitFor(() => !document.querySelector('tr.new-row'));
