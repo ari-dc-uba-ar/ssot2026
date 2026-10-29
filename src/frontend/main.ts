@@ -113,6 +113,7 @@ async function show(name: EntityName): Promise<void> {
     let pinnedColumn: string | null = null;
     let adding: RowEditor | undefined;
     const editors = new Map<Row, RowEditor>();
+    const originals = new WeakMap<RowEditor, {row: Row; version: string}>();
     const selectedRows = new Map<string, Row>();
     const selectionKey = (row: Row) => JSON.stringify(rowKey(entity, row));
     let selectionCheck = 0;
@@ -455,20 +456,36 @@ async function show(name: EntityName): Promise<void> {
             if (!editors.has(row)) {
                 const editor = createRowEditor(entity, sources, row);
                 const version = entity.versions[entity.rows.findIndex(candidate => candidate === row)]!;
-                for (const cell of editor.cells) cell.field.addEventListener('change', () => {
-                    void saveRow(entity, editor, () => afterSave(editor), {row, version});
-                });
+                originals.set(editor, {row, version});
                 editors.set(row, editor);
             }
-            appendCells(tr, editors.get(row)!);
+            const editor = editors.get(row)!;
+            appendCells(tr, editor);
 
             const actions = tr.insertCell();
             actions.className = 'row-actions';
+            const save = actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor), originals.get(editor)!), 'primary');
+            const cancel = actionButton('Cancelar', 'cancel', () => {
+                void confirmAction({title: 'Descartar cambios de la fila', message: '¿Descartar los cambios sin guardar de esta fila?',
+                    confirmText: 'Descartar', danger: true}).then(ok => {
+                    if (!ok) return;
+                    editors.delete(row);
+                    render();
+                });
+            });
+            const updateActions = () => {
+                save.hidden = cancel.hidden = !editor.dirty();
+                tr.classList.toggle('draft-row', editor.dirty());
+            };
+            tr.addEventListener('input', updateActions);
+            tr.addEventListener('change', updateActions);
+            updateActions();
+            actions.append(save, cancel);
             actions.append(actionButton('Ver datos actuales', 'review', () => void run(async () => {
                 cache.invalidate(name);
                 const query = {where: rowKey(entity, row)} as EntityQuery;
                 const current = entityPage(await load(name, query), query).rows[0];
-                reviewRow(entity, row, editors.get(row)!.read(), current);
+                reviewRow(entity, row, editor.read(), current);
             })));
         });
         for (const row of table.rows) {

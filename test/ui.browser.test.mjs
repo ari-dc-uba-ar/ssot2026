@@ -79,7 +79,7 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').matches(':modal')"), true);
                 await evaluate("const input=document.querySelector('#table-search'); input.value='planes'; input.dispatchEvent(new Event('input'))");
                 assert.deepEqual(await evaluate("return [...document.querySelectorAll('#table-list button')].filter(b=>!b.hidden).map(b=>b.textContent)"), ['Planes de Estudio']);
-                await evaluate("document.querySelector('[data-entity=planes]').click()");
+                await until(() => evaluate("if (document.querySelector('#workspace').disabled) return false; document.querySelector('[data-entity=planes]').click(); return true;"));
                 await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Planes de Estudio'"));
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').open"), false);
                 assert.equal(await evaluate("return document.querySelectorAll('tbody tr').length"), 10);
@@ -110,7 +110,7 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 assert.equal(geometry.horizontal, true);
                 for (const key of ['header', 'selection', 'actions']) assert.ok(geometry[key] <= 2, JSON.stringify(geometry));
                 assert.ok(geometry.bottom <= 10, JSON.stringify(geometry));
-                assert.equal(await evaluate("return [...document.querySelectorAll('tbody button')].every(b=>b.getAttribute('aria-label') && b.getBoundingClientRect().height >= 44)"), true);
+                assert.equal(await evaluate("return [...document.querySelectorAll('tbody button')].filter(b=>!b.hidden).every(b=>b.getAttribute('aria-label') && b.getBoundingClientRect().height >= 44)"), true);
                 await evaluate("document.querySelector('th[data-column=descripcion] .column-pin').click()");
                 await until(() => evaluate("return document.querySelector('th.pinned-col')?.dataset.column === 'descripcion'"));
                 assert.equal(await evaluate("return document.querySelectorAll('th[aria-sort=ascending], th[aria-sort=descending]').length"), 0);
@@ -132,6 +132,7 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 await until(() => evaluate("return document.querySelector('tbody [name=plan]')?.value === '11'"));
                 assert.equal(await evaluate("return document.querySelector('tbody .pinned-col [name=descripcion]').value"), 'Plan 11');
                 await evaluate("const input=document.querySelector('tbody .pinned-col [name=descripcion]'); input.value='Edited while pinned'; input.dispatchEvent(new Event('change',{bubbles:true}))");
+                await evaluate("document.querySelector('tbody tr [aria-label=Guardar]').click()");
                 await until(async () => (await pool.query('SELECT descripcion FROM ssot.planes WHERE plan=11')).rows[0]?.descripcion === 'Edited while pinned');
                 await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('tbody .pinned-col [name=descripcion]')?.value === 'Edited while pinned'"));
                 await evaluate("document.querySelector('[aria-label=\"Agregar fila\"]').click(); document.querySelector('tr.new-row [name=descripcion]').value='Keep draft'; document.querySelector('th[data-column=plan] .column-pin').click()");

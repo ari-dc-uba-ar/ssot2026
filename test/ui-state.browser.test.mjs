@@ -14,9 +14,10 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
         await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) VALUES ('E001', 'Original')");
         const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
         const publish = registerEntityEvents(app, auth);
-        let interruptReload = false, interrupted = 0, inserts = 0;
+        let interruptReload = false, interrupted = 0, inserts = 0, updates = 0;
         app.use('/api/entities/estudiantes', (req, res, next) => {
             if (req.method === 'POST') inserts++;
+            if (req.method === 'PUT') updates++;
             if (req.method === 'GET' && interruptReload) {
                 interruptReload = false;
                 const json = res.json.bind(res);
@@ -92,6 +93,22 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                 });
                 await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Estudiantes');
 
+                await t.test('editing fields never saves until Guardar, and Cancelar discards only that draft', async () => {
+                    await enter('tbody [name=nombre]', 'Draft');
+                    await inPage(() => {
+                        document.querySelector('tbody [name=nombre]').dispatchEvent(new Event('change', {bubbles: true}));
+                        document.querySelector('tbody [name=legajo]').focus();
+                    });
+                    assert.equal(updates, 0);
+                    assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Original');
+                    assert.equal(await inPage(() => document.querySelector('tbody [aria-label=Guardar]').hidden), false);
+                    await click('tbody [aria-label=Cancelar]');
+                    await click('#confirm-ok');
+                    assert.equal(await inPage(() => document.querySelector('tbody [name=nombre]').value), 'Original');
+                    assert.equal(await inPage(() => document.querySelector('tbody [aria-label=Guardar]').hidden), true);
+                    assert.equal(updates, 0);
+                });
+
                 await t.test('saving inserts immediately, removes its actions and preserves another dirty row', async () => {
                     await enter('tbody [name=nombre]', 'Pending edit');
                     const originalId = await inPage(() => document.querySelector('tbody [name=nombre]').id);
@@ -104,11 +121,13 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                         [...document.querySelectorAll('tbody [name=legajo]')].some(input => input.value === 'E002'));
                     assert.equal(interrupted, 1, 'The reload was invalidated while its response was pending');
                     assert.equal(inserts, 1);
-                    assert.equal(await inPage(() => document.querySelectorAll('tbody [aria-label=Guardar], tbody [aria-label=Cancelar]').length), 0);
+                    assert.equal(await inPage(() => [...document.querySelectorAll('tbody tr')].find(row => row.querySelector('[name=legajo]')?.value === 'E002').querySelector('[aria-label=Guardar]').hidden), true);
                     assert.equal(await inPage(id => document.getElementById(id)?.value, originalId), 'Pending edit');
                     assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Original');
                     assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E002'")).rows[0].nombre, 'Created');
                     await inPage(id => document.getElementById(id).dispatchEvent(new Event('change', {bubbles: true})), originalId);
+                    assert.equal(updates, 0);
+                    await click('tbody tr:not(.new-row) [aria-label=Guardar]');
                     await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
                         (await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre === 'Pending edit');
                     assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Pending edit');
@@ -120,6 +139,7 @@ test('theme preferences and saved rows survive reloads and live invalidation', {
                     await enter('tr.new-row [name=legajo]', 'E003');
                     await enter('tbody tr:not(.new-row) [name=nombre]', 'Another edit');
                     await inPage(() => document.querySelector('tbody tr:not(.new-row) [name=nombre]').dispatchEvent(new Event('change', {bubbles: true})));
+                    await click('tbody tr:not(.new-row) [aria-label=Guardar]');
                     await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('#status').textContent === 'Guardado');
                     assert.equal(await inPage(() => document.querySelector('tr.new-row [name=legajo]').value), 'E003');
                     assert.equal(inserts, 1);

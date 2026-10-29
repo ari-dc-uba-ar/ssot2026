@@ -394,8 +394,10 @@ fixed columns. Indicators update on scrolling, resizing and sheet changes, and
 disappear when the sheet fits.
 
 The sheet supports inline editing, insertion, text search, typed column equality
-filters, sorting, hybrid pagination and selection-based deletion confirmations. Existing rows save on change after their
-inputs are valid; new rows use **Guardar**. Entity definitions, fields and inputs
+filters, sorting, hybrid pagination and selection-based deletion confirmations.
+Existing rows show **Guardar / Cancelar** when edited; moving between fields does
+not save. **Guardar** validates and submits the whole row together. New rows also
+use **Guardar**. Entity definitions, fields and inputs
 come from the API, including friendly entity labels defined in the backend.
 Successful saves reload the sheet and close the insertion controls while preserving
 other unfinished rows. Reloads retry when live events invalidate an in-flight response.
