@@ -1,0 +1,138 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import express from 'express';
+import {withTestDatabase} from './helpers/database.mjs';
+import {withBrowser, until} from './helpers/browser.mjs';
+import {initializeUsers} from '../dist/backend/bootstrap.js';
+import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
+import {registerEntityApi} from '../dist/backend/api.js';
+import {registerEntityEvents} from '../dist/backend/entity-events.js';
+
+test('theme preferences and saved rows survive reloads and live invalidation', {timeout: 90000}, async t => {
+    await withTestDatabase(async ({pool}) => {
+        await initializeUsers(pool, {username: 'browser', password: 'browser-test-password'});
+        await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) VALUES ('E001', 'Original')");
+        const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
+        const publish = registerEntityEvents(app, auth);
+        let interruptReload = false, interrupted = 0, inserts = 0;
+        app.use('/api/entities/estudiantes', (req, res, next) => {
+            if (req.method === 'POST') inserts++;
+            if (req.method === 'GET' && interruptReload) {
+                interruptReload = false;
+                const json = res.json.bind(res);
+                res.json = body => {
+                    interrupted++;
+                    publish('estudiantes');
+                    setTimeout(() => json(body), 100);
+                    return res;
+                };
+            }
+            next();
+        });
+        registerAuthApi(app, pool, auth);
+        registerEntityApi(app, pool, auth, publish);
+        app.use('/assets', express.static('dist/frontend'));
+        app.use(express.static('src/frontend/public'));
+        const server = await new Promise(resolve => { const server = app.listen(0, '127.0.0.1', () => resolve(server)); });
+        try {
+            await withBrowser(async ({send, evaluate, errors}) => {
+                const inPage = (fn, ...args) => evaluate(`return (${fn})(...${JSON.stringify(args)})`);
+                const waitFor = async (fn, ...args) => {
+                    try { await until(() => inPage(fn, ...args)); }
+                    catch (error) { throw new Error(`Waiting for ${fn}: ${error.message}`, {cause: error}); }
+                };
+                const click = selector => inPage(selector => document.querySelector(selector).click(), selector);
+                const enter = (selector, value) => inPage((selector, value) => {
+                    const input = document.querySelector(selector);
+                    const none = input.closest('.field').querySelector('input[type=checkbox]');
+                    if (none?.checked) none.click();
+                    input.value = value;
+                    input.dispatchEvent(new Event('input', {bubbles: true}));
+                }, selector, value);
+                const idle = () => waitFor(() => !document.querySelector('#workspace').disabled);
+                const ready = () => waitFor(() => typeof document.querySelector('#login-form')?.onsubmit === 'function');
+                await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+                await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-color-scheme', value: 'dark'}]});
+                await send('Page.navigate', {url: `http://127.0.0.1:${server.address().port}`});
+                await ready();
+
+                await t.test('a header control overrides the system palette and remembers the choice', async () => {
+                    assert.equal(await inPage(() => document.documentElement.dataset.theme), 'dark');
+                    assert.equal(await inPage(() => getComputedStyle(document.documentElement).colorScheme), 'dark');
+                    await click('#theme-toggle');
+                    assert.equal(await inPage(() => document.documentElement.dataset.theme), 'light');
+                    assert.equal(await inPage(() => getComputedStyle(document.documentElement).colorScheme), 'light');
+                    assert.equal(await inPage(() => document.querySelector('#theme-toggle').getAttribute('aria-pressed')), 'false');
+                    await send('Page.reload');
+                    await ready();
+                    assert.equal(await inPage(() => document.documentElement.dataset.theme), 'light');
+                    await click('#theme-toggle');
+                    await send('Page.reload');
+                    await ready();
+                    assert.equal(await inPage(() => document.documentElement.dataset.theme), 'dark');
+                    await send('Emulation.setDeviceMetricsOverride', {width: 320, height: 700, deviceScaleFactor: 1, mobile: true});
+                    assert.equal(await inPage(() => {
+                        const rect = document.querySelector('#theme-toggle').getBoundingClientRect();
+                        return rect.width >= 44 && rect.height >= 44 && rect.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth;
+                    }), true);
+                    await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
+                });
+
+                await inPage(() => {
+                    document.querySelector('#login-user').value = 'browser';
+                    document.querySelector('#identity-form').requestSubmit();
+                    document.querySelector('#login-password').value = 'browser-test-password';
+                    document.querySelector('#login-form').requestSubmit();
+                });
+                await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('table'));
+                await waitFor(() => {
+                    if (document.querySelector('#workspace').disabled) return false;
+                    document.querySelector('[data-entity=estudiantes]').click();
+                    return true;
+                });
+                await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Estudiantes');
+
+                await t.test('saving inserts immediately, removes its actions and preserves another dirty row', async () => {
+                    await enter('tbody [name=nombre]', 'Pending edit');
+                    const originalId = await inPage(() => document.querySelector('tbody [name=nombre]').id);
+                    await click('[aria-label="Agregar fila"]');
+                    await enter('tr.new-row [name=legajo]', 'E002');
+                    await enter('tr.new-row [name=nombre]', 'Created');
+                    interruptReload = true;
+                    await click('tr.new-row [aria-label=Guardar]');
+                    await waitFor(() => !document.querySelector('#workspace').disabled && !document.querySelector('tr.new-row') &&
+                        [...document.querySelectorAll('tbody [name=legajo]')].some(input => input.value === 'E002'));
+                    assert.equal(interrupted, 1, 'The reload was invalidated while its response was pending');
+                    assert.equal(inserts, 1);
+                    assert.equal(await inPage(() => document.querySelectorAll('tbody [aria-label=Guardar], tbody [aria-label=Cancelar]').length), 0);
+                    assert.equal(await inPage(id => document.getElementById(id)?.value, originalId), 'Pending edit');
+                    assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Original');
+                    assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E002'")).rows[0].nombre, 'Created');
+                    await inPage(id => document.getElementById(id).dispatchEvent(new Event('change', {bubbles: true})), originalId);
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
+                        (await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre === 'Pending edit');
+                    assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre, 'Pending edit');
+                });
+
+                await t.test('saving an existing row preserves an unfinished insertion', async () => {
+                    await idle();
+                    await click('[aria-label="Agregar fila"]');
+                    await enter('tr.new-row [name=legajo]', 'E003');
+                    await enter('tbody tr:not(.new-row) [name=nombre]', 'Another edit');
+                    await inPage(() => document.querySelector('tbody tr:not(.new-row) [name=nombre]').dispatchEvent(new Event('change', {bubbles: true})));
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('#status').textContent === 'Guardado');
+                    assert.equal(await inPage(() => document.querySelector('tr.new-row [name=legajo]').value), 'E003');
+                    assert.equal(inserts, 1);
+                    await click('tr.new-row [aria-label=Cancelar]');
+                    await click('#confirm-ok');
+                    await waitFor(() => !document.querySelector('tr.new-row'));
+                });
+                assert.deepEqual(errors, []);
+            });
+        } finally {
+            const closed = new Promise(resolve => server.close(resolve));
+            server.closeAllConnections();
+            await closed;
+        }
+    });
+});

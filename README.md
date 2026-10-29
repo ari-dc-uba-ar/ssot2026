@@ -382,6 +382,8 @@ filter/pagination controls, sticky column headers, and pinned selection/action
 columns inside a single two-axis scroll area. The drawer becomes a permanent
 sidebar only when its text and the sheet fit together without horizontal overflow.
 Actions use labelled icons with text added when space permits.
+The small theme button in the header switches between light and dark palettes and
+remembers the choice in this browser. Until a choice is made, it follows the system theme.
 Each data-column header has a pin toggle. One column at a time can be kept next
 to the row selectors; unpinning restores the API order. The pin survives paging,
 sorting and refreshes of the current sheet, and moving it preserves unsaved input.
@@ -395,6 +397,8 @@ The sheet supports inline editing, insertion, text search, typed column equality
 filters, sorting, hybrid pagination and selection-based deletion confirmations. Existing rows save on change after their
 inputs are valid; new rows use **Guardar**. Entity definitions, fields and inputs
 come from the API, including friendly entity labels defined in the backend.
+Successful saves reload the sheet and close the insertion controls while preserving
+other unfinished rows. Reloads retry when live events invalidate an in-flight response.
 Foreign keys use dropdowns populated from the referenced entity.
 Option labels combine the field's code and readable fields marked `isName` in
 the SSOT; plans display their number and description. Nullable references include

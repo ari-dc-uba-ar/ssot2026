@@ -25,8 +25,10 @@ export async function withBrowser(run) {
     try {
         let port;
         await until(async () => {
-            try { port = (await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]; return true; }
-            catch (error) { if (error.code !== 'ENOENT') throw error; return false; }
+            try {
+                port = Number((await readFile(join(profile, 'DevToolsActivePort'), 'utf8')).split('\n')[0]);
+                return Number.isInteger(port) && port > 0;
+            } catch (error) { if (!['ENOENT', 'EBUSY'].includes(error.code)) throw error; return false; }
         });
         const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
         socket = new WebSocket(targets.find(target => target.type === 'page').webSocketDebuggerUrl);

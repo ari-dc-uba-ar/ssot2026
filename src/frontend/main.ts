@@ -177,27 +177,40 @@ async function show(name: EntityName): Promise<void> {
     referenceNotice.className = 'reference-notice';
     referenceNotice.setAttribute('role', 'status');
 
-    async function refresh(): Promise<void> {
+    async function refresh(preserveDrafts = false): Promise<void> {
         const revision = ++queryRevision;
-        try {
+        for (;;) try {
             cache.invalidate(name);
             const next = await load(name, query());
             const nextSources = await loadReferenceSources(next.foreignKeys, load);
             if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
+            const drafts = preserveDrafts ? [...editors].filter(([, editor]) => editor.dirty()) : [];
             entity = next;
             sources = nextSources;
             columns = createRowEditor(entity, sources, undefined, false).cells;
-            adding = undefined;
+            if (!preserveDrafts) adding = undefined;
             editors.clear();
+            for (const [row, editor] of drafts) {
+                const current = entity.rows.find(candidate => selectionKey(candidate) === selectionKey(row));
+                editors.set(current ?? row, editor);
+            }
             selectedRows.clear();
             render();
             await refreshDeleteSelection();
+            return;
+        } catch (error) {
+            if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
+            if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
+            // Live invalidation can obsolete the reload following our own write.
         } finally { if (revision === queryRevision) table.inert = false; }
     }
 
     const afterSave = async (editor: RowEditor) => {
-        if (adding === editor) adding = undefined;
-        if (!dirty()) await refresh();
+        if (adding === editor) {
+            adding = undefined;
+            render();
+        }
+        await refresh(true);
     };
 
     let pendingRefresh = false;

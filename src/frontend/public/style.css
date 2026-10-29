@@ -26,11 +26,11 @@
     --danger-soft: #fde7e9;
     --danger-soft-border: #f3b2b7;
     --error: #d83b01;
-    color-scheme: light dark;
+    color-scheme: light;
     font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: var(--page);
 }
-@media (prefers-color-scheme: dark) {
-    :root {
+:root[data-theme=dark] {
+        color-scheme: dark;
         --page: #1b1a19;
         --surface: #252423;
         --surface-alt: #323130;
@@ -58,7 +58,6 @@
         --danger-soft: #442726;
         --danger-soft-border: #6e3b3d;
         --error: #f7894a;
-    }
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -68,6 +67,8 @@ h2 { font-size: 1.2rem; margin: 0; }
 h3 { font-size: 1.1rem; margin: 0 0 12px; color: var(--text); }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: none; }
 .user-nav { margin-left: auto; display: flex; align-items: center; gap: 10px; margin-top: 0; }
+#theme-toggle { flex: none; width: 44px; height: 44px; padding: 6px; border-color: transparent; background: transparent; font-size: 1.3rem; line-height: 1; }
+#theme-toggle:hover { background: var(--hover); }
 .session-info { display: flex; align-items: center; gap: 8px; font-size: .85rem; }
 .user-badge { color: var(--text); background: var(--hover); padding: 5px 10px; border-radius: 4px; font-size: .85rem; }
 #authentication { width: min(100%, 360px); margin: auto; padding: 24px 8px; }
