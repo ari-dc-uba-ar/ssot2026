@@ -8,7 +8,7 @@ import {inputConstraints} from './value-types.js';
 import {readQuery, queryEntity} from './entity-query.js';
 import type {EntityName} from './api-contract.js';
 import type {ApiError, DeleteDependencyBlocker, DeleteDependencyCheck, EntityForeignKey, EntityNamesResponse, EntityResponse} from './api-contract.js';
-import {ApiFailure, apiErrorHandler, readObject} from './api-errors.js';
+import {ApiFailure, apiErrorHandler, explainKeyChangeFailure, readObject} from './api-errors.js';
 import type {Authentication} from './auth.js';
 import {allowedFields} from './column-security.js';
 import {entityTable, insertPreparedRow, prepareEntityWrite} from './entity-write.js';
@@ -37,6 +37,12 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
         const readNames = Object.keys(readable);
         const table = entityTable(entity.name);
         const keys = Object.fromEntries(entity.pk.map(name => [name, entity.fields[name]!]));
+        const dependentLabels = new Map<string, string>();
+        for (const [name, dependent] of entities) {
+            if (name !== entity.name && Object.values(dependent.fks).some(fk => fk.entity === entity.name)) {
+                dependentLabels.set(name, entityLabels[name]);
+            }
+        }
         const columns = Object.values(readable).filter(field => field.visible)
             .map(({name, label, type, nullable, writable}) => ({name, label, type, nullable, writable, constraints: inputConstraints[type]}));
         const inputs = Object.values(writable).map(({inputName: name, inputType: type, inputConstraints: constraints, label, nullable, transform}) => ({
@@ -183,21 +189,10 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
                 const key = keyValues(body['key']);
                 const row = await prepareEntityWrite(entity, body['row'], 'update');
                 const names = Object.keys(row);
-                let result;
-                try {
-                    result = await pool.query(`UPDATE ${table} SET ${names.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(names.length)} AND xmin::text = $${names.length + key.length + 1}`, [...names.map(name => row[name]), ...key, body['version']]);
-                } catch (error) {
-                    // PostgreSQL identifies the referencing table without exposing submitted values.
-                    const dependent = error instanceof Error && 'table' in error
-                        ? Object.values(myEntities).find(definition => definition.name === error.table) : undefined;
+                const result = await pool.query(`UPDATE ${table} SET ${names.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(names.length)} AND xmin::text = $${names.length + key.length + 1}`, [...names.map(name => row[name]), ...key, body['version']]).catch((error: unknown) => {
                     const changedKey = entity.pk.some((name, index) => Object.hasOwn(row, name) && row[name] !== key[index]);
-                    if (error instanceof Error && 'code' in error && error.code === '23503' && changedKey &&
-                        dependent && dependent.name !== entity.name &&
-                        Object.values(entities.get(dependent.name)!.fks).some(fk => fk.entity === entity.name)) {
-                        throw new ApiFailure(409, `No se puede cambiar la clave porque hay registros en ${entityLabels[dependent.name]} que utilizan esta fila. Tu borrador se conserva; podés corregir la clave o cancelar los cambios.`);
-                    }
-                    throw error;
-                }
+                    throw explainKeyChangeFailure(error, changedKey, dependentLabels);
+                });
                 if (!result.rowCount) throw new ApiFailure(409, 'Otra persona cambió o eliminó este registro. Tu borrador se conservó; revisá los datos actuales antes de volver a guardar.');
                 publish(definition.name);
                 res.sendStatus(204);

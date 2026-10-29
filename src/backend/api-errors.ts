@@ -20,6 +20,14 @@ export function readObject(value: unknown, required: readonly string[], optional
     return value;
 }
 
+export function explainKeyChangeFailure(error: unknown, changedKey: boolean, dependentLabels: ReadonlyMap<string, string>): unknown {
+    if (!changedKey || !(error instanceof Error) || !('code' in error) || error.code !== '23503' ||
+        !('table' in error) || typeof error.table !== 'string') return error;
+    // PostgreSQL identifies the referencing table without exposing submitted values.
+    const label = dependentLabels.get(error.table);
+    return label ? new ApiFailure(409, `No se puede cambiar la clave porque hay registros en ${label} que utilizan esta fila. Tu borrador se conserva; podés corregir la clave o cancelar los cambios.`) : error;
+}
+
 export const apiErrorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
     const conflicts: Record<string, string> = {
         '23505': 'Ya existe un registro con esa clave.',
