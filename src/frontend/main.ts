@@ -8,7 +8,7 @@ import {actionButton, setActionLabel} from './action-button.js';
 import {createTableNavigation} from './table-navigation.js';
 import {reviewRow} from './review-row.js';
 import {initializeAuthentication} from './auth-ui.js';
-import {loadReferenceSources, type LoadedReferenceSource} from './reference-sources.js';
+import {loadReferenceSources} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
 import {scrollCue, updateScrollCues} from './sheet-scroll.js';
 import {rememberSheetContext} from './sheet-context.js';
@@ -72,7 +72,6 @@ async function saveRow(entity: EntityResponse, editor: RowEditor, refresh: () =>
             throw error;
         }
         editor.saved();
-        cache.invalidate(entity.name);
         await refresh();
         status.textContent = previous ? 'Guardado' : 'Fila agregada correctamente.';
     });
@@ -85,26 +84,32 @@ async function selectTab(name: EntityName): Promise<void> {
     await show(name);
 }
 
+async function loadCurrent<T>(read: () => Promise<T>, isCurrent: () => boolean): Promise<T> {
+    while (isCurrent()) {
+        try {
+            const result = await read();
+            if (isCurrent()) return result;
+        } catch (error) {
+            if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
+        }
+    }
+    throw new DOMException('Obsolete view', 'AbortError');
+}
+
+async function loadSheet(name: EntityName, query?: EntityQuery) {
+    const entity = await load(name, query);
+    return {entity, sources: await loadReferenceSources(entity.foreignKeys, load)};
+}
+
 async function show(name: EntityName): Promise<void> {
     const generation = ++viewGeneration;
     invalidateView = () => {};
     resumeLive = () => {};
-    let entity: EntityResponse;
-    let sources: LoadedReferenceSource[];
-    for (;;) {
-        try {
-            entity = await load(name);
-            sources = await loadReferenceSources(entity.foreignKeys, load);
-            break;
-        } catch (error) {
-            // A live change can invalidate a request while a tab is opening.
-            if (!(error instanceof DOMException && error.name === 'AbortError') || !isAuthenticated() || generation !== viewGeneration) throw error;
-        }
-    }
+    const isCurrent = () => isAuthenticated() && generation === viewGeneration;
+    let {entity, sources} = await loadCurrent(() => loadSheet(name), isCurrent);
     const title = entity.label;
     const unit = title.toLowerCase();
 
-    if (!isAuthenticated() || generation !== viewGeneration) return;
     let columns = createRowEditor(entity, sources, undefined, false).cells;
 
     let filter = '';
@@ -136,9 +141,7 @@ async function show(name: EntityName): Promise<void> {
         const revision = ++queryRevision;
         table.inert = true;
         try {
-            const next = await load(name, query());
-            if (revision !== queryRevision || generation !== viewGeneration) return false;
-            entity = next;
+            entity = await loadCurrent(() => load(name, query()), () => isCurrent() && revision === queryRevision);
             render();
             return true;
         } catch (error) {
@@ -181,31 +184,28 @@ async function show(name: EntityName): Promise<void> {
 
     async function refresh(preserveDrafts = false): Promise<void> {
         const revision = ++queryRevision;
-        for (;;) try {
-            cache.invalidate(name);
-            const next = await load(name, query());
-            const nextSources = await loadReferenceSources(next.foreignKeys, load);
-            if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
-            const currentRows = new Map(next.rows.map((row, index) => [selectionKey(row), {row, version: next.versions[index]}]));
+        cache.invalidate(name);
+        try {
+            const next = await loadCurrent(() => {
+                // Each attempt includes the notifications received before it started.
+                pendingRefresh = false;
+                return loadSheet(name, query());
+            }, () => isCurrent() && revision === queryRevision);
+            const currentRows = new Map(next.entity.rows.map((row, index) => [selectionKey(row), {row, version: next.entity.versions[index]}]));
             for (const [key, {editor, version}] of editors) {
                 if (!preserveDrafts || (!editor.dirty() && currentRows.get(key)?.version !== version)) editors.delete(key);
             }
-            entity = next;
-            sources = nextSources;
+            entity = next.entity;
+            sources = next.sources;
             columns = createRowEditor(entity, sources, undefined, false).cells;
             if (!preserveDrafts) adding = undefined;
             for (const key of selectedRows.keys()) {
                 const current = currentRows.get(key);
                 if (current) selectedRows.set(key, current.row);
-                else if (next.window.kind === 'complete') selectedRows.delete(key);
+                else if (entity.window.kind === 'complete') selectedRows.delete(key);
             }
             render();
             await refreshDeleteSelection();
-            return;
-        } catch (error) {
-            if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
-            if (!isAuthenticated() || generation !== viewGeneration || revision !== queryRevision) return;
-            // Live invalidation can obsolete the reload following our own write.
         } finally { if (revision === queryRevision) table.inert = false; }
     }
 
@@ -227,7 +227,6 @@ async function show(name: EntityName): Promise<void> {
     let pendingRefresh = false;
     resumeLive = () => {
         if (!pendingRefresh || dirty() || workspace.disabled || table.contains(document.activeElement) || generation !== viewGeneration) return;
-        pendingRefresh = false;
         void run(() => refresh(true));
     };
     invalidateView = changed => {

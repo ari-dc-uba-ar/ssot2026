@@ -18,8 +18,9 @@ test('theme preferences, row edits and sessions survive navigation and live inva
         await pool.query("INSERT INTO ssot.enrolamientos (legajo, cod_mat, cod_dep, año, cuatrimestre) VALUES ('E001', 'ALG', 'DC', 2026, '1C')");
         const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
         const publish = registerEntityEvents(app, auth);
-        let interruptReload = false, interrupted = 0, inserts = 0, updates = 0;
+        let interruptReload = false, interrupted = 0, inserts = 0, updates = 0, reads = 0;
         app.use('/api/entities/estudiantes', (req, res, next) => {
+            if (req.method === 'GET') reads++;
             if (req.method === 'POST' && req.path === '/') inserts++;
             if (req.method === 'PUT') updates++;
             if (req.method === 'GET' && interruptReload) {
@@ -185,6 +186,19 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                     await click('tr.new-row [aria-label=Cancelar]');
                     await click('#confirm-ok');
                     await waitFor(() => !document.querySelector('tr.new-row'));
+                });
+                await t.test('a save reload consumes earlier notifications and retries an invalidated response only once', async () => {
+                    await idle();
+                    const before = reads;
+                    await enter('tbody tr:first-child [name=nombre]', 'One reload');
+                    interruptReload = true;
+                    await click('tbody tr:first-child [aria-label=Guardar]');
+                    await waitFor(() => !document.querySelector('#workspace').disabled &&
+                        document.querySelector('tbody tr:first-child [name=nombre]')?.value === 'One reload' &&
+                        document.querySelector('tbody tr:first-child [aria-label=Guardar]').hidden);
+                    await inPage(() => document.querySelector('#theme-toggle').focus());
+                    await idle();
+                    assert.equal(reads - before, 2, 'One obsolete response and one successful retry, without a queued duplicate reload');
                 });
                 await t.test('refreshing another saved row preserves the original version of a conflicting draft', async () => {
                     const previous = (await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'E001'")).rows[0].nombre;
