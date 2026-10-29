@@ -433,7 +433,7 @@ async function show(name: EntityName): Promise<void> {
             const actions = tr.insertCell();
             actions.className = 'row-actions';
             actions.append(
-                actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor)), 'primary'),
+                actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor)), 'primary save-action'),
                 actionButton('Cancelar', 'cancel', () => {
                     void confirmAction({
                         title: 'Descartar nueva fila',
@@ -482,7 +482,7 @@ async function show(name: EntityName): Promise<void> {
 
             const actions = tr.insertCell();
             actions.className = 'row-actions';
-            const save = actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor), originals.get(editor)!), 'primary');
+            const save = actionButton('Guardar', 'save', () => void saveRow(entity, editor, () => afterSave(editor), originals.get(editor)!), 'primary save-action');
             const cancel = actionButton('Cancelar', 'cancel', () => {
                 void confirmAction({title: 'Descartar cambios de la fila', message: '¿Descartar los cambios sin guardar de esta fila?',
                     confirmText: 'Descartar', danger: true}).then(ok => {

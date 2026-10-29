@@ -144,6 +144,7 @@ td input[type=checkbox] { width: auto; height: auto; }
 .icon-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; padding: 8px; }
 .icon-action svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .action-label { display: none; }
+.save-action .action-label { display: inline; }
 .row-actions { white-space: nowrap; }
 
 #status:empty { display: none; }

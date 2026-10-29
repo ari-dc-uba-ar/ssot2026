@@ -13,6 +13,9 @@ test('theme preferences, row edits and sessions survive navigation and live inva
     await withTestDatabase(async ({pool}) => {
         await initializeUsers(pool, {username: 'browser', password: 'browser-test-password'});
         await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) VALUES ('E001', 'Original')");
+        await pool.query("INSERT INTO ssot.departamentos (cod_dep, departamento) VALUES ('DC', 'Computación')");
+        await pool.query("INSERT INTO ssot.materias (cod_mat, cod_dep, materia) VALUES ('ALG', 'DC', 'Algoritmos'), ('OTRA', 'DC', 'Otra materia')");
+        await pool.query("INSERT INTO ssot.enrolamientos (legajo, cod_mat, cod_dep, año, cuatrimestre) VALUES ('E001', 'ALG', 'DC', 2026, '1C')");
         const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
         const publish = registerEntityEvents(app, auth);
         let interruptReload = false, interrupted = 0, inserts = 0, updates = 0;
@@ -182,6 +185,47 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                     await click('tr.new-row [aria-label=Cancelar]');
                     await click('#confirm-ok');
                     await waitFor(() => !document.querySelector('tr.new-row'));
+                });
+                await t.test('a rejected key change keeps Guardar visible and never blocks saving another row', async () => {
+                    await waitFor(() => {
+                        if (document.querySelector('#workspace').disabled) return false;
+                        document.querySelector('[data-entity=materias]').click();
+                        return true;
+                    });
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Materias');
+                    const first = 'tbody tr:first-child';
+                    await enter(`${first} [name=materia]`, 'Algoritmos editados');
+                    await click(`${first} [aria-label=Guardar]`);
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
+                        (await pool.query("SELECT materia FROM ssot.materias WHERE cod_mat = 'ALG'")).rows[0].materia === 'Algoritmos editados');
+                    await enter(`${first} [name=cod_mat]`, 'RENAMED');
+                    await click(`${first} [aria-label=Guardar]`);
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('#status').classList.contains('error'));
+                    const errorMessage = await inPage(() => document.querySelector('#status').textContent);
+                    assert.match(errorMessage, /No se puede cambiar la clave.*Inscripciones/);
+                    assert.match(errorMessage, /Tu borrador se conserva/);
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [name=cod_mat]').value), 'RENAMED');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [aria-label=Guardar]').hidden), false);
+                    for (const width of [320, 1440]) {
+                        await send('Emulation.setDeviceMetricsOverride', {width, height: 900, deviceScaleFactor: 1, mobile: width === 320});
+                        await waitFor(() => getComputedStyle(document.querySelector('tbody tr:first-child [aria-label=Guardar] .action-label')).display !== 'none');
+                    }
+                    await click(`${first} [aria-label=Guardar]`);
+                    await waitFor(message => !document.querySelector('#workspace').disabled && document.querySelector('#status').textContent === message, errorMessage);
+                    await enter('tbody tr:last-child [name=materia]', 'Other draft');
+                    await click('tbody tr:last-child [aria-label=Guardar]');
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
+                        (await pool.query("SELECT materia FROM ssot.materias WHERE cod_mat = 'OTRA'")).rows[0].materia === 'Other draft');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [name=cod_mat]').value), 'RENAMED');
+                    await click(`${first} [aria-label=Guardar]`);
+                    await waitFor(message => !document.querySelector('#workspace').disabled && document.querySelector('#status').textContent === message, errorMessage);
+                    await enter(`${first} [name=cod_mat]`, 'ALG');
+                    await enter(`${first} [name=materia]`, 'Corrected edit');
+                    await click(`${first} [aria-label=Guardar]`);
+                    await until(async () => !await inPage(() => document.querySelector('#workspace').disabled) &&
+                        (await pool.query("SELECT materia FROM ssot.materias WHERE cod_mat = 'ALG'")).rows[0].materia === 'Corrected edit');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [aria-label=Guardar]').hidden), true);
+                    assert.equal((await pool.query("SELECT cod_mat FROM ssot.enrolamientos WHERE legajo = 'E001'")).rows[0].cod_mat, 'ALG');
                 });
                 await t.test('reloads and returning to the app restore the validated session without another login', async () => {
                     await send('Page.reload');
