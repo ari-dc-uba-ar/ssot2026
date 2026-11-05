@@ -180,3 +180,7 @@ thead .pinned-col { z-index: 3; background: var(--surface-alt); }
 .horizontal-overflow .scroll-cue { display: flex; }
 .scroll-cue:disabled { visibility: hidden; }
 .scroll-cue .action-label { display: none; }
+
+.menu-group { display: grid; gap: 4px; }
+.menu-group > summary { cursor: pointer; font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); padding: 6px 2px 2px; }
+.menu-group[open] > summary { margin-bottom: 2px; }

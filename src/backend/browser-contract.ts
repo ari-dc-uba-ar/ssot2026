@@ -10,7 +10,7 @@ export type EntityKey = Record<string, NonNullable<FieldValue>>;
 export type EntityCreate = EntityRow;
 export type EntityInput = EntityRow;
 export type EntityUpdate = {key: EntityKey; row: EntityInput; version: string};
-export type EntityNamesResponse = {name: EntityName; label: string}[];
+export type EntityNamesResponse = {name: EntityName; label: string; area: string}[];
 export type EntityQuery = {
     filter?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number;
     where?: Readonly<Partial<EntityRow>>;

@@ -6,7 +6,7 @@ import type {EntityResponse as BrowserEntityResponse} from './browser-contract.j
 export type {EntityWindow, ApiError, AuthenticatedUser, LoginResponse, RecoveryCodesResponse} from './browser-contract.js';
 
 export type EntityName = keyof typeof myEntities;
-export type EntityNamesResponse = {name: EntityName; label: string}[];
+export type EntityNamesResponse = {name: EntityName; label: string; area: string}[];
 export type EntityQuery<E extends EntityName = EntityName> = E extends EntityName ? {
     filter?: string; sort?: keyof EntityRow<E> & string; direction?: 'asc' | 'desc'; page?: number;
     where?: Readonly<Partial<EntityRow<E>>>;
