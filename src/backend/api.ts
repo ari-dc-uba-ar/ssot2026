@@ -12,6 +12,7 @@ import {ApiFailure, apiErrorHandler, explainKeyChangeFailure, readObject} from '
 import type {Authentication} from './auth.js';
 import {allowedFields} from './column-security.js';
 import {entityTable, insertPreparedRow, prepareEntityWrite} from './entity-write.js';
+import {exportEntityCsv, importEntityCsv} from './entity-csv.js';
 
 function readRow(fields: EntityInfo<typeof myContext>['fields'], value: unknown): Record<string, unknown> {
     const row = readObject(value, Object.keys(fields));
@@ -64,6 +65,17 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
             return entity.pk.map(name => row[name]);
         };
         const where = (offset = 0) => entity.pk.map((name, i) => `${quote(name)} = $${offset + i + 1}`).join(' AND ');
+        router.get(`/${entity.name}/csv`, async (_req, res) => {
+            const csv = await exportEntityCsv(pool, entity);
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="${entity.name}.csv"`);
+            res.send(csv);
+        });
+        router.post(`/${entity.name}/csv`, express.text({type: 'text/csv', limit: '10mb'}), async (req, res) => {
+            const result = await importEntityCsv(pool, entity, req.body);
+            if (result.inserted) publish(definition.name);
+            res.json(result);
+        });
         const readKeys = (value: unknown): unknown[][] => {
             const body = readObject(value, ['keys']);
             if (!Array.isArray(body['keys']) || body['keys'].length === 0 || body['keys'].length > browsing.bulkDeleteLimit) {

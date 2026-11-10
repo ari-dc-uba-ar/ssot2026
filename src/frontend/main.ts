@@ -1,5 +1,5 @@
 import type {EntityCreate, EntityKey, EntityName, EntityResponse, EntityUpdate, DeleteDependencyCheck, EntityQuery} from '../backend/browser-contract.js';
-import {ApiRequestError, checkDeleteDependencies, createRow, deleteRows, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
+import {ApiRequestError, checkDeleteDependencies, createRow, deleteRows, exportEntityCsv, importEntityCsv, isAuthenticated, listEntities, updateRow, watchEntities} from './api.js';
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
 import {editColumnFilters} from './column-filters.js';
@@ -176,6 +176,34 @@ async function show(name: EntityName): Promise<void> {
         for (const source of sources) cache.invalidate(source.reference.entity);
         await refresh();
     }); }));
+    toolbar.append(actionButton('Exportar CSV', 'download', () => { void run(async () => {
+        const blob = await exportEntityCsv(name);
+        const url = URL.createObjectURL(blob);
+        const link = element('a');
+        link.href = url;
+        link.download = `${name}.csv`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+        status.textContent = 'CSV exportado.';
+    }); }));
+    if (name !== 'usuarios') {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.csv,text/csv';
+        fileInput.hidden = true;
+        fileInput.onchange = () => {
+            const file = fileInput.files?.[0];
+            fileInput.value = '';
+            if (!file) return;
+            void run(async () => {
+                if (file.size > 10 * 1024 * 1024) throw new Error('El archivo CSV supera el límite de 10 MB.');
+                const result = await importEntityCsv(name, await file.text());
+                await refresh(true);
+                status.textContent = `Importación completa: ${result.inserted} agregadas, ${result.unchanged} ya existentes.`;
+            });
+        };
+        toolbar.append(fileInput, actionButton('Importar CSV', 'upload', () => fileInput.click()));
+    }
     const addButton = actionButton('Agregar fila', 'add', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary');
     toolbar.append(addButton);
     const referenceNotice = element('div');

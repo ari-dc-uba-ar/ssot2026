@@ -1,4 +1,4 @@
-import type {ApiError, AuthenticatedUser, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/browser-contract.js';
+import type {ApiError, AuthenticatedUser, CsvImportResponse, DeleteDependencyCheck, EntityCreate, EntityKey, EntityName, EntityNamesResponse, EntityResponse, EntityUpdate, LoginResponse, RecoveryCodesResponse} from '../backend/browser-contract.js';
 import type {Problem} from 'system-definition';
 import type {EntityName as ChangedEntity, EntityQuery} from '../backend/browser-contract.js';
 import {messageOf} from './messages.js';
@@ -24,14 +24,14 @@ function storeToken(value: string | undefined): void {
 export const isAuthenticated = (): boolean => token !== undefined;
 export function clearSession(): void { storeToken(undefined); }
 
-async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal): Promise<Response> {
+async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal, contentType = 'application/json'): Promise<Response> {
     const requestToken = token;
     const response = await fetch(path, {
         method,
-        headers: {'Content-Type': 'application/json', ...(requestToken ? {Authorization: `Bearer ${requestToken}`} : {})},
+        headers: {'Content-Type': contentType, ...(requestToken ? {Authorization: `Bearer ${requestToken}`} : {})},
         cache: 'no-store',
         ...(signal ? {signal} : {}),
-        ...(body === undefined ? {} : {body: JSON.stringify(body)}),
+        ...(body === undefined ? {} : {body: contentType === 'text/csv' ? String(body) : JSON.stringify(body)}),
     });
     if (!response.ok) {
         if (response.status === 401 && token === requestToken && (path.startsWith('/api/entities') || path === '/api/events' || path === '/api/auth/me')) {
@@ -50,6 +50,12 @@ export async function listEntities(): Promise<EntityNamesResponse> {
 }
 export async function loadEntity(name: EntityName, query?: EntityQuery): Promise<EntityResponse> {
     return (await request(`${path(name)}?query=${encodeURIComponent(JSON.stringify(query ?? {}))}`)).json() as Promise<EntityResponse>;
+}
+export async function exportEntityCsv(name: EntityName): Promise<Blob> {
+    return (await request(`${path(name)}/csv`)).blob();
+}
+export async function importEntityCsv(name: EntityName, csv: string): Promise<CsvImportResponse> {
+    return (await request(`${path(name)}/csv`, 'POST', csv, undefined, 'text/csv')).json() as Promise<CsvImportResponse>;
 }
 
 export function watchEntities(changed: (name: ChangedEntity | null) => void): () => void {
