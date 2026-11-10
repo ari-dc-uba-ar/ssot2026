@@ -9,7 +9,7 @@ import {createTableNavigation} from './table-navigation.js';
 import {reviewRow} from './review-row.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources} from './reference-sources.js';
-import {confirmAction, showDeleteDependencies} from './confirm.js';
+import {confirmAction, showDeleteDependencies, showResultDialog} from './confirm.js';
 import {scrollCue, updateScrollCues} from './sheet-scroll.js';
 import {rememberSheetContext} from './sheet-context.js';
 import {createRowEditor, type RowEditor, type Row, type Value} from './row-editor.js';
@@ -196,10 +196,27 @@ async function show(name: EntityName): Promise<void> {
             fileInput.value = '';
             if (!file) return;
             void run(async () => {
-                if (file.size > 10 * 1024 * 1024) throw new Error('El archivo CSV supera el límite de 10 MB.');
-                const result = await importEntityCsv(name, await file.text());
-                await refresh(true);
-                status.textContent = `Importación completa: ${result.inserted} agregadas, ${result.unchanged} ya existentes.`;
+                try {
+                    if (file.size > 10 * 1024 * 1024) throw new Error('El archivo CSV supera el límite de 10 MB.');
+                    const result = await importEntityCsv(name, await file.text());
+                    let refreshMessage = '';
+                    try {
+                        await refresh(true);
+                    } catch {
+                        refreshMessage = ' La tabla no pudo actualizarse; usá “Actualizar” para ver los cambios.';
+                    }
+                    await showResultDialog({
+                        title: 'Importación completa',
+                        message: `${result.inserted} filas agregadas y ${result.unchanged} ya existentes.${refreshMessage}`,
+                        success: true,
+                    });
+                } catch (error) {
+                    await showResultDialog({
+                        title: 'No se pudo importar el CSV',
+                        message: error instanceof Error ? error.message : 'No se pudo completar la importación.',
+                        success: false,
+                    });
+                }
             });
         };
         toolbar.append(fileInput, actionButton('Importar CSV', 'upload', () => fileInput.click()));

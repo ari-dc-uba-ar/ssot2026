@@ -132,6 +132,8 @@ td input[type=checkbox] { width: auto; height: auto; }
 .dependency-list p { margin: 6px 0; }
 .confirm-content { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
 .confirm-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.result-success .confirm-icon { color: var(--accent-text); }
+.result-error .confirm-icon { color: var(--danger-text); }
 .confirm-dialog h2 { font-size: 1.15rem; margin: 0 0 6px; color: var(--text); }
 .confirm-dialog p { margin: 0; font-size: .9rem; color: var(--text-muted); line-height: 1.4; }
 .confirm-actions { justify-content: flex-end; }

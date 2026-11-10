@@ -47,7 +47,11 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
     }
     if (!records.length || records[0]!.length !== headers.length ||
         records[0]!.some((header, index) => header !== headers[index])) {
-        throw new ApiFailure(400, 'Los encabezados del CSV no coinciden con la entidad.');
+        const index = headers.findIndex((header, column) => records[0]![column] !== header);
+        const expected = headers[index];
+        throw new ApiFailure(400, expected
+            ? `El encabezado de la columna «${expected}» no coincide con la entidad.`
+            : 'Los encabezados del CSV no coinciden con la entidad.');
     }
 
     const inputRows = records.slice(1).map(record => {
@@ -60,7 +64,7 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
                 continue;
             }
             const value = myContext.behaviours[field.inputType].deserialize(text);
-            if (!value.ok) throw new ApiFailure(400, 'El CSV contiene valores inválidos.');
+            if (!value.ok) throw new ApiFailure(400, `Valor inválido en la columna «${field.label}».`);
             row[field.inputName] = value.value;
         }
         return row;
@@ -73,14 +77,27 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
     const reportConflict = (row: Record<string, unknown>) => {
         conflictCount++;
         if (conflicts.length < 50) {
-            conflicts.push(`{${entity.pk.map(name => `${name}=${JSON.stringify(row[name])}`).join(', ')}}`);
+            conflicts.push(`{${entity.pk.map(name => `«${entity.fields[name]!.label}»=${JSON.stringify(row[name])}`).join(', ')}}`);
         }
     };
     const equalCsvValues = (left: Record<string, unknown>, right: Record<string, unknown>) =>
         fields.every(field => Object.is(left[field.name], right[field.name]));
 
     for (const input of inputRows) {
-        const prepared = await prepareEntityWrite(entity, input, 'create');
+        let prepared: Record<string, unknown>;
+        try {
+            prepared = await prepareEntityWrite(entity, input, 'create');
+        } catch (error) {
+            if (!(error instanceof ApiFailure)) throw error;
+            const invalidFields = [...new Set(error.problems
+                .map(problem => problem.field && (entity.fields[problem.field]?.label ??
+                    Object.values(entity.fields).find(field => field.inputName === problem.field)?.label))
+                .filter((label): label is string => !!label))];
+            if (invalidFields.length) {
+                throw new ApiFailure(error.status, `Datos inválidos en la columna${invalidFields.length === 1 ? '' : 's'} ${invalidFields.map(label => `«${label}»`).join(', ')}.`);
+            }
+            throw error;
+        }
         const key = JSON.stringify(entity.pk.map(name => prepared[name]));
         const previous = seen.get(key);
         if (previous) {
@@ -99,6 +116,7 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
         await client.query('BEGIN');
         transactionStarted = true;
         for (const row of preparedRows) {
+            await validateForeignKeys(client, entity, row);
             const keyValues = entity.pk.map(name => row[name]);
             const where = entity.pk.map((name, index) => `${quote(name)} = $${index + 1}`).join(' AND ');
             const select = fields.map(field => quote(field.name)).join(', ');
@@ -141,4 +159,21 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
 function duplicateConflict(message: string, conflicts: readonly string[], count: number): ApiFailure {
     const additional = count - conflicts.length;
     return new ApiFailure(409, `${message}: ${conflicts.join(', ')}${additional ? ` y ${additional} más` : ''}.`);
+}
+
+async function validateForeignKeys(client: Pick<Pool, 'query'>, entity: Entity, row: Record<string, unknown>): Promise<void> {
+    for (const [relationship, foreignKey] of Object.entries(entity.fks)) {
+        const pairs = Object.entries(foreignKey.fields);
+        const sourceValues = pairs.map(([source]) => row[source]);
+        if (sourceValues.some(value => value == null)) continue;
+        const predicates = pairs.map(([, destination], index) => `${quote(destination)} = $${index + 1}`).join(' AND ');
+        const result = await client.query(
+            `SELECT 1 FROM ${entityTable(foreignKey.entity)} WHERE ${predicates} LIMIT 1`,
+            sourceValues,
+        );
+        if (!result.rows.length) {
+            const columns = pairs.map(([source]) => `«${entity.fields[source]!.label}»`);
+            throw new ApiFailure(400, `La referencia de la columna${columns.length === 1 ? '' : 's'} ${columns.join(', ')} no existe (${relationship}).`);
+        }
+    }
 }

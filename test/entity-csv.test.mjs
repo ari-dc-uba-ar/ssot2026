@@ -30,6 +30,7 @@ function fakeDatabase(name, initial = []) {
                         return {rows: []};
                     }
                     if (sql.startsWith('SELECT ')) {
+                        if (sql.startsWith('SELECT 1 FROM ')) return {rows: []};
                         const selected = /^SELECT (.+?) FROM/.exec(sql)?.[1];
                         assert.ok(selected);
                         const fields = [...selected.matchAll(/"([^"]+)"/g)].map(match => match[1]);
@@ -90,7 +91,7 @@ test('rolls back all new records when an existing primary key has different data
         'Legajo,Nombre\r\nE002,Beto\r\nE001,Otra\r\n'), error => {
         assert.ok(error instanceof ApiFailure);
         assert.equal(error.status, 409);
-        assert.match(error.message, /legajo="E001"/);
+        assert.match(error.message, /«Legajo»="E001"/);
         return true;
     });
     assert.deepEqual([...records.values()], [{legajo: 'E001', nombre: 'Ana'}]);
@@ -105,8 +106,23 @@ test('rejects malformed or mismatched headers and invalid values before opening 
     for (const csv of ['Legajo,Nombre\r\n"E001,Ana\r\n', 'legajo,Nombre\r\nE001,Ana\r\n', 'Legajo,Nombre extra\r\nE001,Ana\r\n']) {
         await assert.rejects(importEntityCsv(pool, entity('estudiantes'), csv), ApiFailure);
     }
-    await assert.rejects(importEntityCsv(pool, entity('planes'), 'Plan,Descripción\r\nno-numero,Plan\r\n'), ApiFailure);
+    await assert.rejects(importEntityCsv(pool, entity('planes'), 'Plan,Descripción\r\nno-numero,Plan\r\n'), error => {
+        assert.ok(error instanceof ApiFailure);
+        assert.match(error.message, /columna «Plan»/);
+        return true;
+    });
     assert.equal(connected, false);
+});
+
+test('reports the visible source column when a foreign-key reference does not exist', async () => {
+    const {pool} = fakeDatabase('enrolamientos');
+    await assert.rejects(importEntityCsv(pool, entity('enrolamientos'),
+        'Legajo,Código de materia,Código de departamento,Año,Cuatrimestre,Nota,Regularidad\r\nE001,ALG,DC,2026,1C,8,Regular\r\n'), error => {
+        assert.ok(error instanceof ApiFailure);
+        assert.match(error.message, /columna «Legajo»/);
+        assert.match(error.message, /no existe/);
+        return true;
+    });
 });
 
 test('does not import users', async () => {
