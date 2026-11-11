@@ -3,7 +3,8 @@
     --surface: white;
     --surface-alt: #f3f2f1;
     --hover: #edebe9;
-    --row-hover: #f9fbf9;
+    --row-stripe: #f6f6f6;
+    --row-hover: #eef5f0;
     --row-new: #f0f7f3;
     --text: #201f1e;
     --text-header: #323130;
@@ -35,7 +36,8 @@
         --surface: #252423;
         --surface-alt: #323130;
         --hover: #3b3a39;
-        --row-hover: #2d2c2b;
+        --row-stripe: #292827;
+        --row-hover: #323a34;
         --row-new: #1f3328;
         --text: #f3f2f1;
         --text-header: #e1dfdd;
@@ -101,8 +103,9 @@ th:hover { background: var(--hover); }
 th.row-idx, td.row-idx { width: 44px; text-align: center; background: var(--surface-alt); color: var(--text-muted); user-select: none; font-size: .75rem; }
 th.selection-col, td.selection-col { min-width: 44px; width: 44px; text-align: center; position: sticky; left: 0; z-index: 1; background: var(--surface); }
 th.selection-col input, td.selection-col input { margin: 0; vertical-align: middle; width: 24px; height: 24px; }
-tr:hover td { background: var(--row-hover); }
-tr.new-row td { background: var(--row-new); }
+.table-scroll > table > tbody > tr:nth-child(even) > td { background: var(--row-stripe); }
+.table-scroll > table > tbody > tr:hover > td { background: var(--row-hover); }
+.table-scroll > table > tbody > tr.new-row > td { background: var(--row-new); }
 td input, td select { width: 100%; height: 100%; border: 0; outline: none; background: transparent; padding: 2px 4px; font: inherit; color: inherit; }
 td input:focus, td select:focus { background: var(--surface); outline: 2px solid var(--accent-text); outline-offset: -2px; }
 td.has-error { background: var(--danger-soft) !important; outline: 2px solid var(--error) !important; outline-offset: -2px; }
