@@ -3,6 +3,7 @@ import {ApiRequestError, checkDeleteDependencies, createRow, deleteRows, isAuthe
 import {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
 import {editColumnFilters} from './column-filters.js';
+import {createCsvActions} from './csv-actions.js';
 import {element} from './dom.js';
 import {actionButton, setActionLabel} from './action-button.js';
 import {createTableNavigation} from './table-navigation.js';
@@ -176,6 +177,7 @@ async function show(name: EntityName): Promise<void> {
         for (const source of sources) cache.invalidate(source.reference.entity);
         await refresh();
     }); }));
+    toolbar.append(createCsvActions(entity, () => refresh(true), run));
     const addButton = actionButton('Agregar fila', 'add', () => { adding ??= createRowEditor(entity, sources); render(); }, 'primary');
     toolbar.append(addButton);
     const referenceNotice = element('div');

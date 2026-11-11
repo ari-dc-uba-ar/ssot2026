@@ -19,6 +19,10 @@ export function confirmAction(options: {
         okBtn.textContent = options.confirmText ?? 'Confirmar';
         okBtn.className = options.danger !== false ? 'danger primary' : 'primary';
     }
+    dialog.classList.remove('result-success', 'result-error');
+    const icon = dialog.querySelector<HTMLElement>('.confirm-icon');
+    if (icon) icon.textContent = '⚠️';
+    if (cancelBtn) cancelBtn.hidden = false;
 
     dialog.showModal();
 
@@ -33,6 +37,42 @@ export function confirmAction(options: {
         if (okBtn) okBtn.onclick = () => cleanup(true);
         if (cancelBtn) cancelBtn.onclick = () => cleanup(false);
         dialog.oncancel = () => cleanup(false);
+    });
+}
+
+export function showResultDialog(options: {title: string; message: string; success: boolean}): Promise<void> {
+    const dialog = document.querySelector<HTMLDialogElement>('#confirm-dialog');
+    const title = document.querySelector<HTMLElement>('#confirm-title');
+    const message = document.querySelector<HTMLElement>('#confirm-message');
+    const icon = dialog?.querySelector<HTMLElement>('.confirm-icon');
+    const ok = document.querySelector<HTMLButtonElement>('#confirm-ok');
+    const cancel = document.querySelector<HTMLButtonElement>('#confirm-cancel');
+    if (!dialog || !title || !message || !icon || !ok || !cancel) {
+        throw new Error('No se encontró el diálogo de resultados.');
+    }
+
+    title.textContent = options.title;
+    message.textContent = options.message;
+    icon.textContent = options.success ? '✓' : '⚠️';
+    dialog.classList.toggle('result-success', options.success);
+    dialog.classList.toggle('result-error', !options.success);
+    cancel.hidden = true;
+    ok.textContent = 'Entendido';
+    ok.className = options.success ? 'primary' : 'danger primary';
+
+    return new Promise(resolve => {
+        const cleanup = () => {
+            dialog.close();
+            ok.onclick = null;
+            dialog.oncancel = null;
+            dialog.classList.remove('result-success', 'result-error');
+            cancel.hidden = false;
+            resolve();
+        };
+        ok.onclick = cleanup;
+        dialog.oncancel = event => event.preventDefault();
+        dialog.showModal();
+        ok.focus();
     });
 }
 

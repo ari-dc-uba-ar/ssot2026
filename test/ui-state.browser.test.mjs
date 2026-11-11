@@ -274,6 +274,50 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                     assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [aria-label=Guardar]').hidden), true);
                     assert.equal((await pool.query("SELECT cod_mat FROM ssot.enrolamientos WHERE legajo = 'E001'")).rows[0].cod_mat, 'ALG');
                 });
+                await t.test('CSV imports preserve drafts and exports include saved data only', async () => {
+                    await idle();
+                    await click('[data-entity=estudiantes]');
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Estudiantes');
+                    await enter('tbody tr:first-child [name=nombre]', 'Keep CSV draft');
+                    const upload = text => inPage(text => {
+                        const input = document.querySelector('.toolbar input[type=file]');
+                        const files = new DataTransfer();
+                        files.items.add(new File([text], 'records.csv', {type: 'text/csv'}));
+                        input.files = files.files;
+                        input.dispatchEvent(new Event('change'));
+                    }, text);
+                    await upload('"Legajo","Nombre"\r\n"ECSV","Importado"\r\n');
+                    await waitFor(() => document.querySelector('#confirm-dialog').open && document.querySelector('#confirm-title').textContent === 'Importación completa');
+                    assert.equal(await inPage(() => document.querySelector('#confirm-message').textContent), '1 filas agregadas y 0 ya existentes.');
+                    assert.equal((await pool.query("SELECT nombre FROM ssot.estudiantes WHERE legajo = 'ECSV'")).rows[0].nombre, 'Importado');
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [name=nombre]').value), 'Keep CSV draft');
+                    await click('#confirm-ok');
+                    await idle();
+                    await send('Browser.setDownloadBehavior', {behavior: 'deny'});
+                    await inPage(() => {
+                        const create = URL.createObjectURL;
+                        URL.createObjectURL = blob => { window.downloadedCsv = blob.text(); return create(blob); };
+                    });
+                    await click('[aria-label="Exportar CSV"]');
+                    await waitFor(() => !!window.downloadedCsv && !document.querySelector('#workspace').disabled);
+                    const downloaded = await inPage(() => window.downloadedCsv);
+                    assert.match(downloaded, /"ECSV","Importado"/);
+                    assert.doesNotMatch(downloaded, /Keep CSV draft/);
+                    await upload('');
+                    await waitFor(() => document.querySelector('#confirm-dialog').open && document.querySelector('#confirm-title').textContent === 'No se pudo importar el CSV');
+                    assert.match(await inPage(() => document.querySelector('#confirm-message').textContent), /encabezado/);
+                    await click('#confirm-ok');
+                    await idle();
+                    assert.equal(await inPage(() => document.querySelector('tbody tr:first-child [name=nombre]').value), 'Keep CSV draft');
+                    await click('tbody tr:first-child [aria-label=Cancelar]');
+                    assert.equal(await inPage(() => document.querySelector('#confirm-cancel').hidden), false);
+                    await click('#confirm-ok');
+                    await waitFor(() => document.querySelector('tbody tr:first-child [aria-label=Guardar]').hidden);
+                    await click('[data-entity=usuarios]');
+                    await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Usuarios');
+                    assert.equal(await inPage(() => !!document.querySelector('[aria-label="Importar CSV"]')), false);
+                    assert.equal(await inPage(() => !!document.querySelector('[aria-label="Exportar CSV"]')), true);
+                });
                 await t.test('reloads and returning to the app restore the validated session without another login', async () => {
                     await send('Page.reload');
                     await ready();
