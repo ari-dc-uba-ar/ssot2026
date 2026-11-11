@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
 import {registerEntityApi} from '../dist/backend/api.js';
-import {myEntities, entityLabels} from '../dist/backend/system.js';
+import {myEntities, entityLabels, entityAreas} from '../dist/backend/system.js';
 import {browsing} from '../dist/backend/browsing.js';
 import {entityResult} from './helpers/entity-result.mjs';
 import {createAuthentication} from '../dist/backend/auth.js';
@@ -32,7 +32,7 @@ test('entity discovery comes from the SSOT and needs no database query', async t
     const base = await startApi(t, () => { throw new Error('Unexpected database query'); });
     const response = await fetch(`${base}/api/entities`);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), Object.keys(myEntities).map(name => ({name, label: entityLabels[name]})));
+    assert.deepEqual(await response.json(), Object.keys(myEntities).map(name => ({name, label: entityLabels[name], area: entityAreas[name]})));
     for (const name of ['unknown', 'constructor', 'materias;DROP TABLE ssot.materias']) {
         const invalid = await fetch(`${base}/api/entities/${encodeURIComponent(name)}`);
         assert.equal(invalid.status, 404);

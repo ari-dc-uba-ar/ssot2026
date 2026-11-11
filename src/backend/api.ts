@@ -2,7 +2,7 @@ import express, {type Express} from 'express';
 import type {Pool} from 'pg';
 import {completeEntity, instanceProblems, type EntityInfo} from 'system-definition';
 import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
-import {myContext, myEntities, entityLabels} from './system.js';
+import {myContext, myEntities, entityLabels, entityAreas} from './system.js';
 import {browsing} from './browsing.js';
 import {inputConstraints} from './value-types.js';
 import {readQuery, queryEntity} from './entity-query.js';
@@ -28,7 +28,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
     router.use(auth.requireUser);
     router.use(express.json({limit: '64kb'}));
     router.get('/', (_req, res) => {
-        res.json(Object.values(myEntities).map(({name}) => ({name, label: entityLabels[name]})) satisfies EntityNamesResponse);
+        res.json(Object.values(myEntities).map(({name}) => ({name, label: entityLabels[name], area: entityAreas[name]})) satisfies EntityNamesResponse);
     });
     for (const definition of Object.values(myEntities)) {
         const entity = entities.get(definition.name)!;

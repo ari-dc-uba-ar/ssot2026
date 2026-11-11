@@ -179,6 +179,11 @@ export const entityLabels = {
     departamentos: 'Departamentos', estudiantes: 'Estudiantes', enrolamientos: 'Inscripciones',
 } satisfies Record<keyof typeof myEntities, string>;
 
+export const entityAreas = {
+    materias: 'Académico', pabellones: 'Edificios', planes: 'Académico', usuarios: 'Administración',
+    departamentos: 'Académico', estudiantes: 'Estudiantes', enrolamientos: 'Estudiantes',
+} satisfies Record<keyof typeof myEntities, string>;
+
 const snapshot = captureSystemSnapshot(myContext, {
     systemId: 'ssot2026',
     entities: myEntities,

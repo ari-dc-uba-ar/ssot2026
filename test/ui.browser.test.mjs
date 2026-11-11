@@ -77,8 +77,12 @@ test('table navigation and spreadsheet work with the real API', {timeout: 90000}
                 })`), {value:null,none:'Ninguna',checkboxes:0,optionalValid:true,requiredValid:false,falseValue:false});
                 await evaluate("document.querySelector('#open-tables').click()");
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').matches(':modal')"), true);
+                assert.deepEqual(await evaluate("return [...document.querySelectorAll('#table-list summary')].map(item=>item.textContent)"), ['Académico', 'Edificios', 'Administración', 'Estudiantes']);
+                await evaluate("document.querySelector('#table-list summary').click()");
+                assert.equal(await evaluate("return document.querySelector('#table-list details').open"), false);
                 await evaluate("const input=document.querySelector('#table-search'); input.value='planes'; input.dispatchEvent(new Event('input'))");
                 assert.deepEqual(await evaluate("return [...document.querySelectorAll('#table-list button')].filter(b=>!b.hidden).map(b=>b.textContent)"), ['Planes de Estudio']);
+                assert.deepEqual(await evaluate("return [...document.querySelectorAll('#table-list details')].filter(group=>!group.hidden).map(group=>({area:group.querySelector('summary').textContent,open:group.open}))"), [{area:'Académico',open:true}]);
                 await until(() => evaluate("if (document.querySelector('#workspace').disabled) return false; document.querySelector('[data-entity=planes]').click(); return true;"));
                 await until(() => evaluate("return !document.querySelector('#workspace').disabled && document.querySelector('.sheet-heading h2')?.textContent === 'Planes de Estudio'"));
                 assert.equal(await evaluate("return document.querySelector('#tables-panel').open"), false);
