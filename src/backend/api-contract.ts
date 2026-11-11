@@ -49,7 +49,7 @@ export type EntityForeignKey = {
     }
 }[EntityName];
 
-export type EntityResponse<E extends EntityName = EntityName> = E extends EntityName ? Pick<BrowserEntityResponse, 'label' | 'browsing' | 'versions' | 'window' | 'csv'> & {
+export type EntityResponse<E extends EntityName = EntityName> = E extends EntityName ? Pick<BrowserEntityResponse, 'label' | 'browsing' | 'versions' | 'window' | 'csv' | 'references' | 'referencedBy'> & {
     name: E;
     pk: (typeof myEntities)[E]['pk'];
     columns: EntityColumn<E>[];

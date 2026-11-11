@@ -5,11 +5,30 @@ import {registerEntityApi} from '../dist/backend/api.js';
 import {myEntities, entityLabels, entityAreas} from '../dist/backend/system.js';
 import {browsing} from '../dist/backend/browsing.js';
 import {csvSettings} from '../dist/backend/csv-settings.js';
+import {entityReferences} from '../dist/backend/entity-relations.js';
 import {entityResult} from './helpers/entity-result.mjs';
 import {createAuthentication} from '../dist/backend/auth.js';
 import {appTypeBehaviours} from '../dist/backend/value-types.js';
 
 const tokens = new Map();
+
+test('relationship metadata preserves stored names and excludes unreadable keys and labels', () => {
+    const field = (name, extra = {}) => ({name, inputName: name, readable: true, writable: true, isName: false, ...extra});
+    const target = {name: 'warehouses', fields: {code: field('code'), title: field('title', {isName: true}), secret: field('secret', {isName: true, readable: false})}};
+    const source = {name: 'inventory', fields: {warehouse_code: field('warehouse_code', {inputName: 'warehouse'})},
+        fks: {location: {entity: target.name, fields: {warehouse_code: 'code'}}}};
+    const entities = new Map([[target.name, target], [source.name, source]]);
+    assert.deepEqual(entityReferences(source, entities, 'read'), [{name: 'location', entity: 'warehouses', fields: {warehouse_code: 'code'}, displayFields: ['code', 'title']}]);
+    assert.deepEqual(entityReferences(source, entities, 'write')[0].fields, {warehouse: 'code'});
+    source.fields.warehouse_code.writable = false;
+    assert.equal(entityReferences(source, entities, 'read').length, 1);
+    assert.deepEqual(entityReferences(source, entities, 'write'), []);
+    target.fields.code.readable = false;
+    assert.deepEqual(entityReferences(source, entities, 'read'), []);
+    target.fields.code.readable = true;
+    source.fields.warehouse_code.readable = false;
+    assert.deepEqual(entityReferences(source, entities, 'read'), []);
+});
 const fetch = (url, options = {}) => globalThis.fetch(url, {...options,
     headers: {...options.headers, Authorization: `Bearer ${tokens.get(new URL(url).origin)}`},
 });
@@ -72,6 +91,11 @@ test('entity data preserves JSON value types and exposes only display metadata',
             {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']},
             {name: 'departamento', entity: 'departamentos', fields: {cod_dep: 'cod_dep'}, displayFields: ['cod_dep', 'departamento']},
         ],
+        references: [
+            {name: 'plan', entity: 'planes', fields: {plan: 'plan'}, displayFields: ['plan', 'descripcion']},
+            {name: 'departamento', entity: 'departamentos', fields: {cod_dep: 'cod_dep'}, displayFields: ['cod_dep', 'departamento']},
+        ],
+        referencedBy: [{name: 'materia', entity: 'enrolamientos', label: 'Inscripciones', fields: {cod_mat: 'cod_mat', cod_dep: 'cod_dep'}}],
         rows: [{cod_mat: 'ALG', cod_dep: 'DM', materia: 'Álgebra', plan: 2026, obligatoria: false}],
     });
     assert.match(sql, /SELECT "cod_mat", "cod_dep", "materia", "plan", "obligatoria"/);

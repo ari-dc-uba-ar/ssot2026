@@ -14,6 +14,7 @@ import {allowedFields} from './column-security.js';
 import {entityTable, insertPreparedRow, prepareEntityWrite} from './entity-write.js';
 import {csvCapabilities, exportEntityCsv, importEntityCsv} from './entity-csv.js';
 import {csvSettings} from './csv-settings.js';
+import {entityReferences} from './entity-relations.js';
 
 function readRow(fields: EntityInfo<typeof myContext>['fields'], value: unknown): Record<string, unknown> {
     const row = readObject(value, Object.keys(fields));
@@ -27,6 +28,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
     const router = express.Router();
     const entities = new Map<EntityName, EntityInfo<typeof myContext>>(Object.values(myEntities)
         .map(definition => [definition.name, completeEntity(myContext, definition)]));
+    const referencesByEntity = new Map([...entities].map(([name, entity]) => [name, entityReferences(entity, entities, 'read')]));
     router.use(auth.requireUser);
     router.use(express.json({limit: '64kb'}));
     router.get('/', (_req, res) => {
@@ -50,17 +52,11 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
         const inputs = Object.values(writable).map(({inputName: name, inputType: type, inputConstraints: constraints, label, nullable, transform}) => ({
             name, label, type, nullable, constraints, optionalOnUpdate: transform === 'password',
         }));
-        const foreignKeys = Object.entries(entity.fks).flatMap(([name, fk]) => {
-            const target = entities.get(fk.entity as EntityName)!;
-            const targetReadable = allowedFields(target, 'read');
-            const pairs = Object.entries(fk.fields);
-            if (!pairs.every(([source, destination]) => writable[source] && targetReadable[destination])) return [];
-            return [{name, entity: target.name,
-                fields: Object.fromEntries(pairs.map(([source, destination]) => [writable[source]!.inputName, destination])),
-                displayFields: [...new Set([...pairs.map(([, destination]) => destination),
-                    ...Object.values(targetReadable).filter(field => field.isName).map(field => field.name)])],
-            } as EntityForeignKey];
-        });
+        const foreignKeys = entityReferences(entity, entities, 'write') as EntityForeignKey[];
+        const references = referencesByEntity.get(definition.name)!;
+        const referencedBy = [...referencesByEntity].flatMap(([source, references]) => references
+            .filter(reference => reference.entity === entity.name)
+            .map(({name, fields}) => ({name, fields, entity: source, label: entityLabels[source]})));
         const keyValues = (key: unknown) => {
             const row = readRow(keys, key);
             return entity.pk.map(name => row[name]);
@@ -185,7 +181,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
                     }
                     return projected;
                 });
-                res.json({name: entity.name, label: entityLabels[definition.name], csv: csvCapabilities(entity), browsing, pk: entity.pk, columns, inputs, foreignKeys,
+                res.json({name: entity.name, label: entityLabels[definition.name], csv: csvCapabilities(entity), browsing, pk: entity.pk, columns, inputs, foreignKeys, references, referencedBy,
                     ...result, rows} as EntityResponse);
             })
             .post(async (req, res) => {

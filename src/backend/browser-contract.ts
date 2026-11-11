@@ -29,6 +29,8 @@ export type EntityResponse = {
     columns: EntityColumn[];
     inputs: EntityInputColumn[];
     foreignKeys: EntityForeignKey[];
+    references: EntityForeignKey[];
+    referencedBy: (Omit<EntityForeignKey, 'displayFields'> & {label: string})[];
     rows: EntityRow[];
     versions: string[];
     window: EntityWindow;
