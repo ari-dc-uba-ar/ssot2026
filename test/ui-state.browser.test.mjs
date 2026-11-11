@@ -220,6 +220,12 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                         const dialog = [...document.querySelectorAll('dialog[open]')].find(dialog => dialog.querySelector('h2')?.textContent === 'Revisar cambios');
                         return [...[...dialog.querySelectorAll('tbody tr')].find(row => row.querySelector('th').textContent === 'Nombre').querySelectorAll('td')].map(cell => cell.textContent);
                     }), [previous, 'Remote edit', 'Local conflict']);
+                    // Rows that reference the reviewed one are listed below its fields, with their references labelled.
+                    assert.deepEqual(await inPage(() => {
+                        const dialog = [...document.querySelectorAll('dialog[open]')].find(dialog => dialog.querySelector('h2')?.textContent === 'Revisar cambios');
+                        const section = dialog.querySelector('section');
+                        return [section.querySelector('h3').textContent, ...[...section.querySelectorAll('th, td')].map(cell => cell.textContent)];
+                    }), ['Inscripciones', 'Código de materia', 'Año', 'Cuatrimestre', 'Nota', 'Regularidad', 'ALG — DC — Algoritmos', '2026', '1C', 'Ninguna', 'Ninguna']);
                     await inPage(() => [...document.querySelectorAll('dialog[open]')].find(dialog => dialog.querySelector('h2')?.textContent === 'Revisar cambios').querySelector('button').click());
                     await click('tbody tr:first-child [aria-label=Cancelar]');
                     await click('#confirm-ok');
