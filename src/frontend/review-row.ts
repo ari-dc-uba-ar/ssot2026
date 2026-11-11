@@ -2,8 +2,10 @@ import type {EntityResponse} from '../backend/browser-contract.js';
 import type {Row, Value} from './row-editor.js';
 import {element} from './dom.js';
 
-export function reviewRow(entity: EntityResponse, original: Row, draft: Readonly<Record<string, Value>>, current?: Row): void {
+// `details` are extra sections shown below the fields, such as the rows that reference this one.
+export function reviewRow(entity: EntityResponse, original: Row, draft: Readonly<Record<string, Value>>, current?: Row, ...details: Node[]): void {
     const dialog = element('dialog');
+    dialog.className = 'review-dialog';
     dialog.append(element('h2', 'Revisar cambios'), element('p', 'Tu borrador se conserva. Actualizar la planilla permite cargar los datos actuales después de revisarlos.'));
     if (!current) dialog.append(element('p', 'El registro ya no existe con su clave original.'));
     const table = element('table');
@@ -22,7 +24,7 @@ export function reviewRow(entity: EntityResponse, original: Row, draft: Readonly
     close.type = 'button';
     close.onclick = () => dialog.close();
     dialog.onclose = () => dialog.remove();
-    dialog.append(table, close);
+    dialog.append(table, ...details, close);
     document.body.append(dialog);
     dialog.showModal();
 }
