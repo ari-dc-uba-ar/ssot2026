@@ -2,11 +2,13 @@ import type {EntityName, EntityQuery, EntityResponse} from '../backend/browser-c
 import {loadEntity} from './api.js';
 
 // One reusable dataset (or most recent page) per entity, including in-flight loads.
-export function createEntityCache(fetchEntity = loadEntity) {
+export function createEntityCache(fetchEntity = loadEntity, {retainPages = false} = {}) {
     type Entry = {name: EntityName; key: string; pending: Promise<EntityResponse>; value?: EntityResponse};
     const entries = new Map<EntityName, Entry>();
     const pending = new Map<string, Entry>();
     const revisions = new Map<EntityName, number>();
+    const pages = new Map<string, EntityResponse>();
+    const listeners = new Set<(name: EntityName | null) => void>();
     let session = 0;
     return {
         async load(name: EntityName, query: EntityQuery = {}): Promise<EntityResponse> {
@@ -14,6 +16,7 @@ export function createEntityCache(fetchEntity = loadEntity) {
                 Object.entries(query.where ?? {}).sort()]);
             const previous = entries.get(name);
             if (previous?.value?.window.kind === 'complete') return previous.value;
+            if (pages.has(key)) return pages.get(key)!;
             if (previous?.key === key) return previous.pending;
             if (pending.has(key)) return pending.get(key)!.pending;
             const generation = session;
@@ -22,6 +25,7 @@ export function createEntityCache(fetchEntity = loadEntity) {
                 const value = await fetchEntity(name, query);
                 if (generation !== session || revision !== revisions.get(name)) throw new DOMException('Obsolete response', 'AbortError');
                 entry.value = value;
+                if (retainPages) pages.set(key, value);
                 return value;
             })};
             entries.set(name, entry);
@@ -36,11 +40,19 @@ export function createEntityCache(fetchEntity = loadEntity) {
             }
         },
         invalidate(name: EntityName | null): void {
-            if (name === null) { session++; entries.clear(); pending.clear(); return; }
-            revisions.set(name, (revisions.get(name) ?? 0) + 1);
-            entries.delete(name);
-            for (const [key, entry] of pending) if (entry.name === name) pending.delete(key);
+            if (name === null) { session++; entries.clear(); pending.clear(); pages.clear(); }
+            else {
+                revisions.set(name, (revisions.get(name) ?? 0) + 1);
+                entries.delete(name);
+                for (const [key, entry] of pending) if (entry.name === name) pending.delete(key);
+                for (const [key, value] of pages) if (value.name === name) pages.delete(key);
+            }
+            for (const listener of listeners) listener(name);
         },
-        clear(): void { session++; entries.clear(); pending.clear(); revisions.clear(); },
+        clear(): void { this.invalidate(null); revisions.clear(); },
+        subscribe(listener: (name: EntityName | null) => void): () => void {
+            listeners.add(listener);
+            return () => { listeners.delete(listener); };
+        },
     };
 }

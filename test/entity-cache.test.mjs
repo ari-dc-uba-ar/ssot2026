@@ -58,3 +58,27 @@ test('failed requests can retry and unrelated entities survive targeted invalida
     await cache.load('planes');
     assert.equal(calls, 4);
 });
+
+test('a scoped cache retains visited pages and clears them on invalidation and disposal', async () => {
+    let calls = 0;
+    const cache = createEntityCache(async (name, query) => { calls++; return {...page, name, window: {...page.window, page: query.page}}; }, {retainPages: true});
+    const changes = [];
+    const stop = cache.subscribe(name => changes.push(name));
+    await cache.load('planes', {page: 1});
+    await cache.load('planes', {page: 2});
+    await cache.load('planes', {page: 1});
+    assert.equal(calls, 2);
+    cache.invalidate('other');
+    await cache.load('planes', {page: 2});
+    assert.equal(calls, 2);
+    cache.invalidate('planes');
+    await cache.load('planes', {page: 1});
+    await cache.load('planes', {page: 2});
+    assert.equal(calls, 4);
+    assert.deepEqual(changes, ['other', 'planes']);
+    stop();
+    cache.clear();
+    await cache.load('planes', {page: 2});
+    assert.equal(calls, 5);
+    assert.deepEqual(changes, ['other', 'planes']);
+});
