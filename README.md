@@ -446,8 +446,10 @@ or additional dependency.
 
 `GET /health` checks the database connection. All `/api/entities` requests require
 `Authorization: Bearer <JWT>`. `GET /api/entities` returns the
-available `{name, label}` entries. `GET /api/entities/:name` returns
-`{name, label, browsing, pk, columns, inputs, foreignKeys, rows, versions, window}`,
+available `{name, label, area}` entries. The menu groups these entries by their
+backend-supplied area, with collapsible groups and filtering.
+`GET /api/entities/:name` returns
+`{name, label, csv, browsing, pk, columns, inputs, foreignKeys, rows, versions, window}`,
 with `{name, label, type, nullable, writable, constraints}` for each visible readable column.
 SSOT `visible: false` hides a column without removing its internal key from rows;
 the generated user ID uses this setting and remains non-writable. Keys identify rows for
@@ -516,6 +518,25 @@ missing rows on deletion return 404, invalid input returns 400, and database con
 conflicts return 409. Unexpected failures return 500 without exposing SQL details.
 The old `/poc/*` handlers were replaced by this shared API.
 
+CSV actions use the same authenticated API at `/api/entities/:name/csv`:
+
+- `GET` exports all saved rows, regardless of pagination or UI filters, and only
+  visible readable columns. Unsaved drafts are excluded.
+- `POST` accepts `text/csv`, validates against the SSOT and inserts new rows in a
+  transaction. Identical rows are counted as unchanged; conflicting keys or
+  invalid references roll back the entire import. Successful inserts publish
+  the same live invalidation as ordinary writes.
+- Entity metadata supplies `csv: {export, import, maxBytes}`. Import is available
+  only when the public columns can reconstruct all writable fields and keys
+  without generated or transformed values. The browser has no entity-name exceptions.
+  The upload limit is configured once in `src/backend/csv-settings.ts` (10 MiB).
+
+Use an export as the import template: headers are the current SSOT column labels,
+in their exported order. CSV uses UTF-8, comma separators and doubled quotes;
+quoted cells can contain commas and newlines. An **unquoted empty cell means
+null**, while `""` means empty text. This preserves the distinction already used
+by the database and editors. Imports refresh saved rows while preserving drafts.
+
 Backend types in `src/backend/api-contract.ts` derive concrete field names, value
 types, nullability and primary keys from the SSOT. Type checks also verify that
 those responses satisfy the independent browser protocol.
@@ -551,5 +572,5 @@ DB, checks mobile scrolling/sticky geometry and desktop docking, and exercises
 navigation, typed filters and dropdown validity against the real API. Set
 `UI_SCREENSHOT` to an output PNG path to capture the mobile view.
 
-The selected contributions from PRs #15, #16 and #6, their authors, and the
+The selected contributions from PRs #6, #15, #16, #34, #39 and #40, their authors, and the
 compatibility adjustments are recorded in [PR integration notes](docs/pr-integration.md).
