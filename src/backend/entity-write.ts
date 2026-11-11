@@ -35,7 +35,8 @@ export async function prepareEntityWrite(entity: EntityInfo<typeof myContext>, b
     return row;
 }
 
-export async function insertPreparedRow(db: Pick<Pool, 'query'>, entity: EntityInfo<typeof myContext>, row: Record<string, unknown>): Promise<void> {
+export async function insertPreparedRow(db: Pick<Pool, 'query'>, entity: EntityInfo<typeof myContext>, row: Record<string, unknown>, conflict: 'error' | 'ignore' = 'error'): Promise<number> {
     const names = Object.keys(row);
-    await db.query(`INSERT INTO ${entityTable(entity.name)} (${names.map(quote).join(', ')}) VALUES (${names.map((_, i) => `$${i + 1}`).join(', ')})`, names.map(name => row[name]));
+    const result = await db.query(`INSERT INTO ${entityTable(entity.name)} (${names.map(quote).join(', ')}) VALUES (${names.map((_, i) => `$${i + 1}`).join(', ')})${conflict === 'ignore' ? ' ON CONFLICT DO NOTHING' : ''}`, names.map(name => row[name]));
+    return result.rowCount ?? 0;
 }

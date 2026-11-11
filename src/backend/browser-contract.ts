@@ -10,6 +10,7 @@ export type EntityKey = Record<string, NonNullable<FieldValue>>;
 export type EntityCreate = EntityRow;
 export type EntityInput = EntityRow;
 export type EntityUpdate = {key: EntityKey; row: EntityInput; version: string};
+export type CsvImportResponse = {inserted: number; unchanged: number};
 export type EntityNamesResponse = {name: EntityName; label: string; area: string}[];
 export type EntityQuery = {
     filter?: string; sort?: string; direction?: 'asc' | 'desc'; page?: number;
@@ -22,6 +23,7 @@ export type EntityForeignKey = {name: string; entity: EntityName; fields: Readon
 export type EntityResponse = {
     name: EntityName;
     label: string;
+    csv: {export: boolean; import: boolean; maxBytes: number};
     browsing: {clientRows: number; pageSize: number; bulkDeleteLimit: number};
     pk: readonly string[];
     columns: EntityColumn[];

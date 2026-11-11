@@ -4,6 +4,7 @@ import express from 'express';
 import {registerEntityApi} from '../dist/backend/api.js';
 import {myEntities, entityLabels, entityAreas} from '../dist/backend/system.js';
 import {browsing} from '../dist/backend/browsing.js';
+import {csvSettings} from '../dist/backend/csv-settings.js';
 import {entityResult} from './helpers/entity-result.mjs';
 import {createAuthentication} from '../dist/backend/auth.js';
 import {appTypeBehaviours} from '../dist/backend/value-types.js';
@@ -50,6 +51,7 @@ test('entity data preserves JSON value types and exposes only display metadata',
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
         name: 'materias',
+        csv: {export: true, import: true, maxBytes: csvSettings.maxBytes},
         label: 'Materias', browsing, window: {kind: 'complete'}, versions: ['1'],
         pk: ['cod_mat', 'cod_dep'],
         columns: [
