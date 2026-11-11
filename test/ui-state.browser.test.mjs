@@ -3,7 +3,7 @@ import test from 'node:test';
 import {randomUUID} from 'node:crypto';
 import express from 'express';
 import {withTestDatabase} from './helpers/database.mjs';
-import {withBrowser, until} from './helpers/browser.mjs';
+import {withBrowser, until, pageActions} from './helpers/browser.mjs';
 import {initializeUsers} from '../dist/backend/bootstrap.js';
 import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
@@ -52,12 +52,7 @@ test('theme preferences, row edits and sessions survive navigation and live inva
         const server = await new Promise(resolve => { const server = app.listen(0, '127.0.0.1', () => resolve(server)); });
         try {
             await withBrowser(async ({send, evaluate, errors}) => {
-                const inPage = (fn, ...args) => evaluate(`return (${fn})(...${JSON.stringify(args)})`);
-                const waitFor = async (fn, ...args) => {
-                    try { await until(() => inPage(fn, ...args)); }
-                    catch (error) { throw new Error(`Waiting for ${fn}: ${error.message}`, {cause: error}); }
-                };
-                const click = selector => inPage(selector => document.querySelector(selector).click(), selector);
+                const {inPage, waitFor, click} = pageActions({send, evaluate});
                 const enter = (selector, value) => inPage((selector, value) => {
                     const input = document.querySelector(selector);
                     const none = input.closest('.field').querySelector('input[type=checkbox]');

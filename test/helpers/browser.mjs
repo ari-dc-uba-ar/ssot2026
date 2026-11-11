@@ -4,6 +4,28 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 
 const delay = () => new Promise(resolve => setTimeout(resolve, 100));
+
+// Adapted from PR #34: readable page actions shared by browser suites.
+export function pageActions({send, evaluate}) {
+    // Runs `fn` inside the page. It cannot see test variables: pass them as arguments.
+    const inPage = (fn, ...args) => evaluate(`return (${fn})(...${JSON.stringify(args)})`);
+    const waitFor = async (fn, ...args) => {
+        try { await until(() => inPage(fn, ...args)); }
+        catch (error) { throw error.message.startsWith('Timed out') ? new Error(`Timed out waiting for: ${fn}`) : error; }
+    };
+    const resize = (width, height) => send('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: width < 1000});
+    const click = selector => inPage(selector => document.querySelector(selector).click(), selector);
+    const setValue = (selector, value) => inPage((selector, value) => { document.querySelector(selector).value = value; }, selector, value);
+    const submit = selector => inPage(selector => document.querySelector(selector).requestSubmit(), selector);
+    const valueOf = selector => inPage(selector => document.querySelector(selector).value, selector);
+    const textOf = selector => inPage(selector => document.querySelector(selector).textContent, selector);
+    const isVisible = selector => inPage(selector => !document.querySelector(selector).hidden, selector);
+    const focusedId = () => inPage(() => document.activeElement.id);
+    const dialogIsOpen = () => inPage(() => !!document.querySelector('dialog[open]'));
+    const rowCount = () => inPage(() => document.querySelectorAll('tbody tr').length);
+    return {inPage, waitFor, resize, click, setValue, submit, valueOf, textOf, isVisible, focusedId, dialogIsOpen, rowCount};
+}
+
 export async function until(check) {
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline) {
