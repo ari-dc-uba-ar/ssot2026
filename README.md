@@ -528,18 +528,43 @@ Only visible rows need target lookups, using exact key filters. Visited pages ar
 cached until the review closes; live notifications invalidate affected pages and
 labels while preserving spreadsheet drafts. Failed loads can be retried in place.
 
-**Reportes**, in the table navigation panel, opens a generic single-table report
-page. `GET /api/entities/:name/report` supplies its visible readable fields and
-allowed aggregate operations. `POST` accepts `{groupBy, measures, filter?, where?, page?}`;
-each measure is `{operation, field}`, or `{operation: 'count'}` for the row count.
+**Reportes**, in the table navigation panel, starts from an API-discovered table.
+`GET /api/entities/:name/report` supplies visible readable fields, aggregate
+operations and available SSOT foreign-key relationships in both directions.
+`POST /api/entities/:name/report/definition` with `{joins}` returns the fields and
+relationships for the chosen table occurrences. Each join is
+`{source, relationship, kind: 'inner' | 'left'}`: source 0 is the initial table,
+and join i introduces source i+1. Relationships are opaque IDs from the API;
+each step must start from an existing occurrence. Composite keys, self-joins,
+repeated tables and association-table chains use the same mechanism. The browser
+does not supply table names or SQL join predicates for these steps.
+
+`POST /api/entities/:name/report` accepts
+`{joins?, groupBy, measures, filter?, where?, page?}`. Field references use the
+opaque `columns[].name` values from the matching definition; joined definitions
+qualify them by occurrence. Changing the join structure or join types resets
+field selections and filters; removing an occurrence removes its descendants and
+retains other branches. Each measure is `{operation, field}`, or one of:
+
+- `{operation: 'count'}` counts result rows, including null-extended left-join rows.
+- `{operation: 'countDistinct', source}` counts distinct records of that occurrence
+  using its complete primary key. Unmatched records count as zero. This operation
+  is exposed only when every key component is readable; hidden readable keys need
+  not be exposed as selectable report fields.
+
+For example, one parent with two children produces two rows but one distinct
+parent. An unmatched parent in a left join produces one row and zero distinct
+children. Sums and averages operate on joined rows, so repeated records contribute
+repeatedly; they do not automatically deduplicate entity values.
 The backend derives capabilities from the SSOT's SQL type mapping: numeric fields
 support count/sum/average/min/max; text supports count/min/max; booleans support
-count. Field counts exclude nulls; row counts include them. Filters apply before
-grouping, null groups are retained, and group pages use deterministic ordering.
+count. Field counts exclude nulls. Filters apply after joining and before grouping:
+filtering a joined field to a non-null value can exclude unmatched left-join rows.
+Null groups are retained, and group pages use deterministic ordering.
 Aggregates are returned as text to preserve PostgreSQL numeric precision.
-The page refreshes on live changes to its table and releases its subscription on
+The page refreshes on live changes to any selected table and releases its subscription on
 navigation or logout. Report queries always aggregate and paginate on the server.
-Cross-table joins and saved report definitions are outside this first version.
+Saved report definitions are not implemented.
 
 Successful mutations return HTTP 204. The backend checks exact field sets, types,
 nullability and declared entity validators using system-definition before writing
