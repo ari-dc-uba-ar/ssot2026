@@ -9,6 +9,7 @@ import {actionButton, setActionLabel} from './action-button.js';
 import {createTableNavigation} from './table-navigation.js';
 import {reviewRow} from './review-row.js';
 import {relatedRows} from './related-rows.js';
+import {reportsPage} from './reports.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
@@ -36,6 +37,20 @@ const navigation = createTableNavigation(name => {
     if (workspace.disabled) return;
     if (currentEntity === name) navigation.activate(name);
     else void run(() => selectTab(name));
+});
+document.querySelector<HTMLButtonElement>('#open-reports')!.onclick = () => void run(async () => {
+    if (!await canLeaveView()) return;
+    closeReview();
+    disposeView();
+    viewGeneration++;
+    currentEntity = null;
+    invalidateView = () => {};
+    resumeLive = () => {};
+    canLeaveView = async () => true;
+    navigation.activate('');
+    const reports = reportsPage(labels, cache);
+    disposeView = reports.dispose;
+    content.replaceChildren(reports.node);
 });
 
 async function run(work: () => Promise<void>): Promise<void> {

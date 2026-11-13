@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
 import {withTestDatabase} from './helpers/database.mjs';
-import {withBrowser, pageActions} from './helpers/browser.mjs';
+import {withBrowser, pageActions, until} from './helpers/browser.mjs';
 import {initializeUsers} from '../dist/backend/bootstrap.js';
 import {createAuthentication, registerAuthApi} from '../dist/backend/auth.js';
 import {registerEntityApi} from '../dist/backend/api.js';
@@ -20,8 +20,10 @@ test('related records page, cache and refresh through the real API', {timeout: 9
         const app = express(), auth = createAuthentication(pool, 'browser-test-secret-with-at-least-32-bytes');
         const publish = registerEntityEvents(app, auth);
         const reads = [];
+        let reportRequests = 0;
         let failRelated = false;
         app.use('/api/entities', (req, res, next) => {
+            if (req.method === 'POST' && req.path.endsWith('/report')) reportRequests++;
             if (req.method === 'GET') {
                 reads.push({entity: req.path.slice(1), query: JSON.parse(req.query.query ?? '{}')});
                 if (failRelated && req.path === '/enrolamientos') {
@@ -184,6 +186,58 @@ test('related records page, cache and refresh through the real API', {timeout: 9
                     await inPage(() => window.dispatchEvent(new Event('sessionexpired')));
                     await waitFor(() => !document.querySelector('.review-dialog') && document.querySelector('#workspace').hidden);
                     assert.equal(reads.length, count, 'Clearing the session must not start new related-record requests');
+                });
+                await t.test('reports discover fields, paginate, filter and refresh without domain imports', async () => {
+                    await inPage(() => {
+                        document.querySelector('#login-user').value = 'browser';
+                        document.querySelector('#identity-form').requestSubmit();
+                        document.querySelector('#login-password').value = 'browser-test-password';
+                        document.querySelector('#login-form').requestSubmit();
+                    });
+                    await waitFor(() => !document.querySelector('#workspace').disabled && !document.querySelector('#session').hidden);
+                    await click('#open-reports');
+                    await waitFor(() => document.querySelector('.reports-page')?.getAttribute('aria-busy') === 'false');
+                    await inPage(() => {
+                        const select = document.querySelector('[aria-label="Tabla del reporte"]');
+                        select.value = 'materias';
+                        select.dispatchEvent(new Event('change', {bubbles: true}));
+                    });
+                    await waitFor(() => document.querySelector('.report-results td')?.textContent === '202');
+                    await inPage(() => {
+                        const group = document.querySelector('.reports-page details > fieldset');
+                        [...group.querySelectorAll('label')].find(label => label.textContent === 'Código').querySelector('input').click();
+                        document.querySelector('.reports-page form').requestSubmit();
+                    });
+                    await waitFor(() => document.querySelector('.reports-page [role=status]').textContent.includes('202 resultados'));
+                    assert.equal(await inPage(() => document.querySelectorAll('.report-results tbody tr').length), 10);
+                    await click('[aria-label="Página siguiente del reporte"]');
+                    await waitFor(() => document.querySelector('.report-results tbody tr:first-child td')?.textContent === 'M011');
+                    await inPage(() => {
+                        const input = document.querySelector('.reports-page input[type=search]');
+                        input.value = 'Updated elsewhere';
+                        input.dispatchEvent(new Event('input', {bubbles: true}));
+                    });
+                    await waitFor(() => document.querySelector('.reports-page [role=status]').textContent.includes('1 resultados'));
+                    assert.equal(await inPage(() => document.querySelectorAll('.report-results tbody tr').length), 1);
+                    await pool.query("UPDATE ssot.materias SET materia = 'Updated elsewhere' WHERE cod_mat = 'M002'");
+                    publish('materias');
+                    await waitFor(() => document.querySelector('.reports-page [role=status]').textContent.includes('2 resultados'));
+                    assert.equal(await inPage(() => document.documentElement.scrollWidth <= innerWidth), true);
+                    await inPage(() => {
+                        const select = document.querySelector('[aria-label="Tabla del reporte"]');
+                        select.value = 'usuarios';
+                        select.dispatchEvent(new Event('change', {bubbles: true}));
+                    });
+                    await waitFor(() => document.querySelector('.reports-page [role=status]').textContent.includes('1 resultados'));
+                    assert.doesNotMatch(await textOf('.reports-page details'), /Contraseña|Sesión|recuperacion|contrasena_hash/);
+                    await click('[data-entity=estudiantes]');
+                    await waitFor(() => !document.querySelector('.reports-page') && !document.querySelector('#workspace').disabled);
+                    const before = reportRequests;
+                    const studentReads = reads.filter(read => read.entity === 'estudiantes').length;
+                    publish('materias');
+                    publish('estudiantes');
+                    await until(() => reads.filter(read => read.entity === 'estudiantes').length > studentReads);
+                    assert.equal(reportRequests, before, 'Leaving the report releases its live subscription');
                 });
                 assert.deepEqual(errors, []);
             });

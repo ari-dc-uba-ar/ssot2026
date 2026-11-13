@@ -4,7 +4,7 @@ import {actionButton, setActionLabel} from './action-button.js';
 import {editColumnFilters} from './column-filters.js';
 
 // Shared read-only query controls; metadata determines the selectable fields.
-export function queryControls(read: () => EntityQuery, change: (query: EntityQuery) => Promise<void>) {
+export function queryControls(read: () => EntityQuery, change: (query: EntityQuery) => Promise<void>, {sortable = true} = {}) {
     const node = element('div');
     node.className = 'query-controls';
     let columns: EntityResponse['columns'] = [];
@@ -27,6 +27,7 @@ export function queryControls(read: () => EntityQuery, change: (query: EntityQue
     direction.type = 'button';
     direction.onclick = () => void change({...read(), direction: read().direction === 'desc' ? 'asc' : 'desc', page: 1});
     node.append(search, filters, sort, direction);
+    sort.hidden = direction.hidden = !sortable;
     return {node, update(available: EntityResponse['columns']) {
         columns = available;
         sort.replaceChildren(element('option', 'Orden original'));

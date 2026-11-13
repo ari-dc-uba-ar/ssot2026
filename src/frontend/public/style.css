@@ -141,6 +141,13 @@ td input[type=checkbox] { width: auto; height: auto; }
 .query-controls input, .query-controls select { min-width: 0; max-width: 100%; flex: 1; }
 .inline-related { position: sticky; left: 0; width: min(900px, calc(100vw - 64px)); max-width: 100%; padding: 8px; }
 .related-detail > td { padding: 0; }
+.reports-page { display: flex; flex-direction: column; min-height: 0; flex: 1; overflow: hidden; }
+.reports-page > form { max-height: 40vh; overflow: auto; flex: none; }
+.reports-page fieldset { min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.reports-page label { display: inline-flex; align-items: center; gap: 4px; }
+.reports-page input[type=checkbox] { width: auto; }
+.report-results { flex: 1; min-height: 0; overflow: auto; }
+.report-results td, .report-results th { overflow-wrap: anywhere; }
 .related-scroll th, .related-scroll td { height: auto; padding: 5px 8px; overflow-wrap: anywhere; }
 .dependency-list { padding-left: 20px; }
 .dependency-list > li { margin: 10px 0; }

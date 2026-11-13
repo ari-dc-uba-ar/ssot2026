@@ -34,9 +34,11 @@ export function observeSheetLayout(panel: HTMLDialogElement, toggle: HTMLButtonE
         const available = workspace.clientWidth - (docked ? panelWidth + gap : 0);
         content.classList.toggle('roomy-actions', table.getBoundingClientRect().width <= available);
         table.style.width = tableWidth;
-        const scroll = content.querySelector<HTMLElement>('.table-scroll')!;
-        const selectionWidth = table.querySelector('.selection-col')!.getBoundingClientRect().width;
-        const actionsWidth = table.querySelector('.row-actions')!.getBoundingClientRect().width;
+        const scroll = content.querySelector<HTMLElement>('.table-scroll');
+        const selection = table.querySelector('.selection-col'), actions = table.querySelector('.row-actions');
+        if (!scroll || !selection || !actions) return;
+        const selectionWidth = selection.getBoundingClientRect().width;
+        const actionsWidth = actions.getBoundingClientRect().width;
         table.style.setProperty('--selection-width', `${selectionWidth}px`);
         // Share the remaining viewport between the pinned column and scrolling data.
         table.style.setProperty('--pinned-width', `${Math.max(0, (scroll.clientWidth - selectionWidth - actionsWidth) / 2)}px`);
