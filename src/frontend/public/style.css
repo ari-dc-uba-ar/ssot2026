@@ -136,6 +136,12 @@ td input[type=checkbox] { width: auto; height: auto; }
 .related-scroll { overflow: auto; max-height: 45vh; }
 .related-controls { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
 .related-controls [role=status] { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.related-rows > summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+.query-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; }
+.query-controls input, .query-controls select { min-width: 0; max-width: 100%; flex: 1; }
+.inline-related { position: sticky; left: 0; width: min(900px, calc(100vw - 64px)); max-width: 100%; padding: 8px; }
+.related-detail > td { padding: 0; }
+.related-scroll th, .related-scroll td { height: auto; padding: 5px 8px; overflow-wrap: anywhere; }
 .dependency-list { padding-left: 20px; }
 .dependency-list > li { margin: 10px 0; }
 .dependency-list ul { margin: 6px 0; padding-left: 20px; color: var(--text-muted); }

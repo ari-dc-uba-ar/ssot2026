@@ -52,7 +52,11 @@ test('related records page, cache and refresh through the real API', {timeout: 9
                     document.querySelector('#login-form').requestSubmit();
                 });
                 await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('[data-entity=estudiantes]'));
-                await click('[data-entity=estudiantes]');
+                await waitFor(() => {
+                    if (document.querySelector('#workspace').disabled) return false;
+                    document.querySelector('[data-entity=estudiantes]').click();
+                    return true;
+                });
                 await waitFor(() => !document.querySelector('#workspace').disabled && document.querySelector('tbody [name=nombre]'));
                 await inPage(() => {
                     const input = document.querySelector('tbody [name=nombre]');
@@ -122,6 +126,56 @@ test('related records page, cache and refresh through the real API', {timeout: 9
                     await waitFor(() => document.querySelector('#status').textContent.includes('Hay datos nuevos'));
                     assert.equal(reads.length, count);
                     assert.equal(await valueOf('.table-scroll tbody [name=nombre]'), 'Unsaved draft');
+                });
+                await t.test('inline relationships load on expansion and offer search, sorting and typed filters', async () => {
+                    const before = reads.length;
+                    await click('.table-scroll [aria-label="Registros relacionados"]');
+                    assert.equal(await inPage(() => document.querySelector('.inline-related details').open), false);
+                    assert.equal(reads.length, before);
+                    await click('.inline-related summary');
+                    await ready();
+                    assert.equal(await rowCount(), 10);
+                    await inPage(() => {
+                        const input = document.querySelector('.inline-related input[type=search]');
+                        input.value = 'M200';
+                        input.dispatchEvent(new Event('input', {bubbles: true}));
+                    });
+                    await ready();
+                    assert.equal(await rowCount(), 1);
+                    assert.match(await textOf('.related-scroll'), /M200/);
+                    await inPage(() => {
+                        const input = document.querySelector('.inline-related input[type=search]');
+                        input.value = '';
+                        input.dispatchEvent(new Event('input', {bubbles: true}));
+                    });
+                    await ready();
+                    await inPage(() => {
+                        const sort = document.querySelector('.inline-related [aria-label="Ordenar por"]');
+                        sort.value = 'cod_mat';
+                        sort.dispatchEvent(new Event('change', {bubbles: true}));
+                    });
+                    await ready();
+                    await click('.inline-related [aria-label="Orden ascendente"]');
+                    await ready();
+                    assert.match(await textOf('.related-scroll tbody tr:first-child'), /M202/);
+                    await click('.inline-related [aria-label^="Filtrar por columnas"]');
+                    await inPage(() => {
+                        const dialog = document.querySelector('.column-filters');
+                        const label = [...dialog.querySelectorAll('form > label')].find(label => label.textContent.includes('Año'));
+                        label.querySelector('input').click();
+                        const field = label.nextElementSibling;
+                        const none = field.querySelector('input[type=checkbox]');
+                        if (none?.checked) none.click();
+                        field.querySelector('input[type=number]').value = '2025';
+                        dialog.querySelector('form').requestSubmit();
+                    });
+                    await waitFor(() => !document.querySelector('.column-filters'));
+                    await ready();
+                    assert.match(await textOf('.related-scroll'), /Sin registros/);
+                    assert.equal(await valueOf('.table-scroll tbody [name=nombre]'), 'Unsaved draft');
+                    assert.equal(await inPage(() => document.documentElement.scrollWidth <= innerWidth), true);
+                    await click('.table-scroll [aria-label="Registros relacionados"]');
+                    assert.equal(await inPage(() => !!document.querySelector('.inline-related')), false);
                 });
                 await t.test('ending the session closes the review before clearing cached data', async () => {
                     await click('.table-scroll tbody [aria-label="Ver datos actuales"]');

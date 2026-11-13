@@ -1,4 +1,4 @@
-import type {EntityResponse, EntityRow} from '../backend/browser-contract.js';
+import type {EntityResponse, EntityRow, EntityQuery} from '../backend/browser-contract.js';
 import type {createEntityCache} from './entity-cache.js';
 import {entityPage} from './entity-query.js';
 import {referenceOptions} from './foreign-keys.js';
@@ -7,11 +7,11 @@ const text = (value: unknown): string => value == null ? 'Ninguna' : value === '
 
 // Adapted from PR #41: one association page, plus exact lookups for its visible references.
 export async function loadRelatedPage(relationship: EntityResponse['referencedBy'][number], row: EntityRow, page: number,
-    load: ReturnType<typeof createEntityCache>['load']) {
+    load: ReturnType<typeof createEntityCache>['load'], options: EntityQuery = {}) {
     const where = Object.fromEntries(Object.entries(relationship.fields).map(([source, target]) => [source, row[target]!]));
     // SQL foreign keys with null components do not establish a relationship.
     if (Object.values(where).some(value => value == null)) return null;
-    const query = {where, page};
+    const query = {...options, where: {...options.where, ...where}, page};
     const entity = await load(relationship.entity, query);
     const result = entityPage(entity, query);
     const hidden = new Set(Object.keys(relationship.fields));
@@ -35,5 +35,5 @@ export async function loadRelatedPage(relationship: EntityResponse['referencedBy
         if (resolved.some(({fk}) => Object.hasOwn(fk.fields, column.name))) return [];
         return [{label: column.label, values: result.rows.map(row => text(row[column.name]))}];
     });
-    return {...result, columns, totalPages: Math.max(1, Math.ceil(result.matched / entity.browsing.pageSize))};
+    return {...result, columns, fields: visible, totalPages: Math.max(1, Math.ceil(result.matched / entity.browsing.pageSize))};
 }

@@ -2,7 +2,7 @@ import type {EntityResponse, EntityQuery, FieldValue} from '../backend/browser-c
 import {element} from './dom.js';
 import {createValueField} from './value-field.js';
 
-export function editColumnFilters(entity: EntityResponse, applied: EntityQuery['where'], apply: (where: Record<string, FieldValue>) => Promise<boolean>): void {
+export function editColumnFilters(entity: Pick<EntityResponse, 'columns'>, applied: EntityQuery['where'], apply: (where: Record<string, FieldValue>) => Promise<boolean>): void {
     const dialog = element('dialog');
     const title = element('h2', 'Filtrar por columnas');
     title.id = `filters-${crypto.randomUUID()}`;

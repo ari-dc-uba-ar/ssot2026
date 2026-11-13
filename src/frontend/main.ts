@@ -26,6 +26,7 @@ const cache = createEntityCache();
 const load = cache.load;
 let stopWatching = () => {};
 let closeReview = () => {};
+let disposeView = () => {};
 let invalidateView: (name: EntityName | null) => void = () => {};
 let resumeLive = () => {};
 let canLeaveView = async () => true;
@@ -105,6 +106,7 @@ async function loadSheet(name: EntityName, query?: EntityQuery) {
 }
 
 async function show(name: EntityName): Promise<void> {
+    disposeView();
     const generation = ++viewGeneration;
     invalidateView = () => {};
     resumeLive = () => {};
@@ -123,6 +125,8 @@ async function show(name: EntityName): Promise<void> {
     let pinnedColumn: string | null = null;
     let adding: RowEditor | undefined;
     const editors = new Map<string, RowSnapshot & {editor: RowEditor}>();
+    const expanded = new Map<string, ReturnType<typeof relatedRows>>();
+    disposeView = () => { for (const view of expanded.values()) view.dispose(); expanded.clear(); };
     const selectedRows = new Map<string, Row>();
     const selectionKey = (row: Row) => JSON.stringify(rowKey(entity, row));
     let selectionCheck = 0;
@@ -400,6 +404,8 @@ async function show(name: EntityName): Promise<void> {
         page = result.page;
         const start = (page - 1) * pageSize;
         const paged = result.rows;
+        const visibleKeys = new Set(paged.map(selectionKey));
+        for (const [key, view] of expanded) if (!visibleKeys.has(key)) { view.dispose(); expanded.delete(key); }
 
         setActionLabel(columnFilters, `Filtrar por columnas (${Object.keys(where ?? {}).length})`);
         count.textContent = filter || Object.keys(where ?? {}).length ? `${result.matched} de ${result.total} ${unit}` : `${result.total} ${unit}`;
@@ -499,6 +505,26 @@ async function show(name: EntityName): Promise<void> {
             tr.addEventListener('change', updateActions);
             updateActions();
             actions.append(save, cancel);
+            if (entity.referencedBy.length) {
+                const toggle = actionButton('Registros relacionados', 'relations', () => {
+                    if (expanded.has(key)) { expanded.get(key)!.dispose(); expanded.delete(key); }
+                    else expanded.set(key, relatedRows(entity, original.row, cache, {collapsed: true}));
+                    render();
+                });
+                toggle.setAttribute('aria-expanded', String(expanded.has(key)));
+                actions.append(toggle);
+                const view = expanded.get(key);
+                if (view) {
+                    const detail = tbody.insertRow();
+                    detail.className = 'related-detail';
+                    const cell = detail.insertCell();
+                    cell.colSpan = tr.cells.length;
+                    const panel = element('div');
+                    panel.className = 'inline-related';
+                    panel.append(...view.sections);
+                    cell.append(panel);
+                }
+            }
             actions.append(actionButton('Ver datos actuales', 'review', () => void run(async () => {
                 cache.invalidate(name);
                 const query = {where: rowKey(entity, original.row)} as EntityQuery;
@@ -555,6 +581,7 @@ initializeAuthentication(active => {
     workspace.hidden = !active;
     if (!active) {
         closeReview();
+        disposeView();
         stopWatching();
         cache.clear();
         viewGeneration++;

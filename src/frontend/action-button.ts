@@ -6,6 +6,7 @@ const icons = {
     delete: 'M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7',
     refresh: 'M20 7v5h-5M4 17v-5h5M5 8a7 7 0 0 1 12-3l3 7M4 12l3 7a7 7 0 0 0 12-3',
     review: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12 M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+    relations: 'M3 3h6v6H3zM15 15h6v6h-6zM6 9v9h9',
     download: 'M12 3v12m0 0 5-5m-5 5-5-5M4 17v4h16v-4',
     upload: 'M12 16V4m0 0L7 9m5-5 5 5M4 17v4h16v-4',
     save: 'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h12l4 4v12a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',
