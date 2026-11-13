@@ -1,9 +1,9 @@
 import type {Pool} from 'pg';
 import type {EntityInfo} from 'system-definition';
-import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
+import {sql, identifier, entityTable, joinSql, querySql, equalSql} from './sql.js';
 import {myContext} from './system.js';
 import {ApiFailure} from './api-errors.js';
-import {entityTable, insertPreparedRow, prepareEntityWrite} from './entity-write.js';
+import {insertPreparedRow, prepareEntityWrite} from './entity-write.js';
 import {parseCsv, stringifyCsv} from './csv.js';
 import type {CsvImportResponse, EntityResponse, FieldValue} from './browser-contract.js';
 import {allowedFields} from './column-security.js';
@@ -32,8 +32,8 @@ export function csvCapabilities(entity: Entity): EntityResponse['csv'] {
 export async function exportEntityCsv(pool: Pick<Pool, 'query'>, entity: Entity): Promise<string> {
     const fields = csvFields(entity);
     if (!csvCapabilities(entity).export) throw new ApiFailure(403, 'Esta entidad no permite exportar CSV.');
-    const result = await pool.query<Record<string, FieldValue>>(
-        `SELECT ${fields.map(field => quote(field.name)).join(', ')} FROM ${entityTable(entity.name)} ORDER BY ${entity.pk.map(quote).join(', ')}`,
+    const result = await querySql<Record<string, FieldValue>>(pool,
+        sql`SELECT ${joinSql(fields.map(field => identifier(field.name)))} FROM ${entityTable(entity.name)} ORDER BY ${joinSql(entity.pk.map(name => identifier(name)))}`,
     );
     const rows: FieldValue[][] = [fields.map(field => field.label),
         ...result.rows.map(row => fields.map(field => row[field.name]!))];
@@ -126,11 +126,8 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
         for (const row of preparedRows) {
             await validateForeignKeys(client, entity, row);
             const keyValues = entity.pk.map(name => row[name]);
-            const where = entity.pk.map((name, index) => `${quote(name)} = $${index + 1}`).join(' AND ');
-            const select = fields.map(field => quote(field.name)).join(', ');
-            const existing = await client.query<Record<string, unknown>>(
-                `SELECT ${select} FROM ${entityTable(entity.name)} WHERE ${where} FOR UPDATE`, keyValues,
-            );
+            const statement = sql`SELECT ${joinSql(fields.map(field => identifier(field.name)))} FROM ${entityTable(entity.name)} WHERE ${equalSql(entity.pk, keyValues)} FOR UPDATE`;
+            const existing = await querySql<Record<string, unknown>>(client, statement);
             if (existing.rows.length) {
                 if (!equalCsvValues(existing.rows[0]!, row)) reportConflict(row);
                 continue;
@@ -139,9 +136,7 @@ export async function importEntityCsv(pool: Database, entity: Entity, text: unkn
                 inserted++;
                 continue;
             }
-            const raced = await client.query<Record<string, unknown>>(
-                `SELECT ${select} FROM ${entityTable(entity.name)} WHERE ${where} FOR UPDATE`, keyValues,
-            );
+            const raced = await querySql<Record<string, unknown>>(client, statement);
             if (!raced.rows.length || !equalCsvValues(raced.rows[0]!, row)) reportConflict(row);
         }
         if (conflictCount) {
@@ -168,11 +163,8 @@ async function validateForeignKeys(client: Pick<Pool, 'query'>, entity: Entity, 
         const pairs = Object.entries(foreignKey.fields);
         const sourceValues = pairs.map(([source]) => row[source]);
         if (sourceValues.some(value => value == null)) continue;
-        const predicates = pairs.map(([, destination], index) => `${quote(destination)} = $${index + 1}`).join(' AND ');
-        const result = await client.query(
-            `SELECT 1 FROM ${entityTable(foreignKey.entity)} WHERE ${predicates} LIMIT 1`,
-            sourceValues,
-        );
+        const result = await querySql(client,
+            sql`SELECT 1 FROM ${entityTable(foreignKey.entity)} WHERE ${equalSql(pairs.map(([, destination]) => destination), sourceValues)} LIMIT 1`);
         if (!result.rows.length) {
             const columns = pairs.map(([source]) => `«${entity.fields[source]!.label}»`);
             throw new ApiFailure(400, `La referencia de la columna${columns.length === 1 ? '' : 's'} ${columns.join(', ')} no existe (${relationship}).`);

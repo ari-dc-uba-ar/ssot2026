@@ -1,14 +1,11 @@
 import {randomUUID} from 'node:crypto';
 import type {Pool} from 'pg';
 import {instanceProblems, validateInstance, type EntityInfo} from 'system-definition';
-import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
+import {sql, identifier, entityTable, joinSql, querySql} from './sql.js';
 import {myContext} from './system.js';
-import {databaseSettings} from './database.js';
 import {ApiFailure, readObject} from './api-errors.js';
 import {allowedFields} from './column-security.js';
 import {hashPassword, readPassword, readUsername} from './credentials.js';
-
-export const entityTable = (name: string): string => `${quote(databaseSettings.database.schema)}.${quote(name)}`;
 
 export async function prepareEntityWrite(entity: EntityInfo<typeof myContext>, body: unknown, operation: 'create' | 'update'): Promise<Record<string, unknown>> {
     const fields = Object.values(allowedFields(entity, 'write'));
@@ -37,6 +34,6 @@ export async function prepareEntityWrite(entity: EntityInfo<typeof myContext>, b
 
 export async function insertPreparedRow(db: Pick<Pool, 'query'>, entity: EntityInfo<typeof myContext>, row: Record<string, unknown>, conflict: 'error' | 'ignore' = 'error'): Promise<number> {
     const names = Object.keys(row);
-    const result = await db.query(`INSERT INTO ${entityTable(entity.name)} (${names.map(quote).join(', ')}) VALUES (${names.map((_, i) => `$${i + 1}`).join(', ')})${conflict === 'ignore' ? ' ON CONFLICT DO NOTHING' : ''}`, names.map(name => row[name]));
+    const result = await querySql(db, sql`INSERT INTO ${entityTable(entity.name)} (${joinSql(names.map(name => identifier(name)))}) VALUES (${joinSql(names.map(name => sql`${row[name]}`))})${conflict === 'ignore' ? sql` ON CONFLICT DO NOTHING` : sql``}`);
     return result.rowCount ?? 0;
 }

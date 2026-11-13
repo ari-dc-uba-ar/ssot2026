@@ -1,7 +1,8 @@
 import type {Pool} from 'pg';
 import {completeEntity} from 'system-definition';
 import {authenticationEntity, myContext, myEntities} from './system.js';
-import {entityTable, insertPreparedRow, prepareEntityWrite} from './entity-write.js';
+import {insertPreparedRow, prepareEntityWrite} from './entity-write.js';
+import {sql, querySql, entityTable, compileSql} from './sql.js';
 import {createRecoveryCodes} from './credentials.js';
 import type {EntityCreate, StoredRow} from './api-contract.js';
 
@@ -15,8 +16,8 @@ export async function initializeUsers(pool: Pool, credentials: BootstrapCredenti
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [`${entityTable(entity.name)}:bootstrap`]);
-        const existing = await client.query(`SELECT 1 FROM ${entityTable(entity.name)} LIMIT 1`);
+        await querySql(client, sql`SELECT pg_advisory_xact_lock(hashtextextended(${compileSql(entityTable(entity.name)).text + ':bootstrap'}, 0))`);
+        const existing = await querySql(client, sql`SELECT 1 FROM ${entityTable(entity.name)} LIMIT 1`);
         if (existing.rows.length) {
             await client.query('COMMIT');
             return {created: false};

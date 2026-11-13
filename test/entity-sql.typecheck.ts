@@ -1,5 +1,6 @@
 import type {Pool} from 'pg';
 import {entitySql} from '../src/backend/entity-sql.js';
+import {sql} from '../src/backend/sql.js';
 import type {StoredRow} from '../src/backend/api-contract.js';
 
 type Assert<T extends true> = T;
@@ -8,7 +9,7 @@ declare const db: Pool;
 
 const users = entitySql('usuarios');
 const credentials = users.select('usuario', 'contrasena_hash');
-const result = credentials.query(db, `WHERE ${users.column('id')} = $1`, ['id']);
+const result = credentials.query(db, sql`WHERE ${users.column('id')} = ${'id'}`);
 type Selected = Awaited<typeof result>['rows'][number];
 export type SelectionMatchesSsot = Assert<Equal<Selected, Pick<StoredRow<'usuarios'>, 'usuario' | 'contrasena_hash'>>>;
 // @ts-expect-error Results contain only the columns selected by this query.

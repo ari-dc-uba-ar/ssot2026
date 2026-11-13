@@ -318,9 +318,9 @@ test('delete dependency checks report simple and composite SSOT foreign keys', a
         }],
     });
     assert.match(queries[0].sql, /LIMIT 10/);
-    assert.match(queries[0].sql, /SELECT DISTINCT dependent\."legajo", dependent\."cod_mat", dependent\."cod_dep", dependent\."año", dependent\."cuatrimestre"/);
-    assert.doesNotMatch(queries[0].sql, /SELECT DISTINCT dependent\.\*/);
-    assert.match(queries[0].sql, /dependent\."cod_mat" = target\."cod_mat" AND dependent\."cod_dep" = target\."cod_dep"/);
+    assert.match(queries[0].sql, /SELECT DISTINCT "dependent"\."legajo", "dependent"\."cod_mat", "dependent"\."cod_dep", "dependent"\."año", "dependent"\."cuatrimestre"/);
+    assert.doesNotMatch(queries[0].sql, /SELECT DISTINCT "dependent"\.\*/);
+    assert.match(queries[0].sql, /"dependent"\."cod_mat" = "target"\."cod_mat" AND "dependent"\."cod_dep" = "target"\."cod_dep"/);
     assert.deepEqual(queries[0].values, ['ALG', 'DM']);
 
     const simple = await fetch(`${base}/api/entities/planes/delete-check`, {

@@ -1,7 +1,7 @@
 import express, {type Express} from 'express';
 import type {Pool} from 'pg';
 import {completeEntity, instanceProblems, type EntityInfo} from 'system-definition';
-import {quotePgIdentifier as quote} from '@system-definition/postgres-migrations';
+import {sql, identifier, entityTable, joinSql, querySql, equalSql} from './sql.js';
 import {myContext, myEntities, entityLabels, entityAreas} from './system.js';
 import {browsing} from './browsing.js';
 import {inputConstraints} from './value-types.js';
@@ -11,7 +11,7 @@ import type {ApiError, DeleteDependencyBlocker, DeleteDependencyCheck, EntityFor
 import {ApiFailure, apiErrorHandler, explainKeyChangeFailure, readObject} from './api-errors.js';
 import type {Authentication} from './auth.js';
 import {allowedFields} from './column-security.js';
-import {entityTable, insertPreparedRow, prepareEntityWrite} from './entity-write.js';
+import {insertPreparedRow, prepareEntityWrite} from './entity-write.js';
 import {csvCapabilities, exportEntityCsv, importEntityCsv} from './entity-csv.js';
 import {csvSettings} from './csv-settings.js';
 import {entityReferences} from './entity-relations.js';
@@ -61,7 +61,6 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
             const row = readRow(keys, key);
             return entity.pk.map(name => row[name]);
         };
-        const where = (offset = 0) => entity.pk.map((name, i) => `${quote(name)} = $${offset + i + 1}`).join(' AND ');
         router.get(`/${entity.name}/csv`, async (_req, res) => {
             const csv = await exportEntityCsv(pool, entity);
             res.attachment(`${entity.name}.csv`).type('text/csv; charset=utf-8').send(csv);
@@ -82,10 +81,8 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
             }
             return parsed;
         };
-        const whereKeys = (rows: readonly unknown[][], alias = '') => rows.map((_, rowIndex) =>
-            `(${entity.pk.map((name, columnIndex) =>
-                `${alias}${quote(name)} = $${rowIndex * entity.pk.length + columnIndex + 1}`).join(' AND ')})`
-        ).join(' OR ');
+        const whereKeys = (rows: readonly unknown[][], alias?: string) =>
+            joinSql(rows.map(values => sql`(${equalSql(entity.pk, values, alias)})`), sql` OR `);
         const dependencyBlockers = async (
             rows: readonly unknown[][],
             executor: Pick<Pool, 'query'>,
@@ -96,19 +93,16 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
                 for (const [relationship, foreignKey] of Object.entries(dependent.fks)) {
                     if (foreignKey.entity !== entity.name) continue;
                     const pairs = Object.entries(foreignKey.fields);
-                    const join = pairs.map(([source, target]) =>
-                        `dependent.${quote(source)} = target.${quote(target)}`).join(' AND ');
-                    const dependentKeys = dependent.pk.map(name => `dependent.${quote(name)}`).join(', ');
-                    const keyOrder = dependent.pk.map(quote).join(', ');
-                    const result = await executor.query<{count: number | string; keys: Record<string, unknown>[]}>(
-                        `WITH matching AS (` +
-                        `SELECT DISTINCT ${dependentKeys} FROM ${entityTable(dependent.name)} AS dependent ` +
-                        `JOIN ${table} AS target ON ${join} WHERE ${whereKeys(rows, 'target.')}) ` +
-                        `SELECT (SELECT count(*)::int FROM matching) AS count, ` +
-                        `COALESCE((SELECT json_agg(to_jsonb(sample)) FROM (` +
-                        `SELECT * FROM matching ORDER BY ${keyOrder} LIMIT 10) AS sample), '[]'::json) AS keys`,
-                        rows.flat(),
-                    );
+                    const join = joinSql(pairs.map(([source, target]) =>
+                        sql`${identifier('dependent', source)} = ${identifier('target', target)}`), sql` AND `);
+                    const dependentKeys = joinSql(dependent.pk.map(name => identifier('dependent', name)));
+                    const keyOrder = joinSql(dependent.pk.map(name => identifier(name)));
+                    const result = await querySql<{count: number | string; keys: Record<string, unknown>[]}>(executor,
+                        sql`WITH matching AS (SELECT DISTINCT ${dependentKeys} FROM ${entityTable(dependent.name)} AS dependent
+                        JOIN ${table} AS target ON ${join} WHERE ${whereKeys(rows, 'target')})
+                        SELECT (SELECT count(*)::int FROM matching) AS count,
+                        COALESCE((SELECT json_agg(to_jsonb(sample)) FROM (
+                        SELECT * FROM matching ORDER BY ${keyOrder} LIMIT 10) AS sample), '[]'::json) AS keys`);
                     const count = Number(result.rows[0]?.count ?? 0);
                     if (count > 0) {
                         const keys = result.rows[0]?.keys;
@@ -137,11 +131,9 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
             try {
                 await client.query('BEGIN');
                 transactionStarted = true;
-                const selected = await client.query(
-                    `SELECT ${entity.pk.map(quote).join(', ')} FROM ${table} WHERE ${whereKeys(rows)} ` +
-                    `ORDER BY ${entity.pk.map(quote).join(', ')} FOR UPDATE`,
-                    rows.flat(),
-                );
+                const keyColumns = joinSql(entity.pk.map(name => identifier(name)));
+                const selected = await querySql(client,
+                    sql`SELECT ${keyColumns} FROM ${table} WHERE ${whereKeys(rows)} ORDER BY ${keyColumns} FOR UPDATE`);
                 if (selected.rowCount !== rows.length) throw new ApiFailure(404, 'Una o más filas seleccionadas ya no existen.');
                 const blockers = await dependencyBlockers(rows, client);
                 if (blockers.length) {
@@ -149,10 +141,8 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
                         `${name} (${relationship}): ${count}`).join(', ');
                     throw new ApiFailure(409, `No se puede borrar la selección: hay filas dependientes en ${details}.`);
                 }
-                const deleted = await client.query(
-                    `DELETE FROM ${table} WHERE ${whereKeys(rows)} RETURNING ${entity.pk.map(quote).join(', ')}`,
-                    rows.flat(),
-                );
+                const deleted = await querySql(client,
+                    sql`DELETE FROM ${table} WHERE ${whereKeys(rows)} RETURNING ${keyColumns}`);
                 if (deleted.rowCount !== rows.length) throw new ApiFailure(404, 'Una o más filas seleccionadas ya no existen.');
                 await client.query('COMMIT');
                 transactionStarted = false;
@@ -196,7 +186,8 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
                 const key = keyValues(body['key']);
                 const row = await prepareEntityWrite(entity, body['row'], 'update');
                 const names = Object.keys(row);
-                const result = await pool.query(`UPDATE ${table} SET ${names.map((name, i) => `${quote(name)} = $${i + 1}`).join(', ')} WHERE ${where(names.length)} AND xmin::text = $${names.length + key.length + 1}`, [...names.map(name => row[name]), ...key, body['version']]).catch((error: unknown) => {
+                const assignments = joinSql(names.map(name => sql`${identifier(name)} = ${row[name]}`));
+                const result = await querySql(pool, sql`UPDATE ${table} SET ${assignments} WHERE ${equalSql(entity.pk, key)} AND xmin::text = ${body['version']}`).catch((error: unknown) => {
                     const changedKey = entity.pk.some((name, index) => Object.hasOwn(row, name) && row[name] !== key[index]);
                     throw explainKeyChangeFailure(error, changedKey, dependentLabels);
                 });
@@ -206,7 +197,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
             })
             .delete(async (req, res) => {
                 const key = keyValues(req.body);
-                const result = await pool.query(`DELETE FROM ${table} WHERE ${where()}`, key);
+                const result = await querySql(pool, sql`DELETE FROM ${table} WHERE ${equalSql(entity.pk, key)}`);
                 if (!result.rowCount) throw new ApiFailure(404, 'El registro ya no existe.');
                 publish(definition.name);
                 res.sendStatus(204);
