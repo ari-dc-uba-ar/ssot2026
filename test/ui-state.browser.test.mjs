@@ -74,7 +74,7 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                     await signedIn();
                 };
                 const signedOut = () => waitFor(() => !document.querySelector('#authentication')?.hidden &&
-                    document.querySelector('#workspace')?.hidden && !sessionStorage.getItem('ssot-session-token'));
+                    document.querySelector('#workspace')?.hidden && !localStorage.getItem('ssot-session-token'));
                 const base = `http://127.0.0.1:${server.address().port}`;
                 await send('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
                 await send('Emulation.setEmulatedMedia', {features: [{name: 'prefers-color-scheme', value: 'dark'}]});
@@ -335,7 +335,7 @@ test('theme preferences, row edits and sessions survive navigation and live inva
                     await send('Page.reload');
                     await ready();
                     await waitFor(() => document.querySelector('#auth-status')?.textContent.includes('No se pudo recuperar la sesión'));
-                    assert.equal(await inPage(() => !!sessionStorage.getItem('ssot-session-token')), true);
+                    assert.equal(await inPage(() => !!localStorage.getItem('ssot-session-token')), true);
                     assert.equal(await inPage(() => document.querySelector('#workspace').hidden), true);
                     await send('Page.reload');
                     await ready();

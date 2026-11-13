@@ -36,9 +36,10 @@ export async function until(check) {
 }
 
 // BROWSER_BIN points to a Chromium browser; no browser automation dependency.
-export async function withBrowser(run) {
+export async function withBrowser(run, {profile: existingProfile} = {}) {
     if (!process.env.BROWSER_BIN) throw new Error('Set BROWSER_BIN to a Chromium browser executable.');
-    const profile = await mkdtemp(join(tmpdir(), 'ssot-browser-'));
+    const profile = existingProfile ?? await mkdtemp(join(tmpdir(), 'ssot-browser-'));
+    if (existingProfile) await rm(join(profile, 'DevToolsActivePort'), {force: true});
     const browser = spawn(process.env.BROWSER_BIN, ['--headless=new', '--disable-gpu', '--no-first-run',
         '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'],
     {windowsHide: true, stdio: 'ignore'});
@@ -88,6 +89,6 @@ export async function withBrowser(run) {
         browser.kill();
         await exited;
         // This path is the exact temporary directory created above, outside the repository.
-        await rm(profile, {recursive: true, force: true, maxRetries: 20, retryDelay: 200});
+        if (!existingProfile) await rm(profile, {recursive: true, force: true, maxRetries: 20, retryDelay: 200});
     }
 }

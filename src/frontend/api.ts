@@ -13,16 +13,24 @@ export class ApiRequestError extends Error {
 
 const sessionKey = 'ssot-session-token';
 let token: string | undefined;
-try { token = sessionStorage.getItem(sessionKey) ?? undefined; } catch {}
+try {
+    token = localStorage.getItem(sessionKey) ?? sessionStorage.getItem(sessionKey) ?? undefined;
+    if (token) localStorage.setItem(sessionKey, token);
+    sessionStorage.removeItem(sessionKey);
+} catch {}
 function storeToken(value: string | undefined): void {
     token = value;
     try {
-        if (value) sessionStorage.setItem(sessionKey, value);
-        else sessionStorage.removeItem(sessionKey);
+        if (value) localStorage.setItem(sessionKey, value);
+        else localStorage.removeItem(sessionKey);
+        sessionStorage.removeItem(sessionKey);
     } catch {} // Memory-only login still works when browser storage is unavailable.
 }
 export const isAuthenticated = (): boolean => token !== undefined;
 export function clearSession(): void { storeToken(undefined); }
+if (typeof window !== 'undefined') window.addEventListener('storage', event => {
+    if (event.key === sessionKey && event.newValue === null && token) window.dispatchEvent(new Event('sessionexpired'));
+});
 
 async function request(path: string, method = 'GET', body?: unknown, signal?: AbortSignal, contentType = 'application/json'): Promise<Response> {
     const requestToken = token;
