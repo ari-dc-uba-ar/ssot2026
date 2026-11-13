@@ -43,13 +43,19 @@ export type LoginResponse = {token: string; expiresIn: number; user: Authenticat
 export type RecoveryCodesResponse = {codes: string[]};
 
 export type AggregateOperation = 'count' | 'sum' | 'avg' | 'min' | 'max';
-export type ReportMeasure = {operation: AggregateOperation; field: string} | {operation: 'count'};
+export type ReportMeasure = {operation: AggregateOperation; field: string} | {operation: 'count'} | {operation: 'countDistinct'; source: number};
+export type ReportJoin = {source: number; relationship: string; kind: 'inner' | 'left'};
+export type ReportSource = {
+    index: number; entity: EntityName; label: string; distinctRecords: boolean;
+    relationships: {id: string; entity: EntityName; label: string}[];
+};
 export type ReportDefinition = {
     name: EntityName; label: string; pageSize: number;
     rowCount: {operation: 'count'; label: string};
+    sources: ReportSource[];
     columns: (EntityColumn & {aggregates: {operation: AggregateOperation; label: string}[]})[];
 };
-export type ReportQuery = Pick<EntityQuery, 'filter' | 'where' | 'page'> & {groupBy: string[]; measures: ReportMeasure[]};
+export type ReportQuery = Pick<EntityQuery, 'filter' | 'where' | 'page'> & {joins?: ReportJoin[]; groupBy: string[]; measures: ReportMeasure[]};
 export type ReportResponse = {
     columns: {name: string; label: string}[]; rows: EntityRow[];
     page: number; total: number; pageSize: number;

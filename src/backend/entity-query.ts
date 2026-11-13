@@ -21,11 +21,11 @@ export function readQuery(value: unknown, fields: Fields): EntityQuery {
     return {filter: filter.trim(), ...(sort === undefined ? {} : {sort}), direction, page: Number(page), where: equal} as EntityQuery;
 }
 
-export function queryPredicate(fields: Fields, query: EntityQuery) {
+export function queryPredicate(fields: Fields, query: EntityQuery, column: (name: string) => ReturnType<typeof identifier> = identifier) {
     const names = Object.keys(fields);
-    const predicates = Object.entries(query.where ?? {}).map(([field, value]) => sql`${identifier(field)} IS NOT DISTINCT FROM ${value}`);
+    const predicates = Object.entries(query.where ?? {}).map(([field, value]) => sql`${column(field)} IS NOT DISTINCT FROM ${value}`);
     if (query.filter) {
-        predicates.push(sql`(${joinSql(names.map(field => sql`strpos(lower(${identifier(field)}::text), lower(${query.filter})) > 0`), sql` OR `)})`);
+        predicates.push(sql`(${joinSql(names.map(field => sql`strpos(lower(${column(field)}::text), lower(${query.filter})) > 0`), sql` OR `)})`);
     }
     return predicates.length ? joinSql(predicates, sql` AND `) : sql`TRUE`;
 }

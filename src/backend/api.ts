@@ -16,6 +16,7 @@ import {csvCapabilities, exportEntityCsv, importEntityCsv} from './entity-csv.js
 import {csvSettings} from './csv-settings.js';
 import {entityReferences} from './entity-relations.js';
 import {reportDefinition, runReport} from './reports.js';
+import {createReportCatalog} from './report-joins.js';
 
 function readRow(fields: EntityInfo<typeof myContext>['fields'], value: unknown): Record<string, unknown> {
     const row = readObject(value, Object.keys(fields));
@@ -30,6 +31,7 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
     const entities = new Map<EntityName, EntityInfo<typeof myContext>>(Object.values(myEntities)
         .map(definition => [definition.name, completeEntity(myContext, definition)]));
     const referencesByEntity = new Map([...entities].map(([name, entity]) => [name, entityReferences(entity, entities, 'read')]));
+    const reportCatalog = createReportCatalog(entities, entityLabels);
     router.use(auth.requireUser);
     router.use(express.json({limit: '64kb'}));
     router.get('/', (_req, res) => {
@@ -62,8 +64,12 @@ export function registerEntityApi(app: Express, pool: Pick<Pool, 'query' | 'conn
             const row = readRow(keys, key);
             return entity.pk.map(name => row[name]);
         };
-        router.get(`/${entity.name}/report`, (_req, res) => res.json(reportDefinition(entity, entityLabels[definition.name])));
-        router.post(`/${entity.name}/report`, async (req, res) => res.json(await runReport(pool, entity, req.body)));
+        router.get(`/${entity.name}/report`, (_req, res) => res.json(reportDefinition(entity, reportCatalog)));
+        router.post(`/${entity.name}/report/definition`, (req, res) => {
+            const {joins} = readObject(req.body, ['joins']);
+            res.json(reportDefinition(entity, reportCatalog, joins));
+        });
+        router.post(`/${entity.name}/report`, async (req, res) => res.json(await runReport(pool, entity, req.body, reportCatalog)));
         router.get(`/${entity.name}/csv`, async (_req, res) => {
             const csv = await exportEntityCsv(pool, entity);
             res.attachment(`${entity.name}.csv`).type('text/csv; charset=utf-8').send(csv);
