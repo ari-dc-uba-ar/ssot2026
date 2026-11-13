@@ -511,6 +511,17 @@ of overwriting another user's work. The spreadsheet preserves the draft, offers
 **Ver datos actuales** to compare values, and asks before discarding it on refresh
 or navigation.
 
+The same review shows incoming related records. Entity responses supply
+`references` (readable outgoing foreign keys) and `referencedBy` (incoming
+relationships with source labels and field mappings), derived from the SSOT.
+The browser discovers relationships from that metadata. Each section uses the
+existing page size and client/server threshold, with independent pagination.
+Association-table fields remain visible alongside labels from their outgoing
+references; the browser does not infer domain-specific many-to-many semantics.
+Only visible rows need target lookups, using exact key filters. Visited pages are
+cached until the review closes; live notifications invalidate affected pages and
+labels while preserving spreadsheet drafts. Failed loads can be retried in place.
+
 Successful mutations return HTTP 204. The backend checks exact field sets, types,
 nullability and declared entity validators using system-definition before writing
 through the app connection. SQL values are parameterized. Unknown entities or
@@ -572,5 +583,5 @@ DB, checks mobile scrolling/sticky geometry and desktop docking, and exercises
 navigation, typed filters and dropdown validity against the real API. Set
 `UI_SCREENSHOT` to an output PNG path to capture the mobile view.
 
-The selected contributions from PRs #6, #15, #16, #34, #39 and #40, their authors, and the
+The selected contributions from PRs #6, #15, #16, #34, #39, #40, #41 and #42, their authors, and the
 compatibility adjustments are recorded in [PR integration notes](docs/pr-integration.md).
