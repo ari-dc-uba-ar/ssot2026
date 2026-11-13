@@ -27,6 +27,10 @@ their branches unchanged. The original PRs remain the source for classroom attri
 - Visited pages are cached for the lifetime of the review. Live invalidation
   refreshes affected pages and labels; closing the dialog or ending the session
   releases its cache and subscriptions. Unsaved spreadsheet drafts are preserved.
+- The follow-up comment on #41 is implemented too: the primary spreadsheet has
+  expandable related rows, with lazy collapsible relationship sections. Search,
+  typed column filters, sorting and pagination reuse the same component in both
+  inline and review views. Parent keys remain fixed while filtering.
 - Unit tests cover arbitrary domain names, composite and overlapping keys, nulls
   and unavailable targets. Browser tests cover server pagination, cache reuse,
   live changes, retry, mobile overflow and cleanup against real PostgreSQL.

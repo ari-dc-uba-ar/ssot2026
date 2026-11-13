@@ -294,10 +294,12 @@ expire 24 hours after login (without sliding renewal) and validate the algorithm
 claims. Every authenticated request also checks the account's existence and
 session version. Account updates, password resets/changes and logout
 revoke existing sessions. Logout closes all sessions for that account. The browser
-keeps its token in `sessionStorage` for the current tab, so refreshing or navigating
-away and back restores the session after validating it with `GET /api/auth/me`.
-Logout, revocation or expiry clears the saved token; closing the tab ends its
-browser storage. A temporary server error retains the token for a later reload.
+keeps its token in `localStorage`, so reloading, navigating away and back, or
+restarting the browser restores the session after validating it with
+`GET /api/auth/me`. Existing tab-scoped tokens migrate on the next load.
+Logout, revocation or expiry clears the saved token; logout also clears active
+views in other tabs through storage notifications. A temporary server error
+retains the token for a later reload. Persistence does not extend the one-day expiry.
 When browser storage is unavailable, login still works in memory until reload.
 
 The users table is a required SSOT entity. Anonymous access is limited to login
@@ -511,7 +513,11 @@ of overwriting another user's work. The spreadsheet preserves the draft, offers
 **Ver datos actuales** to compare values, and asks before discarding it on refresh
 or navigation.
 
-The same review shows incoming related records. Entity responses supply
+The same review shows incoming related records. The row's **Registros relacionados**
+button also expands them inline in the primary spreadsheet, with one collapsible
+section per relationship. Closed inline sections load only when expanded.
+Both views offer search, sorting, typed column filters and pagination. Filters
+cannot override the parent relationship's key. Entity responses supply
 `references` (readable outgoing foreign keys) and `referencedBy` (incoming
 relationships with source labels and field mappings), derived from the SSOT.
 The browser discovers relationships from that metadata. Each section uses the
@@ -521,6 +527,19 @@ references; the browser does not infer domain-specific many-to-many semantics.
 Only visible rows need target lookups, using exact key filters. Visited pages are
 cached until the review closes; live notifications invalidate affected pages and
 labels while preserving spreadsheet drafts. Failed loads can be retried in place.
+
+**Reportes**, in the table navigation panel, opens a generic single-table report
+page. `GET /api/entities/:name/report` supplies its visible readable fields and
+allowed aggregate operations. `POST` accepts `{groupBy, measures, filter?, where?, page?}`;
+each measure is `{operation, field}`, or `{operation: 'count'}` for the row count.
+The backend derives capabilities from the SSOT's SQL type mapping: numeric fields
+support count/sum/average/min/max; text supports count/min/max; booleans support
+count. Field counts exclude nulls; row counts include them. Filters apply before
+grouping, null groups are retained, and group pages use deterministic ordering.
+Aggregates are returned as text to preserve PostgreSQL numeric precision.
+The page refreshes on live changes to its table and releases its subscription on
+navigation or logout. Report queries always aggregate and paginate on the server.
+Cross-table joins and saved report definitions are outside this first version.
 
 Successful mutations return HTTP 204. The backend checks exact field sets, types,
 nullability and declared entity validators using system-definition before writing
@@ -555,8 +574,12 @@ those responses satisfy the independent browser protocol.
 Static backend queries use `entitySql` to quote SSOT-checked column names and
 derive SELECT result types from their selected fields. Authentication reuses
 these selections, and bootstrap inputs are checked against the SSOT. The helper
-does not parse SQL clauses or validate the live database; parameterized values,
-runtime input validation and migration checks still serve those responsibilities.
+uses the shared `sql` tagged template. `sql.ts` is the app's sole boundary for
+quoting identifiers and assigning value placeholders, including nested fragments.
+CRUD, browsing, authentication, CSV, bootstrap and reports use it; interpolated
+strings are parameters unless explicitly constructed as SQL fragments or quoted
+identifiers. Query logic remains with each feature. Runtime input validation and
+migration checks still validate incoming data and the live database.
 
 ```sh
 npm run test:api
