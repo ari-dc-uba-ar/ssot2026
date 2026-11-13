@@ -2,7 +2,7 @@ import type {ApiError, AuthenticatedUser, CsvImportResponse, DeleteDependencyChe
 import type {Problem} from 'system-definition';
 import type {EntityName as ChangedEntity, EntityQuery} from '../backend/browser-contract.js';
 import {messageOf} from './messages.js';
-import type {ReportDefinition, ReportQuery, ReportResponse} from '../backend/browser-contract.js';
+import type {ReportDefinition, ReportQuery, ReportResponse, ReportJoin} from '../backend/browser-contract.js';
 
 export class ApiRequestError extends Error {
     readonly problems: readonly Problem[];
@@ -60,8 +60,8 @@ export async function listEntities(): Promise<EntityNamesResponse> {
 export async function loadEntity(name: EntityName, query?: EntityQuery): Promise<EntityResponse> {
     return (await request(`${path(name)}?query=${encodeURIComponent(JSON.stringify(query ?? {}))}`)).json() as Promise<EntityResponse>;
 }
-export async function loadReportDefinition(name: EntityName): Promise<ReportDefinition> {
-    return (await request(`${path(name)}/report`)).json();
+export async function loadReportDefinition(name: EntityName, joins: ReportJoin[] = []): Promise<ReportDefinition> {
+    return (await request(`${path(name)}/report/definition`, 'POST', {joins})).json();
 }
 export async function loadReport(name: EntityName, query: ReportQuery): Promise<ReportResponse> {
     return (await request(`${path(name)}/report`, 'POST', query)).json();

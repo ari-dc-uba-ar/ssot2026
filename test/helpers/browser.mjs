@@ -14,7 +14,12 @@ export function pageActions({send, evaluate}) {
         catch (error) { throw error.message.startsWith('Timed out') ? new Error(`Timed out waiting for: ${fn}`) : error; }
     };
     const resize = (width, height) => send('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: width < 1000});
-    const click = selector => inPage(selector => document.querySelector(selector).click(), selector);
+    const click = selector => waitFor(selector => {
+        const target = document.querySelector(selector);
+        if (!target || target.matches(':disabled') || target.closest('[inert]')) return false;
+        target.click();
+        return true;
+    }, selector);
     const setValue = (selector, value) => inPage((selector, value) => { document.querySelector(selector).value = value; }, selector, value);
     const submit = selector => inPage(selector => document.querySelector(selector).requestSubmit(), selector);
     const valueOf = selector => inPage(selector => document.querySelector(selector).value, selector);

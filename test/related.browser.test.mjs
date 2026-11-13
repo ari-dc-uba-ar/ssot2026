@@ -239,6 +239,77 @@ test('related records page, cache and refresh through the real API', {timeout: 9
                     await until(() => reads.filter(read => read.entity === 'estudiantes').length > studentReads);
                     assert.equal(reportRequests, before, 'Leaving the report releases its live subscription');
                 });
+                await t.test('joined reports choose paths and join types, count distinct records and refresh joined dependencies', async () => {
+                    await pool.query("INSERT INTO ssot.estudiantes (legajo, nombre) VALUES ('E002', 'Unmatched')");
+                    await waitFor(() => !document.querySelector('#workspace').disabled);
+                    await click('#open-reports');
+                    await waitFor(() => document.querySelector('.reports-page')?.getAttribute('aria-busy') === 'false');
+                    await inPage(() => {
+                        const select = document.querySelector('[aria-label="Tabla del reporte"]');
+                        select.value = 'estudiantes';
+                        select.dispatchEvent(new Event('change', {bubbles: true}));
+                    });
+                    await waitFor(() => document.querySelector('.report-results td')?.textContent === '2');
+                    const add = async (source, label) => {
+                        await inPage((source, label) => {
+                            const origin = document.querySelector('[aria-label="Origen de la relación"]');
+                            origin.value = String(source);
+                            origin.dispatchEvent(new Event('change', {bubbles: true}));
+                            const relation = document.querySelector('[aria-label="Relación"]');
+                            relation.value = [...relation.options].find(option => option.textContent.startsWith(label)).value;
+                            document.querySelector('[aria-label="Tipo de nueva unión"]').value = 'left';
+                            [...document.querySelectorAll('.report-joins button')].find(button => button.textContent === 'Agregar relación').click();
+                        }, source, label);
+                        await waitFor(() => !document.querySelector('.report-joins').disabled && document.querySelector('.reports-page').getAttribute('aria-busy') === 'false');
+                    };
+                    await add(0, 'Inscripciones');
+                    await add(1, 'Materias');
+                    assert.equal(await inPage(() => document.querySelectorAll('.report-join-step').length), 2);
+                    await inPage(() => {
+                        [...document.querySelectorAll('.report-groups > label')].find(label => label.textContent === 'Estudiantes · Nombre').querySelector('input').click();
+                        for (const label of document.querySelectorAll('.report-measures > label')) {
+                            if (label.textContent.startsWith('Registros distintos')) label.querySelector('input').click();
+                        }
+                        document.querySelector('.reports-page form').requestSubmit();
+                    });
+                    await waitFor(() => document.querySelector('.report-results th')?.textContent === 'Estudiantes · Nombre');
+                    assert.deepEqual(await inPage(() => [...document.querySelectorAll('.report-results tbody tr')].map(tr => [...tr.cells].map(cell => cell.textContent))), [
+                        ['Original', '202', '1', '202', '202'], ['Unmatched', '1', '1', '0', '0'],
+                    ]);
+                    assert.equal(await inPage(() => {
+                        const results = document.querySelector('.report-results').getBoundingClientRect();
+                        const header = document.querySelector('.report-results thead').getBoundingClientRect();
+                        const row = document.querySelector('.report-results tbody tr').getBoundingClientRect();
+                        return results.height >= header.height + row.height && results.bottom <= innerHeight;
+                    }), true, 'Report results remain visible below the controls on a phone');
+                    const before = reportRequests;
+                    await pool.query("DELETE FROM ssot.enrolamientos WHERE cod_mat = 'M202'");
+                    publish('enrolamientos');
+                    await waitFor(() => document.querySelector('.report-results tbody tr td:nth-child(2)')?.textContent === '201');
+                    assert.equal(reportRequests, before + 1);
+                    publish('materias');
+                    await until(() => reportRequests === before + 2);
+                    await waitFor(() => document.querySelector('.reports-page').getAttribute('aria-busy') === 'false');
+                    assert.equal(await inPage(() => document.documentElement.scrollWidth <= innerWidth), true);
+                    await inPage(() => {
+                        const select = document.querySelector('[aria-label="Tipo de unión 1"]');
+                        select.value = 'inner';
+                        select.dispatchEvent(new Event('change', {bubbles: true}));
+                    });
+                    await waitFor(() => document.querySelector('.report-results td')?.textContent === '201');
+                    await add(1, 'Estudiantes');
+                    assert.equal(await inPage(() => document.querySelector('[aria-label="Origen de la relación"]').options.length), 4);
+                    assert.equal(await inPage(() => {
+                        const labels = [...document.querySelectorAll('.report-groups label')].map(label => label.textContent);
+                        return labels.includes('Estudiantes · Nombre') && labels.some(label => label.includes('(4) · Nombre'));
+                    }), true);
+                    await click('[aria-label="Quitar unión 1 y sus dependientes"]');
+                    await waitFor(() => document.querySelector('.report-results td')?.textContent === '2');
+                    assert.equal(await inPage(() => document.querySelectorAll('.report-join-step').length), 0);
+                    await inPage(() => window.dispatchEvent(new Event('sessionexpired')));
+                    await waitFor(() => document.querySelector('#workspace').hidden);
+                    assert.equal(await inPage(() => !!document.querySelector('.reports-page')), false);
+                });
                 assert.deepEqual(errors, []);
             });
         } finally {

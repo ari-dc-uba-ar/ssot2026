@@ -146,6 +146,9 @@ td input[type=checkbox] { width: auto; height: auto; }
 .reports-page fieldset { min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .reports-page label { display: inline-flex; align-items: center; gap: 4px; }
 .reports-page input[type=checkbox] { width: auto; }
+.report-joins select { min-width: 0; max-width: 100%; }
+.report-join-step { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.report-join-step span { overflow-wrap: anywhere; }
 .report-results { flex: 1; min-height: 0; overflow: auto; }
 .report-results td, .report-results th { overflow-wrap: anywhere; }
 .related-scroll th, .related-scroll td { height: auto; padding: 5px 8px; overflow-wrap: anywhere; }
