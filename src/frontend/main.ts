@@ -8,6 +8,7 @@ import {element} from './dom.js';
 import {actionButton, setActionLabel} from './action-button.js';
 import {createTableNavigation} from './table-navigation.js';
 import {reviewRow} from './review-row.js';
+import {relatedRows} from './related-rows.js';
 import {initializeAuthentication} from './auth-ui.js';
 import {loadReferenceSources} from './reference-sources.js';
 import {confirmAction, showDeleteDependencies} from './confirm.js';
@@ -24,6 +25,7 @@ const status = document.querySelector<HTMLElement>('#status')!;
 const cache = createEntityCache();
 const load = cache.load;
 let stopWatching = () => {};
+let closeReview = () => {};
 let invalidateView: (name: EntityName | null) => void = () => {};
 let resumeLive = () => {};
 let canLeaveView = async () => true;
@@ -501,7 +503,11 @@ async function show(name: EntityName): Promise<void> {
                 cache.invalidate(name);
                 const query = {where: rowKey(entity, original.row)} as EntityQuery;
                 const current = entityPage(await load(name, query), query).rows[0];
-                reviewRow(entity, original.row, editor.read(), current);
+                closeReview();
+                const related = relatedRows(entity, original.row, cache);
+                const dialog = reviewRow(entity, original.row, editor.read(), current, ...related.sections);
+                closeReview = () => { related.dispose(); dialog.close(); };
+                dialog.addEventListener('close', related.dispose, {once: true});
             })));
         });
         for (const row of table.rows) {
@@ -548,6 +554,7 @@ async function show(name: EntityName): Promise<void> {
 initializeAuthentication(active => {
     workspace.hidden = !active;
     if (!active) {
+        closeReview();
         stopWatching();
         cache.clear();
         viewGeneration++;
