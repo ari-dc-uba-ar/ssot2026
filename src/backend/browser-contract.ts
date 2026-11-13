@@ -41,3 +41,16 @@ export type ApiError = {error: string; problems?: readonly Problem[]};
 export type AuthenticatedUser = {id: string; usuario: string};
 export type LoginResponse = {token: string; expiresIn: number; user: AuthenticatedUser};
 export type RecoveryCodesResponse = {codes: string[]};
+
+export type AggregateOperation = 'count' | 'sum' | 'avg' | 'min' | 'max';
+export type ReportMeasure = {operation: AggregateOperation; field: string} | {operation: 'count'};
+export type ReportDefinition = {
+    name: EntityName; label: string; pageSize: number;
+    rowCount: {operation: 'count'; label: string};
+    columns: (EntityColumn & {aggregates: {operation: AggregateOperation; label: string}[]})[];
+};
+export type ReportQuery = Pick<EntityQuery, 'filter' | 'where' | 'page'> & {groupBy: string[]; measures: ReportMeasure[]};
+export type ReportResponse = {
+    columns: {name: string; label: string}[]; rows: EntityRow[];
+    page: number; total: number; pageSize: number;
+};
